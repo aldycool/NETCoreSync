@@ -3,15 +3,21 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 15
 VisualStudioVersion = 15.0.28307.572
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NETCoreSyncWebSample", "NETCoreSyncWebSample\NETCoreSyncWebSample.csproj", "{395E5492-E19A-423F-B81D-CAD7A8726D25}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "NETCoreSyncWebSample", "NETCoreSyncWebSample\NETCoreSyncWebSample.csproj", "{395E5492-E19A-423F-B81D-CAD7A8726D25}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NETCoreSync", "NETCoreSync\NETCoreSync.csproj", "{00C06802-3397-4BE0-82F2-99547468A22F}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "NETCoreSync", "NETCoreSync\NETCoreSync.csproj", "{00C06802-3397-4BE0-82F2-99547468A22F}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NETCoreSyncMobileSample.Android", "NETCoreSyncMobileSample\NETCoreSyncMobileSample.Android\NETCoreSyncMobileSample.Android.csproj", "{24CE3C36-16B9-426D-AA0C-5961ECF8D88C}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NETCoreSyncMobileSample.iOS", "NETCoreSyncMobileSample\NETCoreSyncMobileSample.iOS\NETCoreSyncMobileSample.iOS.csproj", "{4FCCA9DC-AF6B-43C4-B0CF-571EB539D688}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NETCoreSyncMobileSample", "NETCoreSyncMobileSample\NETCoreSyncMobileSample\NETCoreSyncMobileSample.csproj", "{D92CD917-80F9-4C05-9D4C-B13B040B0DAD}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "NETCoreSyncMobileSample", "NETCoreSyncMobileSample\NETCoreSyncMobileSample\NETCoreSyncMobileSample.csproj", "{D92CD917-80F9-4C05-9D4C-B13B040B0DAD}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{2E25CEE8-52F3-4E0D-A6CE-DDAE46E90434}"
+	ProjectSection(SolutionItems) = preProject
+		LICENSE = LICENSE
+		README.md = README.md
+	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
