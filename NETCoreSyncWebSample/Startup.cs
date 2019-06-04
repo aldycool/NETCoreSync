@@ -2,20 +2,26 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using System.IO;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.EntityFrameworkCore;
+using NETCoreSyncWebSample.Models;
 
 namespace NETCoreSyncWebSample
 {
     public class Startup
     {
-        public Startup(IConfiguration configuration)
+        private readonly IHostingEnvironment hostingEnvironment;
+
+        public Startup(IConfiguration configuration, IHostingEnvironment hostingEnvironment)
         {
             Configuration = configuration;
+            this.hostingEnvironment = hostingEnvironment;
         }
 
         public IConfiguration Configuration { get; }
@@ -30,6 +36,12 @@ namespace NETCoreSyncWebSample
                 options.MinimumSameSitePolicy = SameSiteMode.None;
             });
 
+            
+
+            services.AddDbContext<DatabaseContext>(options =>
+            {
+                options.UseSqlite($"Data Source={Path.Combine(hostingEnvironment.ContentRootPath, nameof(NETCoreSyncWebSample) + ".sqlite")}");
+            });
 
             services.AddMvc().SetCompatibilityVersion(CompatibilityVersion.Version_2_1);
         }
