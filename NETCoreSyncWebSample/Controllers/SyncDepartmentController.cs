@@ -21,7 +21,7 @@ namespace NETCoreSyncWebSample.Controllers
         // GET: SyncDepartment
         public async Task<IActionResult> Index()
         {
-            return View(await _context.Departments.ToListAsync());
+            return View(await GetDatas().ToListAsync());
         }
 
         // GET: SyncDepartment/Details/5
@@ -32,7 +32,7 @@ namespace NETCoreSyncWebSample.Controllers
                 return NotFound();
             }
 
-            var syncDepartment = await _context.Departments
+            var syncDepartment = await GetDatas()
                 .FirstOrDefaultAsync(m => m.ID == id);
             if (syncDepartment == null)
             {
@@ -53,11 +53,12 @@ namespace NETCoreSyncWebSample.Controllers
         // more details see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create([Bind("Name")] SyncDepartment syncDepartment)
+        public async Task<IActionResult> Create([Bind("SynchronizationID,Name")] SyncDepartment syncDepartment)
         {
             if (ModelState.IsValid)
             {
                 syncDepartment.ID = Guid.NewGuid();
+                syncDepartment.LastUpdated = TempHelper.GetNowTicks();
                 _context.Add(syncDepartment);
                 await _context.SaveChangesAsync();
                 return RedirectToAction(nameof(Index));
@@ -73,7 +74,7 @@ namespace NETCoreSyncWebSample.Controllers
                 return NotFound();
             }
 
-            var syncDepartment = await _context.Departments.FindAsync(id);
+            var syncDepartment = await GetDatas().FirstOrDefaultAsync(m => m.ID == id);
             if (syncDepartment == null)
             {
                 return NotFound();
@@ -86,7 +87,7 @@ namespace NETCoreSyncWebSample.Controllers
         // more details see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(Guid id, [Bind("ID,Name")] SyncDepartment syncDepartment)
+        public async Task<IActionResult> Edit(Guid id, [Bind("ID,SynchronizationID,Name")] SyncDepartment syncDepartment)
         {
             if (id != syncDepartment.ID)
             {
@@ -97,6 +98,7 @@ namespace NETCoreSyncWebSample.Controllers
             {
                 try
                 {
+                    syncDepartment.LastUpdated = TempHelper.GetNowTicks();
                     _context.Update(syncDepartment);
                     await _context.SaveChangesAsync();
                 }
@@ -124,7 +126,7 @@ namespace NETCoreSyncWebSample.Controllers
                 return NotFound();
             }
 
-            var syncDepartment = await _context.Departments
+            var syncDepartment = await GetDatas()
                 .FirstOrDefaultAsync(m => m.ID == id);
             if (syncDepartment == null)
             {
@@ -139,15 +141,22 @@ namespace NETCoreSyncWebSample.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> DeleteConfirmed(Guid id)
         {
-            var syncDepartment = await _context.Departments.FindAsync(id);
-            _context.Departments.Remove(syncDepartment);
+            var syncDepartment = await GetDatas().FirstAsync(m => m.ID == id);
+            syncDepartment.Deleted = TempHelper.GetNowTicks();
+            _context.Update(syncDepartment);
+            //_context.Departments.Remove(syncDepartment);
             await _context.SaveChangesAsync();
             return RedirectToAction(nameof(Index));
         }
 
         private bool SyncDepartmentExists(Guid id)
         {
-            return _context.Departments.Any(e => e.ID == id);
+            return GetDatas().Any(e => e.ID == id);
+        }
+
+        public IQueryable<SyncDepartment> GetDatas()
+        {
+            return _context.Departments.Where(w => w.Deleted == null);
         }
     }
 }

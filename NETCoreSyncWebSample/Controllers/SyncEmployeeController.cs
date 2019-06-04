@@ -21,7 +21,7 @@ namespace NETCoreSyncWebSample.Controllers
         // GET: SyncEmployee
         public async Task<IActionResult> Index()
         {
-            var databaseContext = _context.SyncEmployee.Include(s => s.Department);
+            var databaseContext = GetDatas().Include(s => s.Department);
             return View(await databaseContext.ToListAsync());
         }
 
@@ -33,7 +33,7 @@ namespace NETCoreSyncWebSample.Controllers
                 return NotFound();
             }
 
-            var syncEmployee = await _context.SyncEmployee
+            var syncEmployee = await GetDatas()
                 .Include(s => s.Department)
                 .FirstOrDefaultAsync(m => m.ID == id);
             if (syncEmployee == null)
@@ -47,7 +47,7 @@ namespace NETCoreSyncWebSample.Controllers
         // GET: SyncEmployee/Create
         public IActionResult Create()
         {
-            ViewData["DepartmentID"] = new SelectList(_context.Departments, "ID", "ID");
+            ViewData["DepartmentID"] = GetSelectListDepartment(null);
             return View();
         }
 
@@ -56,16 +56,18 @@ namespace NETCoreSyncWebSample.Controllers
         // more details see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create([Bind("Name,Birthday,NumberOfComputers,SavingAmount,IsActive,DepartmentID")] SyncEmployee syncEmployee)
+        public async Task<IActionResult> Create([Bind("SynchronizationID,Name,Birthday,NumberOfComputers,SavingAmount,IsActive,DepartmentID")] SyncEmployee syncEmployee)
         {
             if (ModelState.IsValid)
             {
                 syncEmployee.ID = Guid.NewGuid();
+                if (syncEmployee.DepartmentID == Guid.Empty) syncEmployee.DepartmentID = null;
+                syncEmployee.LastUpdated = TempHelper.GetNowTicks();
                 _context.Add(syncEmployee);
                 await _context.SaveChangesAsync();
                 return RedirectToAction(nameof(Index));
             }
-            ViewData["DepartmentID"] = new SelectList(_context.Departments, "ID", "ID", syncEmployee.DepartmentID);
+            ViewData["DepartmentID"] = GetSelectListDepartment(syncEmployee.DepartmentID);
             return View(syncEmployee);
         }
 
@@ -77,12 +79,12 @@ namespace NETCoreSyncWebSample.Controllers
                 return NotFound();
             }
 
-            var syncEmployee = await _context.SyncEmployee.FindAsync(id);
+            var syncEmployee = await GetDatas().FirstOrDefaultAsync(m => m.ID == id);
             if (syncEmployee == null)
             {
                 return NotFound();
             }
-            ViewData["DepartmentID"] = new SelectList(_context.Departments, "ID", "ID", syncEmployee.DepartmentID);
+            ViewData["DepartmentID"] = GetSelectListDepartment(syncEmployee.DepartmentID);
             return View(syncEmployee);
         }
 
@@ -91,7 +93,7 @@ namespace NETCoreSyncWebSample.Controllers
         // more details see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(Guid id, [Bind("ID,Name,Birthday,NumberOfComputers,SavingAmount,IsActive,DepartmentID")] SyncEmployee syncEmployee)
+        public async Task<IActionResult> Edit(Guid id, [Bind("ID,SynchronizationID,Name,Birthday,NumberOfComputers,SavingAmount,IsActive,DepartmentID")] SyncEmployee syncEmployee)
         {
             if (id != syncEmployee.ID)
             {
@@ -102,6 +104,8 @@ namespace NETCoreSyncWebSample.Controllers
             {
                 try
                 {
+                    if (syncEmployee.DepartmentID == Guid.Empty) syncEmployee.DepartmentID = null;
+                    syncEmployee.LastUpdated = TempHelper.GetNowTicks();
                     _context.Update(syncEmployee);
                     await _context.SaveChangesAsync();
                 }
@@ -118,7 +122,7 @@ namespace NETCoreSyncWebSample.Controllers
                 }
                 return RedirectToAction(nameof(Index));
             }
-            ViewData["DepartmentID"] = new SelectList(_context.Departments, "ID", "ID", syncEmployee.DepartmentID);
+            ViewData["DepartmentID"] = GetSelectListDepartment(syncEmployee.DepartmentID);
             return View(syncEmployee);
         }
 
@@ -130,7 +134,7 @@ namespace NETCoreSyncWebSample.Controllers
                 return NotFound();
             }
 
-            var syncEmployee = await _context.SyncEmployee
+            var syncEmployee = await GetDatas()
                 .Include(s => s.Department)
                 .FirstOrDefaultAsync(m => m.ID == id);
             if (syncEmployee == null)
@@ -146,15 +150,35 @@ namespace NETCoreSyncWebSample.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> DeleteConfirmed(Guid id)
         {
-            var syncEmployee = await _context.SyncEmployee.FindAsync(id);
-            _context.SyncEmployee.Remove(syncEmployee);
+            var syncEmployee = await GetDatas().FirstAsync(m => m.ID == id);
+            syncEmployee.Deleted = TempHelper.GetNowTicks();
+            _context.Update(syncEmployee);
+            //_context.SyncEmployee.Remove(syncEmployee);
             await _context.SaveChangesAsync();
             return RedirectToAction(nameof(Index));
         }
 
         private bool SyncEmployeeExists(Guid id)
         {
-            return _context.SyncEmployee.Any(e => e.ID == id);
+            return GetDatas().Any(e => e.ID == id);
+        }
+
+        public IQueryable<SyncEmployee> GetDatas()
+        {
+            return _context.SyncEmployee.Where(w => w.Deleted == null);
+        }
+
+        public SelectList GetSelectListDepartment(object selectedValue)
+        {
+            var syncDepartmentController = new SyncDepartmentController(_context);
+            IQueryable<SyncDepartment> departments = syncDepartmentController.GetDatas();
+            List<SyncDepartment> listDepartment = new List<SyncDepartment>();
+            SyncDepartment emptyDepartment = new SyncDepartment() { ID = Guid.Empty, Name = "[None]" };
+            listDepartment.Add(emptyDepartment);
+            listDepartment.AddRange(departments.ToList());
+            if (selectedValue == null) selectedValue = emptyDepartment;
+            SelectList selectList = new SelectList(listDepartment, "ID", "Name", selectedValue);
+            return selectList;
         }
     }
 }

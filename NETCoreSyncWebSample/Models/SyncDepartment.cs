@@ -11,10 +11,14 @@ namespace NETCoreSyncWebSample.Models
     {
         [Key]
         [DatabaseGenerated(DatabaseGeneratedOption.None)]
-        public Guid ID { get; set; } = Guid.NewGuid();
+        public Guid ID { get; set; }
+        public string SynchronizationID { get; set; }
         public string Name { get; set; }
 
         [ForeignKey("DepartmentID")]
         public ICollection<SyncEmployee> Employees { get; set; }
+
+        public long LastUpdated { get; set; }
+        public long? Deleted { get; set; }
     }
 }

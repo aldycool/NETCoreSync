@@ -11,7 +11,8 @@ namespace NETCoreSyncWebSample.Models
     {
         [Key]
         [DatabaseGenerated(DatabaseGeneratedOption.None)]
-        public Guid ID { get; set; } = Guid.NewGuid();
+        public Guid ID { get; set; }
+        public string SynchronizationID { get; set; }
         public string Name { get; set; }
         public DateTime Birthday { get; set; }
         public int NumberOfComputers { get; set; }
@@ -19,7 +20,9 @@ namespace NETCoreSyncWebSample.Models
         public bool IsActive { get; set; }
 
         public Guid? DepartmentID { get; set; }
-        [ForeignKey("DepartmentID")]
         public SyncDepartment Department { get; set; }
+
+        public long LastUpdated { get; set; }
+        public long? Deleted { get; set; }
     }
 }
