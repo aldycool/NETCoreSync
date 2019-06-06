@@ -36,8 +36,6 @@ namespace NETCoreSyncWebSample
                 options.MinimumSameSitePolicy = SameSiteMode.None;
             });
 
-            
-
             services.AddDbContext<DatabaseContext>(options =>
             {
                 options.UseSqlite($"Data Source={Path.Combine(hostingEnvironment.ContentRootPath, nameof(NETCoreSyncWebSample) + ".sqlite")}");

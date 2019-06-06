@@ -165,7 +165,7 @@ namespace NETCoreSyncWebSample.Controllers
 
         public IQueryable<SyncEmployee> GetDatas()
         {
-            return _context.SyncEmployee.Where(w => w.Deleted == null);
+            return _context.Employees.Where(w => w.Deleted == null);
         }
 
         public SelectList GetSelectListDepartment(object selectedValue)

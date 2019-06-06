@@ -14,7 +14,6 @@ namespace NETCoreSyncWebSample.Models
         }
 
         public DbSet<SyncDepartment> Departments { get; set; }
-        public DbSet<SyncDepartment> Employees { get; set; }
-        public DbSet<NETCoreSyncWebSample.Models.SyncEmployee> SyncEmployee { get; set; }
+        public DbSet<SyncEmployee> Employees { get; set; }
     }
 }
