@@ -6,11 +6,12 @@ using Xamarin.Forms.Xaml;
 namespace NETCoreSyncMobileSample.Views
 {
     [XamlCompilation(XamlCompilationOptions.Compile)]
-    public partial class AboutPage : ContentPage
+    public partial class AboutPage
     {
         public AboutPage()
         {
             InitializeComponent();
+            BindingContext = ViewModel;
         }
     }
 }

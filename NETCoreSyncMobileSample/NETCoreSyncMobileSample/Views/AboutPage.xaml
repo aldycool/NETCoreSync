@@ -1,13 +1,11 @@
 ﻿<?xml version="1.0" encoding="utf-8" ?>
-<ContentPage xmlns="http://xamarin.com/schemas/2014/forms"
-             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
-             x:Class="NETCoreSyncMobileSample.Views.AboutPage"
-             xmlns:vm="clr-namespace:NETCoreSyncMobileSample.ViewModels"
-             Title="{Binding Title}">
-    
-    <ContentPage.BindingContext>
-        <vm:AboutViewModel />
-    </ContentPage.BindingContext>
+<mvvm:BaseContentPage xmlns="http://xamarin.com/schemas/2014/forms"
+                      xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+                      xmlns:mvvm="clr-namespace:NETCoreSyncMobileSample.Views"
+                      xmlns:vm="clr-namespace:NETCoreSyncMobileSample.ViewModels"
+                      x:Class="NETCoreSyncMobileSample.Views.AboutPage"
+                      x:TypeArguments="vm:AboutViewModel"
+                      Title="{Binding Title}">
     
     <ContentPage.Resources>
         <ResourceDictionary>
@@ -75,4 +73,4 @@
             </StackLayout>
         </ScrollView>
     </Grid>
-</ContentPage>
+</mvvm:BaseContentPage>

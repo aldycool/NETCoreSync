@@ -6,11 +6,16 @@ using NETCoreSyncMobileSample.Models;
 
 namespace NETCoreSyncMobileSample.ViewModels
 {
-    public class EmployeeListViewModel : CustomBaseViewModel
+    public class EmployeeItemViewModel : CustomBaseViewModel
     {
-        public EmployeeListViewModel()
+        public EmployeeItemViewModel()
         {
             Title = HomeMenuItem.GetMenus().Where(w => w.Id == MenuItemType.EmployeeList).First().Title;
+        }
+
+        public override void Init(object initData)
+        {
+            base.Init(initData);
         }
     }
 }

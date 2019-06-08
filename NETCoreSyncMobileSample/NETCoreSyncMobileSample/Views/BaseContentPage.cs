@@ -15,14 +15,18 @@ namespace NETCoreSyncMobileSample.Views
     {
         public T ViewModel { get; set; }
 
-        protected BaseContentPage()
+        protected BaseContentPage(object initData)
         {
             using (var scope = App.Container.BeginLifetimeScope()) 
             {
                 ViewModel = scope.Resolve<T>();
                 ViewModel.WireEvents(this);
+                ViewModel.Init(initData);
             }
         }
 
+        protected BaseContentPage() : this(null)
+        {
+        }
     }
 }

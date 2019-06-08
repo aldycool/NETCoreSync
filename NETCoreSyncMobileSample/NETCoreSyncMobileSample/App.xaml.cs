@@ -23,6 +23,7 @@ namespace NETCoreSyncMobileSample
 
             builder.RegisterType<DatabaseContext>();
 
+            builder.RegisterType<AboutViewModel>();
             builder.RegisterType<DepartmentListViewModel>();
             builder.RegisterType<EmployeeListViewModel>();
 
