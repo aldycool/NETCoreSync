@@ -39,7 +39,7 @@ namespace NETCoreSyncMobileSample.ViewModels
             DepartmentItems.Add(new Department() { Id = Guid.Empty.ToString(), Name = "[None]" });
             using (var databaseContext = databaseService.GetDatabaseContext())
             {
-                DepartmentItems.AddRange(databaseContext.Departments.AsNoTracking().ToList());
+                DepartmentItems.AddRange(databaseService.GetDepartments(databaseContext).AsNoTracking().ToList());
             }
         }
 
@@ -90,6 +90,7 @@ namespace NETCoreSyncMobileSample.ViewModels
 
             using (var databaseContext = databaseService.GetDatabaseContext())
             {
+                Data.LastUpdated = TempHelper.GetNowTicks();
                 if (IsNewData)
                 {
                     databaseContext.Add(Data);
@@ -110,7 +111,9 @@ namespace NETCoreSyncMobileSample.ViewModels
 
             using (var databaseContext = databaseService.GetDatabaseContext())
             {
-                databaseContext.Remove(Data);
+                Data.Deleted = TempHelper.GetNowTicks();
+                databaseContext.Update(Data);
+                //databaseContext.Remove(Data);
                 await databaseContext.SaveChangesAsync();
             }
 

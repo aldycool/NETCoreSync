@@ -32,6 +32,7 @@ namespace NETCoreSyncMobileSample.Models
             optionsBuilder.UseSqlite($"Filename={databaseFilePath}");
         }
 
+        public DbSet<Configuration> Configurations { get; set; }
         public DbSet<Department> Departments { get; set; }
         public DbSet<Employee> Employees { get; set; }
     }

@@ -141,6 +141,10 @@ namespace NETCoreSyncWebSample.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> DeleteConfirmed(Guid id)
         {
+            var syncEmployeeController = new SyncEmployeeController(_context);
+            var dependentEmployee = await syncEmployeeController.GetDatas().Where(w => w.DepartmentID == id).FirstOrDefaultAsync();
+            if (dependentEmployee != null) throw new Exception($"The data is already used by Employee Name: {dependentEmployee.Name}");
+
             var syncDepartment = await GetDatas().FirstAsync(m => m.ID == id);
             syncDepartment.Deleted = TempHelper.GetNowTicks();
             _context.Update(syncDepartment);

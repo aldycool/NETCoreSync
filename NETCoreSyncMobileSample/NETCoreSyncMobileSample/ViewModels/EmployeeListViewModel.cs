@@ -48,7 +48,7 @@ namespace NETCoreSyncMobileSample.ViewModels
             List<Employee> listData = null;
             using (var databaseContext = databaseService.GetDatabaseContext())
             {
-                listData = databaseContext.Employees.Where(w => w.Deleted == null).ToList();
+                listData = databaseService.GetEmployees(databaseContext).ToList();
             }
             Items = new ObservableCollection<Employee>(listData);
         }

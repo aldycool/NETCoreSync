@@ -8,7 +8,8 @@ namespace NETCoreSyncMobileSample.Models
     {
         About,
         DepartmentList,
-        EmployeeList
+        EmployeeList,
+        Setup
     }
 
     public class MainMenuItem
@@ -22,6 +23,7 @@ namespace NETCoreSyncMobileSample.Models
             menus.Add(new MainMenuItem() { Id = MenuItemType.About, Title = "About" });
             menus.Add(new MainMenuItem() { Id = MenuItemType.DepartmentList, Title = "Departments" });
             menus.Add(new MainMenuItem() { Id = MenuItemType.EmployeeList, Title = "Employees" });
+            menus.Add(new MainMenuItem() { Id = MenuItemType.Setup, Title = "Setup" });
             return menus;
         }
     }

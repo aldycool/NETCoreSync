@@ -55,6 +55,7 @@ namespace NETCoreSyncMobileSample.ViewModels
         {
             using (var databaseContext = databaseService.GetDatabaseContext())
             {
+                Data.LastUpdated = TempHelper.GetNowTicks();
                 if (IsNewData)
                 {
                     databaseContext.Add(Data);
@@ -75,7 +76,15 @@ namespace NETCoreSyncMobileSample.ViewModels
 
             using (var databaseContext = databaseService.GetDatabaseContext())
             {
-                databaseContext.Remove(Data);
+                Employee dependentEmployee = databaseService.GetEmployees(databaseContext).Where(w => w.DepartmentId == Data.Id).FirstOrDefault();
+                if (dependentEmployee != null)
+                {
+                    await Application.Current.MainPage.DisplayAlert("Data Already Used", $"The data is already used by Employee Name: {dependentEmployee.Name}", "OK");
+                    return;
+                }
+                Data.Deleted = TempHelper.GetNowTicks();
+                databaseContext.Update(Data);
+                //databaseContext.Remove(Data);
                 await databaseContext.SaveChangesAsync();
             }
 

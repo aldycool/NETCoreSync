@@ -28,12 +28,22 @@ namespace NETCoreSyncMobileSample
             builder.RegisterType<DepartmentItemViewModel>();
             builder.RegisterType<EmployeeListViewModel>();
             builder.RegisterType<EmployeeItemViewModel>();
+            builder.RegisterType<SetupViewModel>();
 
             //NOTE: Navigation (INavigation) is registered per life time scope basis on  BaseContentPage.cs
 
             Container = builder.Build();
 
-            MainPage = new MainPage();
+            DatabaseService databaseService = Container.Resolve<DatabaseService>();
+
+            if (!databaseService.IsDatabaseReady())
+            {
+                MainPage = new NavigationPage(new SetupPage());
+            }
+            else
+            {
+                MainPage = new MainPage();
+            }
         }
 
         protected override void OnStart()
