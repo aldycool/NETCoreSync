@@ -11,7 +11,7 @@ using NETCoreSyncMobileSample.Views;
 
 namespace NETCoreSyncMobileSample.ViewModels
 {
-    public class DepartmentListViewModel : CustomBaseViewModel
+    public class DepartmentListViewModel : BaseViewModel
     {
         private readonly INavigation navigation;
         private readonly DatabaseService databaseService;
@@ -44,7 +44,7 @@ namespace NETCoreSyncMobileSample.ViewModels
         protected override void ViewAppearing(object sender, EventArgs e)
         {
             base.ViewAppearing(sender, e);
-            Title = HomeMenuItem.GetMenus().Where(w => w.Id == MenuItemType.DepartmentList).First().Title;
+            Title = MainMenuItem.GetMenus().Where(w => w.Id == MenuItemType.DepartmentList).First().Title;
             List<Department> listData = null;
             using (var databaseContext = databaseService.GetDatabaseContext())
             {

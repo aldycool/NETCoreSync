@@ -11,13 +11,13 @@ namespace NETCoreSyncMobileSample.Views
     public partial class MenuPage : ContentPage
     {
         MainPage RootPage { get => Application.Current.MainPage as MainPage; }
-        List<HomeMenuItem> menuItems;
+        List<Models.MainMenuItem> menuItems;
 
         public MenuPage()
         {
             InitializeComponent();
 
-            menuItems = HomeMenuItem.GetMenus();
+            menuItems = Models.MainMenuItem.GetMenus();
 
             ListViewMenu.ItemsSource = menuItems;
 
@@ -28,7 +28,7 @@ namespace NETCoreSyncMobileSample.Views
                 if (e.SelectedItem == null)
                     return;
 
-                var id = (int)((HomeMenuItem)e.SelectedItem).Id;
+                var id = (int)((Models.MainMenuItem)e.SelectedItem).Id;
                 await RootPage.NavigateFromMenu(id);
             };
         }

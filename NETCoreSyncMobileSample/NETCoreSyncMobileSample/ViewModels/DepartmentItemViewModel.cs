@@ -9,7 +9,7 @@ using NETCoreSyncMobileSample.Services;
 
 namespace NETCoreSyncMobileSample.ViewModels
 {
-    public class DepartmentItemViewModel : CustomBaseViewModel
+    public class DepartmentItemViewModel : BaseViewModel
     {
         private readonly INavigation navigation;
         private readonly DatabaseService databaseService;

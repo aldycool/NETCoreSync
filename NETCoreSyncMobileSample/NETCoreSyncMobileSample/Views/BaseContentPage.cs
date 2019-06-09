@@ -11,7 +11,7 @@ using NETCoreSyncMobileSample.ViewModels;
 
 namespace NETCoreSyncMobileSample.Views
 {
-    public class BaseContentPage<T> : ContentPage where T : CustomBaseViewModel
+    public class BaseContentPage<T> : ContentPage where T : BaseViewModel
     {
         public T ViewModel { get; set; }
 
