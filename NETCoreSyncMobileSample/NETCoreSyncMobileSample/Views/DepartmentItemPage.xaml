@@ -6,11 +6,16 @@
                       x:Class="NETCoreSyncMobileSample.Views.DepartmentItemPage"
                       x:TypeArguments="vm:DepartmentItemViewModel"
                       Title="{Binding Title}">
+    <ContentPage.ToolbarItems>
+        <ToolbarItem Text="Delete" Command="{Binding DeleteCommand}" />
+        <ToolbarItem Text="Save" Command="{Binding SaveCommand}" />
+    </ContentPage.ToolbarItems>
     <ContentPage.Content>
-        <StackLayout>
-            <Label Text="Welcome to Xamarin.Forms!"
-                VerticalOptions="CenterAndExpand" 
-                HorizontalOptions="CenterAndExpand" />
-        </StackLayout>
+        <ScrollView>
+            <StackLayout Spacing="20" Padding="15">
+                <Label Text="Name" />
+                <Entry Text="{Binding Data.Name}" />
+            </StackLayout>
+        </ScrollView>
     </ContentPage.Content>
 </mvvm:BaseContentPage>

@@ -4,7 +4,7 @@ using Xamarin.Forms.Xaml;
 using NETCoreSyncMobileSample.Views;
 using Autofac;
 using Xamarin.Forms.Internals;
-using NETCoreSyncMobileSample.Models;
+using NETCoreSyncMobileSample.Services;
 using NETCoreSyncMobileSample.ViewModels;
 
 [assembly: XamlCompilation(XamlCompilationOptions.Compile)]
@@ -21,11 +21,15 @@ namespace NETCoreSyncMobileSample
 
             DependencyResolver.ResolveUsing(type => Container.IsRegistered(type) ? Container.Resolve(type) : null);
 
-            builder.RegisterType<DatabaseContext>();
+            builder.RegisterType<DatabaseService>();
 
             builder.RegisterType<AboutViewModel>();
             builder.RegisterType<DepartmentListViewModel>();
+            builder.RegisterType<DepartmentItemViewModel>();
             builder.RegisterType<EmployeeListViewModel>();
+            builder.RegisterType<EmployeeItemViewModel>();
+
+            //NOTE: Navigation (INavigation) is registered per life time scope basis on  BaseContentPage.cs
 
             Container = builder.Build();
 

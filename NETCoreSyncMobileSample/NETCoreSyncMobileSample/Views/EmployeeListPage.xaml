@@ -6,11 +6,30 @@
                       x:Class="NETCoreSyncMobileSample.Views.EmployeeListPage"
                       x:TypeArguments="vm:EmployeeListViewModel"
                       Title="{Binding Title}">
+    <ContentPage.ToolbarItems>
+        <ToolbarItem Text="Add" Command="{Binding AddCommand}" />
+    </ContentPage.ToolbarItems>
     <ContentPage.Content>
-        <StackLayout>
-            <Label Text="Welcome to Xamarin.Forms!"
-                VerticalOptions="CenterAndExpand" 
-                HorizontalOptions="CenterAndExpand" />
-        </StackLayout>
+        <ListView 
+            ItemsSource="{Binding Items}" 
+            SelectedItem="{Binding SelectedItem, Mode=TwoWay}">
+            <ListView.ItemTemplate>
+                <DataTemplate>
+                    <ViewCell>
+                        <ViewCell.View>
+                            <StackLayout   
+                            Padding="20,0,20,0"                       
+                            Orientation="Horizontal"       
+                            HorizontalOptions="FillAndExpand">
+                                <Label 
+                                Text="{Binding Name}"
+                                VerticalTextAlignment="Start"
+                                HorizontalOptions="StartAndExpand" />
+                            </StackLayout>
+                        </ViewCell.View>
+                    </ViewCell>
+                </DataTemplate>
+            </ListView.ItemTemplate>
+        </ListView>
     </ContentPage.Content>
 </mvvm:BaseContentPage>

@@ -7,12 +7,14 @@ using System.Threading.Tasks;
 using Xamarin.Forms;
 using Xamarin.Forms.Xaml;
 
+using NETCoreSyncMobileSample.ViewModels;
+
 namespace NETCoreSyncMobileSample.Views
 {
 	[XamlCompilation(XamlCompilationOptions.Compile)]
-	public partial class DepartmentListPage
+	public partial class DepartmentListPage : BaseContentPage<DepartmentListViewModel>
 	{
-		public DepartmentListPage()
+		public DepartmentListPage() : base(null)
 		{
 			InitializeComponent();
             BindingContext = ViewModel;

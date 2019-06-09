@@ -6,16 +6,34 @@ using System.Threading.Tasks;
 
 using Xamarin.Forms;
 using Xamarin.Forms.Xaml;
+using NETCoreSyncMobileSample.Models;
+using NETCoreSyncMobileSample.ViewModels;
 
 namespace NETCoreSyncMobileSample.Views
 {
 	[XamlCompilation(XamlCompilationOptions.Compile)]
-	public partial class EmployeeItemPage
+	public partial class EmployeeItemPage : BaseContentPage<EmployeeItemViewModel>
 	{
-		public EmployeeItemPage()
+		public EmployeeItemPage(object initData) : base(initData)
 		{
 			InitializeComponent();
             BindingContext = ViewModel;
+
+            if (ViewModel.IsNewData)
+            {
+                for (int i = 0; i < ToolbarItems.Count; i++)
+                {
+                    if (ToolbarItems[i].Text == "Delete")
+                    {
+                        ToolbarItems.Remove(ToolbarItems[i]);
+                        break;
+                    }
+                }
+            }
+        }
+
+        public EmployeeItemPage() : this(null)
+        {
         }
 	}
 }

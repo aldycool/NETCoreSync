@@ -15,9 +15,9 @@ namespace NETCoreSyncMobileSample.Views
     {
         public T ViewModel { get; set; }
 
-        protected BaseContentPage(object initData)
+        public BaseContentPage(object initData)
         {
-            using (var scope = App.Container.BeginLifetimeScope()) 
+            using (var scope = App.Container.BeginLifetimeScope(builder => builder.RegisterInstance(Navigation).As<INavigation>())) 
             {
                 ViewModel = scope.Resolve<T>();
                 ViewModel.WireEvents(this);
@@ -25,7 +25,7 @@ namespace NETCoreSyncMobileSample.Views
             }
         }
 
-        protected BaseContentPage() : this(null)
+        public BaseContentPage() : this(null)
         {
         }
     }

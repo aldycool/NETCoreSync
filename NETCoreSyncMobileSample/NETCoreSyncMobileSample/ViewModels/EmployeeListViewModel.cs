@@ -2,15 +2,61 @@
 using System.Linq;
 using System.Collections.Generic;
 using System.Text;
+using System.Collections.ObjectModel;
+using System.Windows.Input;
+using Xamarin.Forms;
 using NETCoreSyncMobileSample.Models;
+using NETCoreSyncMobileSample.Services;
+using NETCoreSyncMobileSample.Views;
 
 namespace NETCoreSyncMobileSample.ViewModels
 {
     public class EmployeeListViewModel : CustomBaseViewModel
     {
-        public EmployeeListViewModel()
+        private readonly INavigation navigation;
+        private readonly DatabaseService databaseService;
+
+        public EmployeeListViewModel(INavigation navigation, DatabaseService databaseService)
         {
-            Title = HomeMenuItem.GetMenus().Where(w => w.Id == MenuItemType.EmployeeList).First().Title;
+            this.navigation = navigation;
+            this.databaseService = databaseService;
         }
+
+        private ObservableCollection<Employee> items;
+        public ObservableCollection<Employee> Items
+        {
+            get { return items; }
+            set { SetProperty(ref items, value); }
+        }
+
+        private Employee selectedItem;
+        public Employee SelectedItem
+        {
+            get { return selectedItem; }
+            set
+            {
+                SetProperty(ref selectedItem, value);
+                EmployeeItemPage page = new EmployeeItemPage(selectedItem);
+                navigation.PushAsync(page);
+            }
+        }
+
+        protected override void ViewAppearing(object sender, EventArgs e)
+        {
+            base.ViewAppearing(sender, e);
+            Title = HomeMenuItem.GetMenus().Where(w => w.Id == MenuItemType.EmployeeList).First().Title;
+            List<Employee> listData = null;
+            using (var databaseContext = databaseService.GetDatabaseContext())
+            {
+                listData = databaseContext.Employees.Where(w => w.Deleted == null).ToList();
+            }
+            Items = new ObservableCollection<Employee>(listData);
+        }
+
+        public ICommand AddCommand => new Command(async () =>
+        {
+            EmployeeItemPage page = new EmployeeItemPage(null);
+            await navigation.PushAsync(page);
+        });
     }
 }

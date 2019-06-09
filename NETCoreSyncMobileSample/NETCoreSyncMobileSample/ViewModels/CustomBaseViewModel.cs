@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
+using System.Threading.Tasks;
 
 using Xamarin.Forms;
 
@@ -12,7 +13,7 @@ namespace NETCoreSyncMobileSample.ViewModels
 {
     public class CustomBaseViewModel : INotifyPropertyChanged
     {
-        string title = string.Empty;
+        private string title = string.Empty;
         public string Title
         {
             get { return title; }

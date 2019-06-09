@@ -6,11 +6,26 @@
                       x:Class="NETCoreSyncMobileSample.Views.EmployeeItemPage"
                       x:TypeArguments="vm:EmployeeItemViewModel"
                       Title="{Binding Title}">
+    <ContentPage.ToolbarItems>
+        <ToolbarItem Text="Delete" Command="{Binding DeleteCommand}" />
+        <ToolbarItem Text="Save" Command="{Binding SaveCommand}" />
+    </ContentPage.ToolbarItems>
     <ContentPage.Content>
-        <StackLayout>
-            <Label Text="Welcome to Xamarin.Forms!"
-                VerticalOptions="CenterAndExpand" 
-                HorizontalOptions="CenterAndExpand" />
-        </StackLayout>
+        <ScrollView>
+            <StackLayout Spacing="20" Padding="15">
+                <Label Text="Name" />
+                <Entry Text="{Binding Data.Name}" />
+                <Label Text="Birthday" />
+                <DatePicker Date="{Binding Data.Birthday}" />
+                <Label Text="Number of Computers" />
+                <Entry Text="{Binding Data.NumberOfComputers}" Keyboard="Numeric" />
+                <Label Text="Saving Amount" />
+                <Entry Text="{Binding Data.SavingAmount}" Keyboard="Numeric" />
+                <Label Text="Is Active" />
+                <Picker Title="Select Status" ItemsSource="{Binding IsActiveItems}" SelectedItem="{Binding Data.IsActive, Mode=TwoWay}" />
+                <Label Text="Department" />
+                <Picker Title="Select Department" ItemsSource="{Binding DepartmentItems}" ItemDisplayBinding="{Binding Name}" SelectedItem="{Binding Data.Department, Mode=TwoWay}"  />
+            </StackLayout>
+        </ScrollView>
     </ContentPage.Content>
 </mvvm:BaseContentPage>
