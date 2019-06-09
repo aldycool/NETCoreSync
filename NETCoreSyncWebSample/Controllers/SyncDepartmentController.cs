@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
 using NETCoreSyncWebSample.Models;
+using NETCoreSync;
 
 namespace NETCoreSyncWebSample.Controllers
 {
@@ -58,7 +59,7 @@ namespace NETCoreSyncWebSample.Controllers
             if (ModelState.IsValid)
             {
                 syncDepartment.ID = Guid.NewGuid();
-                syncDepartment.LastUpdated = TempHelper.GetNowTicks();
+                syncDepartment.LastUpdated = SyncEngine.GetNowTicks();
                 _context.Add(syncDepartment);
                 await _context.SaveChangesAsync();
                 return RedirectToAction(nameof(Index));
@@ -98,7 +99,7 @@ namespace NETCoreSyncWebSample.Controllers
             {
                 try
                 {
-                    syncDepartment.LastUpdated = TempHelper.GetNowTicks();
+                    syncDepartment.LastUpdated = SyncEngine.GetNowTicks();
                     _context.Update(syncDepartment);
                     await _context.SaveChangesAsync();
                 }
@@ -146,7 +147,7 @@ namespace NETCoreSyncWebSample.Controllers
             if (dependentEmployee != null) throw new Exception($"The data is already used by Employee Name: {dependentEmployee.Name}");
 
             var syncDepartment = await GetDatas().FirstAsync(m => m.ID == id);
-            syncDepartment.Deleted = TempHelper.GetNowTicks();
+            syncDepartment.Deleted = SyncEngine.GetNowTicks();
             _context.Update(syncDepartment);
             //_context.Departments.Remove(syncDepartment);
             await _context.SaveChangesAsync();

@@ -5,10 +5,18 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <None Remove="NETCoreSyncWebSample.sqlite" />
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="Microsoft.AspNetCore.App" />
     <PackageReference Include="Microsoft.AspNetCore.Razor.Design" Version="2.1.2" PrivateAssets="All" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="2.1.11" />
     <PackageReference Include="Microsoft.VisualStudio.Web.CodeGeneration.Design" Version="2.1.9" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\NETCoreSync\NETCoreSync.csproj" />
   </ItemGroup>
 
 </Project>

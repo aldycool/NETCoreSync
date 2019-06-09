@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
 using NETCoreSyncWebSample.Models;
+using NETCoreSync;
 
 namespace NETCoreSyncWebSample.Controllers
 {
@@ -62,7 +63,7 @@ namespace NETCoreSyncWebSample.Controllers
             {
                 syncEmployee.ID = Guid.NewGuid();
                 if (syncEmployee.DepartmentID == Guid.Empty) syncEmployee.DepartmentID = null;
-                syncEmployee.LastUpdated = TempHelper.GetNowTicks();
+                syncEmployee.LastUpdated = SyncEngine.GetNowTicks();
                 _context.Add(syncEmployee);
                 await _context.SaveChangesAsync();
                 return RedirectToAction(nameof(Index));
@@ -105,7 +106,7 @@ namespace NETCoreSyncWebSample.Controllers
                 try
                 {
                     if (syncEmployee.DepartmentID == Guid.Empty) syncEmployee.DepartmentID = null;
-                    syncEmployee.LastUpdated = TempHelper.GetNowTicks();
+                    syncEmployee.LastUpdated = SyncEngine.GetNowTicks();
                     _context.Update(syncEmployee);
                     await _context.SaveChangesAsync();
                 }
@@ -151,7 +152,7 @@ namespace NETCoreSyncWebSample.Controllers
         public async Task<IActionResult> DeleteConfirmed(Guid id)
         {
             var syncEmployee = await GetDatas().FirstAsync(m => m.ID == id);
-            syncEmployee.Deleted = TempHelper.GetNowTicks();
+            syncEmployee.Deleted = SyncEngine.GetNowTicks();
             _context.Update(syncEmployee);
             //_context.SyncEmployee.Remove(syncEmployee);
             await _context.SaveChangesAsync();

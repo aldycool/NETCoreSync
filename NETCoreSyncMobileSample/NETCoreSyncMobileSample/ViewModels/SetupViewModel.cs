@@ -18,15 +18,8 @@ namespace NETCoreSyncMobileSample.ViewModels
             this.databaseService = databaseService;
             Title = MainMenuItem.GetMenus().Where(w => w.Id == MenuItemType.Setup).First().Title;
 
-            using (var databaseContext = databaseService.GetDatabaseContext())
-            {
-                Configuration configurationSynchronizationId = databaseContext.Configurations.Where(w => w.Key == DatabaseService.SYNCHRONIZATIONID_KEY).FirstOrDefault();
-                if (configurationSynchronizationId != null)
-                {
-                    SynchronizationId = configurationSynchronizationId.Value;
-                    IsSynchronizationIdSet = true;
-                }
-            }
+            SynchronizationId = databaseService.GetSynchronizationId();
+            if (!string.IsNullOrEmpty(SynchronizationId)) IsSynchronizationIdSet = true;
         }
 
         private string synchronizationId;
@@ -61,26 +54,10 @@ namespace NETCoreSyncMobileSample.ViewModels
             {
                 databaseContext.Employees.RemoveRange(databaseContext.Employees);
                 databaseContext.Departments.RemoveRange(databaseContext.Departments);
-                Configuration configurationLastSync = databaseContext.Configurations.Where(w => w.Key == DatabaseService.LASTSYNC_KEY).FirstOrDefault();
-                if (configurationLastSync != null)
-                {
-                    databaseContext.Configurations.Remove(configurationLastSync);
-                }
-                Configuration configurationSynchronizationId = databaseContext.Configurations.Where(w => w.Key == DatabaseService.SYNCHRONIZATIONID_KEY).FirstOrDefault();
-                if (configurationSynchronizationId != null)
-                {
-                    databaseContext.Configurations.Remove(configurationSynchronizationId);   
-                }
+                databaseContext.Configurations.RemoveRange(databaseContext.Configurations);
                 await databaseContext.SaveChangesAsync();
 
-                configurationSynchronizationId = new Configuration()
-                {
-                    Id = Guid.NewGuid().ToString(),
-                    Key = DatabaseService.SYNCHRONIZATIONID_KEY,
-                    Value = SynchronizationId
-                };
-                databaseContext.Configurations.Add(configurationSynchronizationId);
-                await databaseContext.SaveChangesAsync();
+                databaseService.SetSynchronizationId(SynchronizationId);
             }
 
             await Application.Current.MainPage.DisplayAlert("Success", "Synchronization ID is successfully set", "OK");

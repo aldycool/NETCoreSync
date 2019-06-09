@@ -6,6 +6,7 @@ using System.Windows.Input;
 using Xamarin.Forms;
 using NETCoreSyncMobileSample.Models;
 using NETCoreSyncMobileSample.Services;
+using NETCoreSync;
 
 namespace NETCoreSyncMobileSample.ViewModels
 {
@@ -55,7 +56,7 @@ namespace NETCoreSyncMobileSample.ViewModels
         {
             using (var databaseContext = databaseService.GetDatabaseContext())
             {
-                Data.LastUpdated = TempHelper.GetNowTicks();
+                Data.LastUpdated = SyncEngine.GetNowTicks();
                 if (IsNewData)
                 {
                     databaseContext.Add(Data);
@@ -82,7 +83,7 @@ namespace NETCoreSyncMobileSample.ViewModels
                     await Application.Current.MainPage.DisplayAlert("Data Already Used", $"The data is already used by Employee Name: {dependentEmployee.Name}", "OK");
                     return;
                 }
-                Data.Deleted = TempHelper.GetNowTicks();
+                Data.Deleted = SyncEngine.GetNowTicks();
                 databaseContext.Update(Data);
                 //databaseContext.Remove(Data);
                 await databaseContext.SaveChangesAsync();

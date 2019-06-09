@@ -36,6 +36,9 @@ namespace NETCoreSyncMobileSample.Views
                     case (int)MenuItemType.EmployeeList:
                         MenuPages.Add(id, new NavigationPage(new EmployeeListPage()));
                         break;
+                    case (int)MenuItemType.Sync:
+                        MenuPages.Add(id, new NavigationPage(new SyncPage()));
+                        break;
                     case (int)MenuItemType.Setup:
                         MenuPages.Add(id, new NavigationPage(new SetupPage()));
                         break;

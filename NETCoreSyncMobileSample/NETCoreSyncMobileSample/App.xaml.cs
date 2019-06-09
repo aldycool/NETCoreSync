@@ -1,11 +1,14 @@
 ﻿using System;
+using System.Collections.Generic;
 using Xamarin.Forms;
 using Xamarin.Forms.Xaml;
 using NETCoreSyncMobileSample.Views;
 using Autofac;
 using Xamarin.Forms.Internals;
 using NETCoreSyncMobileSample.Services;
+using NETCoreSyncMobileSample.Models;
 using NETCoreSyncMobileSample.ViewModels;
+using NETCoreSync;
 
 [assembly: XamlCompilation(XamlCompilationOptions.Compile)]
 namespace NETCoreSyncMobileSample
@@ -28,9 +31,13 @@ namespace NETCoreSyncMobileSample
             builder.RegisterType<DepartmentItemViewModel>();
             builder.RegisterType<EmployeeListViewModel>();
             builder.RegisterType<EmployeeItemViewModel>();
+            builder.RegisterType<SyncViewModel>();
             builder.RegisterType<SetupViewModel>();
-
             //NOTE: Navigation (INavigation) is registered per life time scope basis on  BaseContentPage.cs
+
+            List<Type> syncTypes = new List<Type>() { typeof(Department), typeof(Employee) };
+            SyncConfiguration syncConfiguration = new SyncConfiguration(syncTypes.ToArray());
+            builder.RegisterInstance(syncConfiguration);
 
             Container = builder.Build();
 

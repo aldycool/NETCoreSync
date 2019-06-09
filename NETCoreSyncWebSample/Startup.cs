@@ -11,6 +11,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.EntityFrameworkCore;
 using NETCoreSyncWebSample.Models;
+using NETCoreSync;
 
 namespace NETCoreSyncWebSample
 {
@@ -42,6 +43,10 @@ namespace NETCoreSyncWebSample
             });
 
             services.AddMvc().SetCompatibilityVersion(CompatibilityVersion.Version_2_1);
+
+            List<Type> syncTypes = new List<Type>() { typeof(SyncDepartment), typeof(SyncEmployee) };
+            SyncConfiguration syncConfiguration = new SyncConfiguration(syncTypes.ToArray());
+            services.AddSingleton(syncConfiguration);
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
