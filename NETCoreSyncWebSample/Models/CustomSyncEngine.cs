@@ -22,6 +22,21 @@ namespace NETCoreSyncWebSample.Models
             customContractResolvers = new Dictionary<Type, CustomContractResolver>();
         }
 
+        public override bool IsServerEngine()
+        {
+            return true;
+        }
+
+        public override long GetClientLastSync()
+        {
+            throw new NotImplementedException();
+        }
+
+        public override void SetClientLastSync(long lastSync)
+        {
+            throw new NotImplementedException();
+        }
+
         public override IQueryable GetQueryable(Type classType, object transaction, OperationType operationType, string synchronizationId, Dictionary<string, object> customInfo)
         {
             if (classType == typeof(SyncDepartment)) return databaseContext.Departments.Where(w => w.SynchronizationID == synchronizationId).AsQueryable();

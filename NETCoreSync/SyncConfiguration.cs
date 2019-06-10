@@ -11,8 +11,8 @@ namespace NETCoreSync
 {
     public class SyncConfiguration
     {
-        public readonly List<Type> SyncTypes = new List<Type>();
-        public readonly Dictionary<Type, SchemaInfo> SyncSchemaInfos = new Dictionary<Type, SchemaInfo>();
+        internal readonly List<Type> SyncTypes = new List<Type>();
+        internal readonly Dictionary<Type, SchemaInfo> SyncSchemaInfos = new Dictionary<Type, SchemaInfo>();
 
         public SyncConfiguration(Assembly[] assemblies)
         {
@@ -68,7 +68,7 @@ namespace NETCoreSync
             }
         }
 
-        public class SchemaInfo
+        internal class SchemaInfo
         {
             public SyncSchemaAttribute SyncSchemaAttribute { get; set; }
             public SchemaInfoProperty PropertyInfoId { get; set; }
@@ -150,7 +150,7 @@ namespace NETCoreSync
             }
         }
 
-        public class SchemaInfoProperty
+        internal class SchemaInfoProperty
         {
             public string Name { get; set; }
             public string PropertyType { get; set; }

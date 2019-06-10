@@ -53,7 +53,7 @@ namespace NETCoreSyncMobileSample.ViewModels
                 await Application.Current.MainPage.DisplayAlert("Sync is Running", "Synchronization is already running, please wait until it finished", "OK");
                 return;
             }
-
+            
             IsSynchronizing = true;
 
             try
@@ -68,8 +68,7 @@ namespace NETCoreSyncMobileSample.ViewModels
                 SyncClient syncClient = new SyncClient(synchronizationId, customSyncEngine, ServerUrl);
                 Log = "";
 
-                long lastSync = databaseService.GetLastSync();
-                SyncResult result = await syncClient.SynchronizeAsync(lastSync);
+                SyncResult result = await syncClient.SynchronizeAsync();
 
                 string tempLog = "";
                 tempLog += $"Client Log: {Environment.NewLine}";
@@ -94,10 +93,8 @@ namespace NETCoreSyncMobileSample.ViewModels
                 Log = tempLog;
 
                 if (!string.IsNullOrEmpty(result.ErrorMessage)) throw new Exception($"Synchronization Error: {result.ErrorMessage}");
-
-                if (result.UpdatedLastSync.HasValue) databaseService.SetLastSync(result.UpdatedLastSync.Value);
-
-                await Application.Current.MainPage.DisplayAlert("Finished", "Synchronnization is finished", "OK");
+                
+                await Application.Current.MainPage.DisplayAlert("Finished", "Synchronization is finished", "OK");
             }
             catch (Exception e)
             {

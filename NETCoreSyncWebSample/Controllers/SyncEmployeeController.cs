@@ -65,7 +65,10 @@ namespace NETCoreSyncWebSample.Controllers
             {
                 syncEmployee.ID = Guid.NewGuid();
                 if (syncEmployee.DepartmentID == Guid.Empty) syncEmployee.DepartmentID = null;
-                SyncEngine.HookPreInsertOrUpdate(syncConfiguration, syncEmployee, null);
+
+                CustomSyncEngine customSyncEngine = new CustomSyncEngine(_context, syncConfiguration);
+                customSyncEngine.HookPreInsertOrUpdate(syncEmployee);
+
                 _context.Add(syncEmployee);
                 await _context.SaveChangesAsync();
                 return RedirectToAction(nameof(Index));
@@ -108,7 +111,10 @@ namespace NETCoreSyncWebSample.Controllers
                 try
                 {
                     if (syncEmployee.DepartmentID == Guid.Empty) syncEmployee.DepartmentID = null;
-                    SyncEngine.HookPreInsertOrUpdate(syncConfiguration, syncEmployee, null);
+
+                    CustomSyncEngine customSyncEngine = new CustomSyncEngine(_context, syncConfiguration);
+                    customSyncEngine.HookPreInsertOrUpdate(syncEmployee);
+
                     _context.Update(syncEmployee);
                     await _context.SaveChangesAsync();
                 }
@@ -154,7 +160,10 @@ namespace NETCoreSyncWebSample.Controllers
         public async Task<IActionResult> DeleteConfirmed(Guid id)
         {
             var syncEmployee = await GetDatas().FirstAsync(m => m.ID == id);
-            SyncEngine.HookPreDelete(syncConfiguration, syncEmployee, null);
+
+            CustomSyncEngine customSyncEngine = new CustomSyncEngine(_context, syncConfiguration);
+            customSyncEngine.HookPreDelete(syncEmployee);
+
             _context.Update(syncEmployee);
             //_context.SyncEmployee.Remove(syncEmployee);
             await _context.SaveChangesAsync();

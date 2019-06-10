@@ -76,6 +76,8 @@ namespace NETCoreSyncMobileSample.ViewModels
             {
                 Title = $"Edit {nameof(Employee)}";
             }
+
+            //Prepare the navigation property for binding
             Data.Department = DepartmentItems.Where(w => w.Id == Guid.Empty.ToString()).First();
             if (!string.IsNullOrEmpty(Data.DepartmentId))
             {
@@ -83,17 +85,25 @@ namespace NETCoreSyncMobileSample.ViewModels
             }
         }
 
-        public ICommand SaveCommand => new Command(async () =>
+        private void NormalizeForeignKeyBindings()
         {
+            //Prepare the foreign key property after binding, to ensure successful database modification
             string departmentId = null;
             if (Data.Department != null) departmentId = Data.Department.Id;
             if (departmentId == Guid.Empty.ToString()) departmentId = null;
             Data.Department = null;
             Data.DepartmentId = departmentId;
+        }
+
+        public ICommand SaveCommand => new Command(async () =>
+        {
+            NormalizeForeignKeyBindings();
+
+            CustomSyncEngine customSyncEngine = new CustomSyncEngine(databaseService, syncConfiguration);
+            customSyncEngine.HookPreInsertOrUpdate(Data);
 
             using (var databaseContext = databaseService.GetDatabaseContext())
             {
-                SyncEngine.HookPreInsertOrUpdate(syncConfiguration, Data, databaseService.GetLastSync());
                 if (IsNewData)
                 {
                     databaseContext.Add(Data);
@@ -112,9 +122,13 @@ namespace NETCoreSyncMobileSample.ViewModels
         {
             if (IsNewData) return;
 
+            NormalizeForeignKeyBindings();
+
+            CustomSyncEngine customSyncEngine = new CustomSyncEngine(databaseService, syncConfiguration);
+            customSyncEngine.HookPreDelete(Data);
+
             using (var databaseContext = databaseService.GetDatabaseContext())
             {
-                SyncEngine.HookPreDelete(syncConfiguration, Data, databaseService.GetLastSync());
                 databaseContext.Update(Data);
                 //databaseContext.Remove(Data);
                 await databaseContext.SaveChangesAsync();

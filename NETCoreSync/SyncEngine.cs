@@ -15,7 +15,7 @@ namespace NETCoreSync
 {
     public abstract class SyncEngine
     {
-        public readonly SyncConfiguration SyncConfiguration;
+        internal readonly SyncConfiguration SyncConfiguration;
 
         public SyncEngine(SyncConfiguration syncConfiguration)
         {
@@ -27,6 +27,12 @@ namespace NETCoreSync
             GetChanges = 1,
             ApplyChanges = 2
         }
+
+        public abstract bool IsServerEngine();
+
+        public abstract long GetClientLastSync();
+
+        public abstract void SetClientLastSync(long lastSync);
 
         public virtual object StartTransaction(Type classType, OperationType operationType, string synchronizationId, Dictionary<string, object> customInfo)
         {
@@ -64,25 +70,33 @@ namespace NETCoreSync
         {
         }
 
-        public static void HookPreInsertOrUpdate(SyncConfiguration syncConfiguration, object data, long? lastSync)
+        public void HookPreInsertOrUpdate(object data)
         {
             if (data == null) throw new NullReferenceException(nameof(data));
             long nowTicks = GetNowTicks();
-            if (lastSync.HasValue && nowTicks <= lastSync.Value) throw new SyncEngineConstraintException("System Date and Time is older than the lastSync value");
-            SyncConfiguration.SchemaInfo schemaInfo = GetSchemaInfo(syncConfiguration, data.GetType());
+            if (!IsServerEngine())
+            {
+                long lastSync = GetClientLastSync();
+                if (nowTicks <= lastSync) throw new SyncEngineConstraintException("System Date and Time is older than the lastSync value");
+            }
+            SyncConfiguration.SchemaInfo schemaInfo = GetSchemaInfo(SyncConfiguration, data.GetType());
             data.GetType().GetProperty(schemaInfo.PropertyInfoLastUpdated.Name).SetValue(data, nowTicks);
         }
 
-        public static void HookPreDelete(SyncConfiguration syncConfiguration, object data, long? lastSync)
+        public void HookPreDelete(object data)
         {
             if (data == null) throw new NullReferenceException(nameof(data));
             long nowTicks = GetNowTicks();
-            if (lastSync.HasValue && nowTicks <= lastSync.Value) throw new SyncEngineConstraintException("System Date and Time is older than the lastSync value");
-            SyncConfiguration.SchemaInfo schemaInfo = GetSchemaInfo(syncConfiguration, data.GetType());
+            if (!IsServerEngine())
+            {
+                long lastSync = GetClientLastSync();
+                if (nowTicks <= lastSync) throw new SyncEngineConstraintException("System Date and Time is older than the lastSync value");
+            }
+            SyncConfiguration.SchemaInfo schemaInfo = GetSchemaInfo(SyncConfiguration, data.GetType());
             data.GetType().GetProperty(schemaInfo.PropertyInfoDeleted.Name).SetValue(data, nowTicks);
         }
 
-        public (byte[] compressed, long maxTimeStamp, List<SyncLog.SyncLogData> logChanges) PreparePayload(List<string> log, string synchronizationId, long? lastSync = null, Dictionary<string, object> customInfo = null, Dictionary<Type, List<object>> dictAppliedIds = null)
+        internal (byte[] compressed, long maxTimeStamp, List<SyncLog.SyncLogData> logChanges) PreparePayload(List<string> log, string synchronizationId, long? lastSync = null, Dictionary<string, object> customInfo = null, Dictionary<Type, List<object>> dictAppliedIds = null)
         {
             if (string.IsNullOrEmpty(synchronizationId)) throw new NullReferenceException(nameof(synchronizationId));
             if (lastSync == null) lastSync = GetMinValueTicks();
@@ -122,7 +136,7 @@ namespace NETCoreSync
             return (compressed, maxTimeStamp, logChanges);
         }
 
-        public (JObject typeChanges, int typeChangesCount, long maxTimeStamp, List<SyncLog.SyncLogData> logChanges) GetTypeChanges(long? lastSync, Type syncType, string synchronizationId, Dictionary<string, object> customInfo, List<object> appliedIds)
+        internal (JObject typeChanges, int typeChangesCount, long maxTimeStamp, List<SyncLog.SyncLogData> logChanges) GetTypeChanges(long? lastSync, Type syncType, string synchronizationId, Dictionary<string, object> customInfo, List<object> appliedIds)
         {
             if (string.IsNullOrEmpty(synchronizationId)) throw new NullReferenceException(nameof(synchronizationId));
             if (lastSync == null) lastSync = GetMinValueTicks();
@@ -182,7 +196,7 @@ namespace NETCoreSync
             return (typeChanges, datas.Count, maxTimeStamp, logChanges);
         }
 
-        public (Dictionary<Type, List<object>> dictAppliedIds, List<SyncLog.SyncLogData> inserts, List<SyncLog.SyncLogData> updates, List<SyncLog.SyncLogData> deletes, List<SyncLog.SyncLogConflict> conflicts) ProcessPayload(List<string> log, byte[] syncDataBytes)
+        internal (Dictionary<Type, List<object>> dictAppliedIds, List<SyncLog.SyncLogData> inserts, List<SyncLog.SyncLogData> updates, List<SyncLog.SyncLogData> deletes, List<SyncLog.SyncLogConflict> conflicts) ProcessPayload(List<string> log, byte[] syncDataBytes)
         {
             List<SyncLog.SyncLogData> inserts = new List<SyncLog.SyncLogData>();
             List<SyncLog.SyncLogData> updates = new List<SyncLog.SyncLogData>();
@@ -243,7 +257,7 @@ namespace NETCoreSync
             return (dictAppliedIds, inserts, updates, deletes, conflicts);
         }
 
-        public (Type localSyncType, List<object> appliedIds, List<object> deletedIds, List<SyncLog.SyncLogData> inserts, List<SyncLog.SyncLogData> updates, List<SyncLog.SyncLogData> deletes, List<SyncLog.SyncLogConflict> conflicts) ApplyTypeChanges(List<string> log, JObject typeChanges, string synchronizationId, Dictionary<string, object> customInfo)
+        internal (Type localSyncType, List<object> appliedIds, List<object> deletedIds, List<SyncLog.SyncLogData> inserts, List<SyncLog.SyncLogData> updates, List<SyncLog.SyncLogData> deletes, List<SyncLog.SyncLogConflict> conflicts) ApplyTypeChanges(List<string> log, JObject typeChanges, string synchronizationId, Dictionary<string, object> customInfo)
         {
             List<object> appliedIds = new List<object>();
             List<object> deletedIds = new List<object>();
@@ -377,6 +391,14 @@ namespace NETCoreSync
             return existingData;
         }
 
+        internal long InvokeGetClientLastSync()
+        {
+            long lastSync = GetClientLastSync();
+            long minValueTicks = GetMinValueTicks();
+            if (lastSync < minValueTicks) lastSync = minValueTicks;
+            return lastSync;
+        }
+
         private static SyncConfiguration.SchemaInfo GetSchemaInfo(SyncConfiguration syncConfiguration, Type type)
         {
             if (syncConfiguration == null) throw new NullReferenceException(nameof(syncConfiguration));
@@ -384,7 +406,7 @@ namespace NETCoreSync
             return syncConfiguration.SyncSchemaInfos[type];
         }
 
-        public static (string synchronizationId, long lastSync, Dictionary<string, object> customInfo) ExtractInfo(byte[] syncDataBytes)
+        internal static (string synchronizationId, long lastSync, Dictionary<string, object> customInfo) ExtractInfo(byte[] syncDataBytes)
         {
             if (syncDataBytes == null) throw new Exception($"{nameof(syncDataBytes)} cannot be null");
             string content = Decompress(syncDataBytes);
@@ -400,7 +422,7 @@ namespace NETCoreSync
             return (synchronizationId, lastSync, customInfo);
         }
 
-        public static byte[] Compress(string text)
+        private static byte[] Compress(string text)
         {
             var bytes = Encoding.Unicode.GetBytes(text);
             using (var mso = new MemoryStream())
@@ -413,7 +435,7 @@ namespace NETCoreSync
             }
         }
 
-        public static string Decompress(byte[] data)
+        private static string Decompress(byte[] data)
         {
             // Read the last 4 bytes to get the length
             byte[] lengthBuffer = new byte[4];
@@ -431,12 +453,12 @@ namespace NETCoreSync
             return Encoding.Unicode.GetString(buffer);
         }
 
-        public static long GetNowTicks()
+        internal static long GetNowTicks()
         {
             return DateTime.Now.Ticks;
         }
 
-        public static long GetMinValueTicks()
+        internal static long GetMinValueTicks()
         {
             return DateTime.MinValue.Ticks;
         }

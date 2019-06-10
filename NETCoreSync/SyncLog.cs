@@ -28,7 +28,7 @@ namespace NETCoreSync
             public string JsonData { get; set; }
             public string FriendlyId { get; set; }
 
-            public static SyncLogData FromJObject(JObject jObject, Type syncType, SyncConfiguration.SchemaInfo schemaInfo)
+            internal static SyncLogData FromJObject(JObject jObject, Type syncType, SyncConfiguration.SchemaInfo schemaInfo)
             {
                 SyncLogData syncLogData = new SyncLogData();
                 syncLogData.TypeName = syncType.Name;
@@ -61,5 +61,4 @@ namespace NETCoreSync
             }
         }
     }
-
 }

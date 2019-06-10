@@ -21,12 +21,14 @@ namespace NETCoreSync
             this.serverUrl = serverUrl ?? throw new NullReferenceException(nameof(serverUrl));
         }
 
-        public async Task<SyncResult> SynchronizeAsync(long? lastSync = null, Dictionary<string, object> customInfo = null)
+        public async Task<SyncResult> SynchronizeAsync(Dictionary<string, object> customInfo = null)
         {
             SyncResult result = new SyncResult();
             
             try
             {
+                long lastSync = syncEngine.InvokeGetClientLastSync();
+
                 (byte[] compressed, long clientPayloadMaxTimeStamp, List<SyncLog.SyncLogData> logChanges) = syncEngine.PreparePayload(result.Log, synchronizationId, lastSync, customInfo);
                 result.ClientLog.SentChanges.AddRange(logChanges);
 
@@ -73,10 +75,11 @@ namespace NETCoreSync
                 result.ClientLog.AppliedChanges.Deletes.AddRange(deletes);
                 result.ClientLog.AppliedChanges.Conflicts.AddRange(conflicts);
                 long serverMaxTimeStamp = jObjectResponse["maxTimeStamp"].Value<long>();
-                result.UpdatedLastSync = lastSync;
-                if (clientPayloadMaxTimeStamp > result.UpdatedLastSync) result.UpdatedLastSync = clientPayloadMaxTimeStamp;
-                if (serverMaxTimeStamp > result.UpdatedLastSync) result.UpdatedLastSync = serverMaxTimeStamp;
-                result.Log.Add($"LastSync Updated To: {result.UpdatedLastSync}");
+                long maxLastSync = lastSync;
+                if (clientPayloadMaxTimeStamp > maxLastSync) maxLastSync = clientPayloadMaxTimeStamp;
+                if (serverMaxTimeStamp > maxLastSync) maxLastSync = serverMaxTimeStamp;
+                result.Log.Add($"LastSync Updated To: {maxLastSync}");
+                syncEngine.SetClientLastSync(maxLastSync);
                 result.Log.Add($"Synchronize Finished");
             }
             catch (Exception e)

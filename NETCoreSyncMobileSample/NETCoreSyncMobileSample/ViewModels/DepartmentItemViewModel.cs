@@ -56,9 +56,11 @@ namespace NETCoreSyncMobileSample.ViewModels
 
         public ICommand SaveCommand => new Command(async () =>
         {
+            CustomSyncEngine customSyncEngine = new CustomSyncEngine(databaseService, syncConfiguration);
+            customSyncEngine.HookPreInsertOrUpdate(Data);
+
             using (var databaseContext = databaseService.GetDatabaseContext())
             {
-                SyncEngine.HookPreInsertOrUpdate(syncConfiguration, Data, databaseService.GetLastSync());
                 if (IsNewData)
                 {
                     databaseContext.Add(Data);
@@ -86,7 +88,9 @@ namespace NETCoreSyncMobileSample.ViewModels
                     return;
                 }
 
-                SyncEngine.HookPreDelete(syncConfiguration, Data, databaseService.GetLastSync());
+                CustomSyncEngine customSyncEngine = new CustomSyncEngine(databaseService, syncConfiguration);
+                customSyncEngine.HookPreDelete(Data);
+
                 databaseContext.Update(Data);
                 //databaseContext.Remove(Data);
                 await databaseContext.SaveChangesAsync();

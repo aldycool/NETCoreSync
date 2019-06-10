@@ -85,7 +85,7 @@ namespace NETCoreSyncMobileSample.Services
                 Configuration configurationLastSync = databaseContext.Configurations.Where(w => w.Key == LASTSYNC_KEY).FirstOrDefault();
                 if (configurationLastSync == null)
                 {
-                    SetLastSync(SyncEngine.GetMinValueTicks());
+                    SetLastSync(0);
                     configurationLastSync = databaseContext.Configurations.Where(w => w.Key == LASTSYNC_KEY).First();
                 }
                 return Convert.ToInt64(configurationLastSync.Value);

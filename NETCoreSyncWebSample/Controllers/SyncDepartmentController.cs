@@ -61,7 +61,10 @@ namespace NETCoreSyncWebSample.Controllers
             if (ModelState.IsValid)
             {
                 syncDepartment.ID = Guid.NewGuid();
-                SyncEngine.HookPreInsertOrUpdate(syncConfiguration, syncDepartment, null);
+
+                CustomSyncEngine customSyncEngine = new CustomSyncEngine(_context, syncConfiguration);
+                customSyncEngine.HookPreInsertOrUpdate(syncDepartment);
+
                 _context.Add(syncDepartment);
                 await _context.SaveChangesAsync();
                 return RedirectToAction(nameof(Index));
@@ -101,7 +104,9 @@ namespace NETCoreSyncWebSample.Controllers
             {
                 try
                 {
-                    SyncEngine.HookPreInsertOrUpdate(syncConfiguration, syncDepartment, null);
+                    CustomSyncEngine customSyncEngine = new CustomSyncEngine(_context, syncConfiguration);
+                    customSyncEngine.HookPreInsertOrUpdate(syncDepartment);
+
                     _context.Update(syncDepartment);
                     await _context.SaveChangesAsync();
                 }
@@ -149,7 +154,10 @@ namespace NETCoreSyncWebSample.Controllers
             if (dependentEmployee != null) throw new Exception($"The data is already used by Employee Name: {dependentEmployee.Name}");
 
             var syncDepartment = await GetDatas().FirstAsync(m => m.ID == id);
-            SyncEngine.HookPreDelete(syncConfiguration, syncDepartment, null);
+
+            CustomSyncEngine customSyncEngine = new CustomSyncEngine(_context, syncConfiguration);
+            customSyncEngine.HookPreDelete(syncDepartment);
+
             _context.Update(syncDepartment);
             //_context.Departments.Remove(syncDepartment);
             await _context.SaveChangesAsync();
