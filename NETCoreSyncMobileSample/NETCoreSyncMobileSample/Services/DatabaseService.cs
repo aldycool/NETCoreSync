@@ -134,7 +134,7 @@ namespace NETCoreSyncMobileSample.Services
                     }
                     else if (Device.RuntimePlatform == "iOS")
                     {
-                        defaultServerUrl = "http://192.168.56.1:5000/App/Sync";
+                        defaultServerUrl = "http://192.168.56.1:5000/Sync";
                     }
                     else
                     {

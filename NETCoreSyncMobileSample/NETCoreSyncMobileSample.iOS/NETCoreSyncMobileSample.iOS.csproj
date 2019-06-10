@@ -147,4 +147,11 @@
       <Name>NETCoreSyncMobileSample</Name>
     </ProjectReference>
   </ItemGroup>
+  <!-- Troubleshoot Error CS1703 Multiple assemblies with equivalent identity have been imported System.Reflection.Emit 4.3.0 -->
+  <!-- https://github.com/xamarin/Xamarin.Forms/issues/1380 -->
+  <ItemGroup>
+    <PackageReference Include="System.Reflection.Emit" Version="4.3.0">
+      <ExcludeAssets>all</ExcludeAssets>
+    </PackageReference>
+  </ItemGroup>
 </Project>
