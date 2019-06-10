@@ -5,6 +5,7 @@ using Xamarin.Forms;
 using NETCoreSyncMobileSample.Models;
 using NETCoreSyncMobileSample.Services;
 using NETCoreSync;
+using System.Text;
 
 namespace NETCoreSyncMobileSample.ViewModels
 {
@@ -68,29 +69,33 @@ namespace NETCoreSyncMobileSample.ViewModels
                 Log = "";
 
                 long lastSync = databaseService.GetLastSync();
-                SyncClient.SyncClientResult result = await syncClient.SynchronizeAsync(lastSync);
-                
-                Log += $"Client Log: {Environment.NewLine}";
-                Log += $"Sent Changes Count: {result.ClientLog.SentChanges.Count}{Environment.NewLine}";
-                Log += $"Applied Changes Insert Count: {result.ClientLog.AppliedChanges.Inserts.Count}{Environment.NewLine}";
-                Log += $"Applied Changes Updates Count: {result.ClientLog.AppliedChanges.Updates.Count}{Environment.NewLine}";
-                Log += $"Applied Changes Deletes Count: {result.ClientLog.AppliedChanges.Deletes.Count}{Environment.NewLine}";
-                Log += $"Applied Changes Conflicts Count: {result.ClientLog.AppliedChanges.Conflicts.Count}{Environment.NewLine}";
-                Log += $"{Environment.NewLine}";
-                Log += $"Server Log: {Environment.NewLine}";
-                Log += $"Sent Changes Count: {result.ServerLog.SentChanges.Count}{Environment.NewLine}";
-                Log += $"Applied Changes Insert Count: {result.ServerLog.AppliedChanges.Inserts.Count}{Environment.NewLine}";
-                Log += $"Applied Changes Updates Count: {result.ServerLog.AppliedChanges.Updates.Count}{Environment.NewLine}";
-                Log += $"Applied Changes Deletes Count: {result.ServerLog.AppliedChanges.Deletes.Count}{Environment.NewLine}";
-                Log += $"Applied Changes Conflicts Count: {result.ServerLog.AppliedChanges.Conflicts.Count}{Environment.NewLine}";
-                Log += $"{Environment.NewLine}";
-                Log += $"Detail Log: {Environment.NewLine}";
+                SyncResult result = await syncClient.SynchronizeAsync(lastSync);
+
+                string tempLog = "";
+                tempLog += $"Client Log: {Environment.NewLine}";
+                tempLog += $"Sent Changes Count: {result.ClientLog.SentChanges.Count}{Environment.NewLine}";
+                tempLog += $"Applied Changes Insert Count: {result.ClientLog.AppliedChanges.Inserts.Count}{Environment.NewLine}";
+                tempLog += $"Applied Changes Updates Count: {result.ClientLog.AppliedChanges.Updates.Count}{Environment.NewLine}";
+                tempLog += $"Applied Changes Deletes Count: {result.ClientLog.AppliedChanges.Deletes.Count}{Environment.NewLine}";
+                tempLog += $"Applied Changes Conflicts Count: {result.ClientLog.AppliedChanges.Conflicts.Count}{Environment.NewLine}";
+                tempLog += $"{Environment.NewLine}";
+                tempLog += $"Server Log: {Environment.NewLine}";
+                tempLog += $"Sent Changes Count: {result.ServerLog.SentChanges.Count}{Environment.NewLine}";
+                tempLog += $"Applied Changes Insert Count: {result.ServerLog.AppliedChanges.Inserts.Count}{Environment.NewLine}";
+                tempLog += $"Applied Changes Updates Count: {result.ServerLog.AppliedChanges.Updates.Count}{Environment.NewLine}";
+                tempLog += $"Applied Changes Deletes Count: {result.ServerLog.AppliedChanges.Deletes.Count}{Environment.NewLine}";
+                tempLog += $"Applied Changes Conflicts Count: {result.ServerLog.AppliedChanges.Conflicts.Count}{Environment.NewLine}";
+                tempLog += $"{Environment.NewLine}";
+                tempLog += $"Detail Log: {Environment.NewLine}";
                 for (int i = 0; i < result.Log.Count; i++)
                 {
-                    Log += $"{result.Log[i]}{Environment.NewLine}";
+                    tempLog += $"{result.Log[i]}{Environment.NewLine}";
                 }
+                Log = tempLog;
 
                 if (!string.IsNullOrEmpty(result.ErrorMessage)) throw new Exception($"Synchronization Error: {result.ErrorMessage}");
+
+                if (result.UpdatedLastSync.HasValue) databaseService.SetLastSync(result.UpdatedLastSync.Value);
 
                 await Application.Current.MainPage.DisplayAlert("Finished", "Synchronnization is finished", "OK");
             }

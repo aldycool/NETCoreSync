@@ -21,9 +21,9 @@ namespace NETCoreSync
             this.serverUrl = serverUrl ?? throw new NullReferenceException(nameof(serverUrl));
         }
 
-        public async Task<SyncClientResult> SynchronizeAsync(long? lastSync = null, Dictionary<string, object> customInfo = null)
+        public async Task<SyncResult> SynchronizeAsync(long? lastSync = null, Dictionary<string, object> customInfo = null)
         {
-            SyncClientResult result = new SyncClientResult();
+            SyncResult result = new SyncResult();
             
             try
             {
@@ -73,7 +73,8 @@ namespace NETCoreSync
                 result.ClientLog.AppliedChanges.Deletes.AddRange(deletes);
                 result.ClientLog.AppliedChanges.Conflicts.AddRange(conflicts);
                 long serverMaxTimeStamp = jObjectResponse["maxTimeStamp"].Value<long>();
-                result.UpdatedLastSync = clientPayloadMaxTimeStamp;
+                result.UpdatedLastSync = lastSync;
+                if (clientPayloadMaxTimeStamp > result.UpdatedLastSync) result.UpdatedLastSync = clientPayloadMaxTimeStamp;
                 if (serverMaxTimeStamp > result.UpdatedLastSync) result.UpdatedLastSync = serverMaxTimeStamp;
                 result.Log.Add($"LastSync Updated To: {result.UpdatedLastSync}");
                 result.Log.Add($"Synchronize Finished");
@@ -86,7 +87,7 @@ namespace NETCoreSync
             return result;
         }
 
-        private void AddServerLogIfExist(JObject jObjectResponse, SyncClientResult result)
+        private void AddServerLogIfExist(JObject jObjectResponse, SyncResult result)
         {
             if (jObjectResponse.ContainsKey("log"))
             {
@@ -121,15 +122,6 @@ namespace NETCoreSync
                 List<SyncLog.SyncLogConflict> serverConflicts = jObjectResponse["serverConflicts"].ToObject<List<SyncLog.SyncLogConflict>>();
                 result.ServerLog.AppliedChanges.Conflicts.AddRange(serverConflicts);
             }
-        }
-
-        public class SyncClientResult
-        {
-            public string ErrorMessage { get; set; }
-            public long? UpdatedLastSync { get; set; }
-            public List<string> Log { get; } = new List<string>();
-            public SyncLog ClientLog { get; } = new SyncLog();
-            public SyncLog ServerLog { get; } = new SyncLog();
         }
     }
 }

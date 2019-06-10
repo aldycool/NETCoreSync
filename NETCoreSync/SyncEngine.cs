@@ -64,18 +64,22 @@ namespace NETCoreSync
         {
         }
 
-        public static void HookPreInsertOrUpdate(SyncConfiguration syncConfiguration, object data)
+        public static void HookPreInsertOrUpdate(SyncConfiguration syncConfiguration, object data, long? lastSync)
         {
             if (data == null) throw new NullReferenceException(nameof(data));
+            long nowTicks = GetNowTicks();
+            if (lastSync.HasValue && nowTicks <= lastSync.Value) throw new SyncEngineConstraintException("System Date and Time is older than the lastSync value");
             SyncConfiguration.SchemaInfo schemaInfo = GetSchemaInfo(syncConfiguration, data.GetType());
-            data.GetType().GetProperty(schemaInfo.PropertyInfoLastUpdated.Name).SetValue(data, GetNowTicks());
+            data.GetType().GetProperty(schemaInfo.PropertyInfoLastUpdated.Name).SetValue(data, nowTicks);
         }
 
-        public static void HookPreDelete(SyncConfiguration syncConfiguration, object data)
+        public static void HookPreDelete(SyncConfiguration syncConfiguration, object data, long? lastSync)
         {
             if (data == null) throw new NullReferenceException(nameof(data));
+            long nowTicks = GetNowTicks();
+            if (lastSync.HasValue && nowTicks <= lastSync.Value) throw new SyncEngineConstraintException("System Date and Time is older than the lastSync value");
             SyncConfiguration.SchemaInfo schemaInfo = GetSchemaInfo(syncConfiguration, data.GetType());
-            data.GetType().GetProperty(schemaInfo.PropertyInfoDeleted.Name).SetValue(data, GetNowTicks());
+            data.GetType().GetProperty(schemaInfo.PropertyInfoDeleted.Name).SetValue(data, nowTicks);
         }
 
         public (byte[] compressed, long maxTimeStamp, List<SyncLog.SyncLogData> logChanges) PreparePayload(List<string> log, string synchronizationId, long? lastSync = null, Dictionary<string, object> customInfo = null, Dictionary<Type, List<object>> dictAppliedIds = null)
