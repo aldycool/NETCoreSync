@@ -14,11 +14,13 @@ namespace NETCoreSyncMobileSample.ViewModels
     {
         private readonly INavigation navigation;
         private readonly DatabaseService databaseService;
+        private readonly SyncConfiguration syncConfiguration;
 
-        public DepartmentItemViewModel(INavigation navigation, DatabaseService databaseService)
+        public DepartmentItemViewModel(INavigation navigation, DatabaseService databaseService, SyncConfiguration syncConfiguration)
         {
             this.navigation = navigation;
             this.databaseService = databaseService;
+            this.syncConfiguration = syncConfiguration;
         }
 
         private bool isNewData;
@@ -56,7 +58,7 @@ namespace NETCoreSyncMobileSample.ViewModels
         {
             using (var databaseContext = databaseService.GetDatabaseContext())
             {
-                Data.LastUpdated = SyncEngine.GetNowTicks();
+                SyncEngine.HookPreInsertOrUpdate(syncConfiguration, Data, databaseService.GetLastSync());
                 if (IsNewData)
                 {
                     databaseContext.Add(Data);
@@ -83,7 +85,8 @@ namespace NETCoreSyncMobileSample.ViewModels
                     await Application.Current.MainPage.DisplayAlert("Data Already Used", $"The data is already used by Employee Name: {dependentEmployee.Name}", "OK");
                     return;
                 }
-                Data.Deleted = SyncEngine.GetNowTicks();
+
+                SyncEngine.HookPreDelete(syncConfiguration, Data, databaseService.GetLastSync());
                 databaseContext.Update(Data);
                 //databaseContext.Remove(Data);
                 await databaseContext.SaveChangesAsync();

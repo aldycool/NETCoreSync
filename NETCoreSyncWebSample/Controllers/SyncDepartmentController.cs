@@ -13,10 +13,12 @@ namespace NETCoreSyncWebSample.Controllers
     public class SyncDepartmentController : Controller
     {
         private readonly DatabaseContext _context;
+        private SyncConfiguration syncConfiguration;
 
-        public SyncDepartmentController(DatabaseContext context)
+        public SyncDepartmentController(DatabaseContext context, SyncConfiguration syncConfiguration)
         {
             _context = context;
+            this.syncConfiguration = syncConfiguration;
         }
 
         // GET: SyncDepartment
@@ -59,7 +61,7 @@ namespace NETCoreSyncWebSample.Controllers
             if (ModelState.IsValid)
             {
                 syncDepartment.ID = Guid.NewGuid();
-                syncDepartment.LastUpdated = SyncEngine.GetNowTicks();
+                SyncEngine.HookPreInsertOrUpdate(syncConfiguration, syncDepartment, null);
                 _context.Add(syncDepartment);
                 await _context.SaveChangesAsync();
                 return RedirectToAction(nameof(Index));
@@ -99,7 +101,7 @@ namespace NETCoreSyncWebSample.Controllers
             {
                 try
                 {
-                    syncDepartment.LastUpdated = SyncEngine.GetNowTicks();
+                    SyncEngine.HookPreInsertOrUpdate(syncConfiguration, syncDepartment, null);
                     _context.Update(syncDepartment);
                     await _context.SaveChangesAsync();
                 }
@@ -142,12 +144,12 @@ namespace NETCoreSyncWebSample.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> DeleteConfirmed(Guid id)
         {
-            var syncEmployeeController = new SyncEmployeeController(_context);
+            var syncEmployeeController = new SyncEmployeeController(_context, syncConfiguration);
             var dependentEmployee = await syncEmployeeController.GetDatas().Where(w => w.DepartmentID == id).FirstOrDefaultAsync();
             if (dependentEmployee != null) throw new Exception($"The data is already used by Employee Name: {dependentEmployee.Name}");
 
             var syncDepartment = await GetDatas().FirstAsync(m => m.ID == id);
-            syncDepartment.Deleted = SyncEngine.GetNowTicks();
+            SyncEngine.HookPreDelete(syncConfiguration, syncDepartment, null);
             _context.Update(syncDepartment);
             //_context.Departments.Remove(syncDepartment);
             await _context.SaveChangesAsync();

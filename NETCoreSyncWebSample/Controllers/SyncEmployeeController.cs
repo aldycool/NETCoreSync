@@ -13,10 +13,12 @@ namespace NETCoreSyncWebSample.Controllers
     public class SyncEmployeeController : Controller
     {
         private readonly DatabaseContext _context;
+        private readonly SyncConfiguration syncConfiguration;
 
-        public SyncEmployeeController(DatabaseContext context)
+        public SyncEmployeeController(DatabaseContext context, SyncConfiguration syncConfiguration)
         {
             _context = context;
+            this.syncConfiguration = syncConfiguration;
         }
 
         // GET: SyncEmployee
@@ -63,7 +65,7 @@ namespace NETCoreSyncWebSample.Controllers
             {
                 syncEmployee.ID = Guid.NewGuid();
                 if (syncEmployee.DepartmentID == Guid.Empty) syncEmployee.DepartmentID = null;
-                syncEmployee.LastUpdated = SyncEngine.GetNowTicks();
+                SyncEngine.HookPreInsertOrUpdate(syncConfiguration, syncEmployee, null);
                 _context.Add(syncEmployee);
                 await _context.SaveChangesAsync();
                 return RedirectToAction(nameof(Index));
@@ -106,7 +108,7 @@ namespace NETCoreSyncWebSample.Controllers
                 try
                 {
                     if (syncEmployee.DepartmentID == Guid.Empty) syncEmployee.DepartmentID = null;
-                    syncEmployee.LastUpdated = SyncEngine.GetNowTicks();
+                    SyncEngine.HookPreInsertOrUpdate(syncConfiguration, syncEmployee, null);
                     _context.Update(syncEmployee);
                     await _context.SaveChangesAsync();
                 }
@@ -152,7 +154,7 @@ namespace NETCoreSyncWebSample.Controllers
         public async Task<IActionResult> DeleteConfirmed(Guid id)
         {
             var syncEmployee = await GetDatas().FirstAsync(m => m.ID == id);
-            syncEmployee.Deleted = SyncEngine.GetNowTicks();
+            SyncEngine.HookPreDelete(syncConfiguration, syncEmployee, null);
             _context.Update(syncEmployee);
             //_context.SyncEmployee.Remove(syncEmployee);
             await _context.SaveChangesAsync();
@@ -171,7 +173,7 @@ namespace NETCoreSyncWebSample.Controllers
 
         public SelectList GetSelectListDepartment(object selectedValue)
         {
-            var syncDepartmentController = new SyncDepartmentController(_context);
+            var syncDepartmentController = new SyncDepartmentController(_context, syncConfiguration);
             IQueryable<SyncDepartment> departments = syncDepartmentController.GetDatas();
             List<SyncDepartment> listDepartment = new List<SyncDepartment>();
             SyncDepartment emptyDepartment = new SyncDepartment() { ID = Guid.Empty, Name = "[None]" };

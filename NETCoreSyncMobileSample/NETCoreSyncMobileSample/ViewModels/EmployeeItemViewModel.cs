@@ -15,6 +15,7 @@ namespace NETCoreSyncMobileSample.ViewModels
     {
         private readonly INavigation navigation;
         private readonly DatabaseService databaseService;
+        private readonly SyncConfiguration syncConfiguration;
 
         private List<bool> isActiveItems;
         public List<bool> IsActiveItems
@@ -30,10 +31,11 @@ namespace NETCoreSyncMobileSample.ViewModels
             set { SetProperty(ref departmentItems, value); }
         }
 
-        public EmployeeItemViewModel(INavigation navigation, DatabaseService databaseService)
+        public EmployeeItemViewModel(INavigation navigation, DatabaseService databaseService, SyncConfiguration syncConfiguration)
         {
             this.navigation = navigation;
             this.databaseService = databaseService;
+            this.syncConfiguration = syncConfiguration;
 
             IsActiveItems = new List<bool>() { true, false };
             DepartmentItems = new List<Department>();
@@ -91,7 +93,7 @@ namespace NETCoreSyncMobileSample.ViewModels
 
             using (var databaseContext = databaseService.GetDatabaseContext())
             {
-                Data.LastUpdated = SyncEngine.GetNowTicks();
+                SyncEngine.HookPreInsertOrUpdate(syncConfiguration, Data, databaseService.GetLastSync());
                 if (IsNewData)
                 {
                     databaseContext.Add(Data);
@@ -112,7 +114,7 @@ namespace NETCoreSyncMobileSample.ViewModels
 
             using (var databaseContext = databaseService.GetDatabaseContext())
             {
-                Data.Deleted = SyncEngine.GetNowTicks();
+                SyncEngine.HookPreDelete(syncConfiguration, Data, databaseService.GetLastSync());
                 databaseContext.Update(Data);
                 //databaseContext.Remove(Data);
                 await databaseContext.SaveChangesAsync();
