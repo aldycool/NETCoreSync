@@ -11,7 +11,8 @@ namespace NETCoreSync
         {
             Id,
             LastUpdated,
-            Deleted
+            Deleted,
+            DatabaseInstanceId
         }
 
         public PropertyIndicatorEnum PropertyIndicator { get; set; }

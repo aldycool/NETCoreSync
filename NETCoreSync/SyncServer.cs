@@ -48,47 +48,50 @@ namespace NETCoreSync
             List<SyncLog.SyncLogData> serverDeletes = new List<SyncLog.SyncLogData>();
             List<SyncLog.SyncLogConflict> serverConflicts = new List<SyncLog.SyncLogConflict>();
 
-            (string synchronizationId, long lastSync, Dictionary<string, object> customInfo) = SyncEngine.ExtractInfo(syncDataBytes);
-            SyncServerLockObject syncServerLockObject = null;
-            bool lockTaken = false;
-
-            try
+            if (syncEngine.SyncConfiguration.TimeStampStrategy == SyncConfiguration.TimeStampStrategyEnum.UseGlobalTimeStamp)
             {
-                lock (serverLock)
+                (string synchronizationId, long lastSync, Dictionary<string, object> customInfo) = SyncEngine.ExtractInfo(syncDataBytes);
+                SyncServerLockObject syncServerLockObject = null;
+                bool lockTaken = false;
+
+                try
                 {
-                    if (!serverLockObjects.ContainsKey(synchronizationId))
+                    lock (serverLock)
                     {
-                        SyncServerLockObject newLockObject = new SyncServerLockObject(synchronizationId);
-                        serverLockObjects.Add(synchronizationId, newLockObject);
+                        if (!serverLockObjects.ContainsKey(synchronizationId))
+                        {
+                            SyncServerLockObject newLockObject = new SyncServerLockObject(synchronizationId);
+                            serverLockObjects.Add(synchronizationId, newLockObject);
+                        }
+                        syncServerLockObject = serverLockObjects[synchronizationId];
                     }
-                    syncServerLockObject = serverLockObjects[synchronizationId];
-                }
 
-                Monitor.TryEnter(syncServerLockObject, 0, ref lockTaken);
-                if (!lockTaken) throw new Exception($"{nameof(SyncServerLockObject.SynchronizationId)}: {syncServerLockObject.SynchronizationId}, Synchronization process is already in progress");
-                
-                (Dictionary<Type, List<object>> dictAppliedIds, List<SyncLog.SyncLogData> inserts, List<SyncLog.SyncLogData> updates, List<SyncLog.SyncLogData> deletes, List<SyncLog.SyncLogConflict> conflicts) = syncEngine.ProcessPayload(log, syncDataBytes);
-                serverInserts.AddRange(inserts);
-                serverUpdates.AddRange(updates);
-                serverDeletes.AddRange(deletes);
-                serverConflicts.AddRange(conflicts);
-                (byte[] compressed, long maxTimeStamp, List<SyncLog.SyncLogData> logChanges) = syncEngine.PreparePayload(log, synchronizationId, lastSync, customInfo, dictAppliedIds);
-                sentChanges.AddRange(logChanges);
-                string base64Compressed = Convert.ToBase64String(compressed);
-                jsonResult["payload"] = base64Compressed;
-                jsonResult["maxTimeStamp"] = maxTimeStamp;
-            }
-            catch (Exception e)
-            {
-                jsonResult["isOK"] = false;
-                jsonResult["errorMessage"] = e.Message;
-                log.Add($"Error: {e.Message}");
-            }
-            finally
-            {
-                if (lockTaken)
+                    Monitor.TryEnter(syncServerLockObject, 0, ref lockTaken);
+                    if (!lockTaken) throw new Exception($"{nameof(SyncServerLockObject.SynchronizationId)}: {syncServerLockObject.SynchronizationId}, Synchronization process is already in progress");
+
+                    (Dictionary<Type, List<object>> dictAppliedIds, List<SyncLog.SyncLogData> inserts, List<SyncLog.SyncLogData> updates, List<SyncLog.SyncLogData> deletes, List<SyncLog.SyncLogConflict> conflicts) = syncEngine.ProcessPayload(log, syncDataBytes);
+                    serverInserts.AddRange(inserts);
+                    serverUpdates.AddRange(updates);
+                    serverDeletes.AddRange(deletes);
+                    serverConflicts.AddRange(conflicts);
+                    (byte[] compressed, long maxTimeStamp, List<SyncLog.SyncLogData> logChanges) = syncEngine.PreparePayload(log, synchronizationId, lastSync, customInfo, dictAppliedIds);
+                    sentChanges.AddRange(logChanges);
+                    string base64Compressed = Convert.ToBase64String(compressed);
+                    jsonResult["payload"] = base64Compressed;
+                    jsonResult["maxTimeStamp"] = maxTimeStamp;
+                }
+                catch (Exception e)
                 {
-                    Monitor.Exit(syncServerLockObject);
+                    jsonResult["isOK"] = false;
+                    jsonResult["errorMessage"] = e.Message;
+                    log.Add($"Error: {e.Message}");
+                }
+                finally
+                {
+                    if (lockTaken)
+                    {
+                        Monitor.Exit(syncServerLockObject);
+                    }
                 }
             }
 

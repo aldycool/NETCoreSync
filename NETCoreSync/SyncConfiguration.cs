@@ -11,24 +11,41 @@ namespace NETCoreSync
 {
     public class SyncConfiguration
     {
+        public enum TimeStampStrategyEnum
+        {
+            UseGlobalTimeStamp,
+            UseEachDatabaseInstanceTimeStamp
+        }
+
+        internal TimeStampStrategyEnum TimeStampStrategy = TimeStampStrategyEnum.UseGlobalTimeStamp;
         internal readonly List<Type> SyncTypes = new List<Type>();
         internal readonly Dictionary<Type, SchemaInfo> SyncSchemaInfos = new Dictionary<Type, SchemaInfo>();
 
-        public SyncConfiguration(Assembly[] assemblies)
+        public SyncConfiguration(Assembly[] assemblies) : this(assemblies, TimeStampStrategyEnum.UseGlobalTimeStamp)
+        {
+        }
+
+        public SyncConfiguration(Assembly[] assemblies, TimeStampStrategyEnum timeStampStrategy)
         {
             if (assemblies == null) throw new NullReferenceException(nameof(assemblies));
             Type[] types = assemblies.SelectMany(sm => sm.GetTypes()).Where(w => Attribute.IsDefined(w, typeof(SyncSchemaAttribute))).ToArray();
-            Build(types);
+            Build(types, timeStampStrategy);
         }
 
-        public SyncConfiguration(Type[] types)
+        public SyncConfiguration(Type[] types) : this(types, TimeStampStrategyEnum.UseGlobalTimeStamp)
+        {
+        }
+
+        public SyncConfiguration(Type[] types, TimeStampStrategyEnum timeStampStrategy)
         {
             if (types == null) throw new NullReferenceException(nameof(types));
-            Build(types);
+            Build(types, timeStampStrategy);
         }
 
-        private void Build(Type[] types)
+        private void Build(Type[] types, TimeStampStrategyEnum timeStampStrategy)
         {
+            TimeStampStrategy = timeStampStrategy;
+
             SyncTypes.Clear();
             SyncSchemaInfos.Clear();
 
@@ -53,7 +70,8 @@ namespace NETCoreSync
 
                 PropertyInfo propertyInfoDeleted = type.GetProperties().Where(w => w.GetCustomAttribute<SyncPropertyAttribute>() != null && w.GetCustomAttribute<SyncPropertyAttribute>().PropertyIndicator == SyncPropertyAttribute.PropertyIndicatorEnum.Deleted).FirstOrDefault();
                 if (propertyInfoDeleted == null) throw new SyncConfigurationMissingSyncPropertyAttributeException(SyncPropertyAttribute.PropertyIndicatorEnum.Deleted, type);
-                if (propertyInfoDeleted.PropertyType != typeof(long?)) throw new SyncConfigurationMismatchPropertyTypeException(propertyInfoDeleted, typeof(long?), type);
+                if (TimeStampStrategy == TimeStampStrategyEnum.UseGlobalTimeStamp && propertyInfoDeleted.PropertyType != typeof(long?)) throw new SyncConfigurationMismatchPropertyTypeException(propertyInfoDeleted, typeof(long?), type);
+                if (TimeStampStrategy == TimeStampStrategyEnum.UseEachDatabaseInstanceTimeStamp && propertyInfoDeleted.PropertyType != typeof(bool)) throw new SyncConfigurationMismatchPropertyTypeException(propertyInfoDeleted, typeof(bool), type);
                 schemaInfo.PropertyInfoDeleted = new SchemaInfoProperty() { Name = propertyInfoDeleted.Name, PropertyType = propertyInfoDeleted.PropertyType.FullName };
 
                 PropertyInfo propertyInfoFriendlyId = type.GetProperties().Where(w => w.GetCustomAttribute<SyncFriendlyIdAttribute>() != null).FirstOrDefault();
@@ -61,6 +79,14 @@ namespace NETCoreSync
                 {
                     if (propertyInfoFriendlyId.PropertyType != typeof(string)) throw new SyncConfigurationMismatchPropertyTypeException(propertyInfoFriendlyId, typeof(string), type);
                     schemaInfo.PropertyInfoFriendlyId = new SchemaInfoProperty() { Name = propertyInfoFriendlyId.Name, PropertyType = propertyInfoFriendlyId.PropertyType.FullName };
+                }
+
+                if (TimeStampStrategy == TimeStampStrategyEnum.UseEachDatabaseInstanceTimeStamp)
+                {
+                    PropertyInfo propertyInfoDatabaseInstanceId = type.GetProperties().Where(w => w.GetCustomAttribute<SyncPropertyAttribute>() != null && w.GetCustomAttribute<SyncPropertyAttribute>().PropertyIndicator == SyncPropertyAttribute.PropertyIndicatorEnum.DatabaseInstanceId).FirstOrDefault();
+                    if (propertyInfoDatabaseInstanceId == null) throw new SyncConfigurationMissingSyncPropertyAttributeException(SyncPropertyAttribute.PropertyIndicatorEnum.DatabaseInstanceId, type);
+                    if (propertyInfoDatabaseInstanceId.PropertyType != typeof(string)) throw new SyncConfigurationMismatchPropertyTypeException(propertyInfoDatabaseInstanceId, typeof(string), type);
+                    schemaInfo.PropertyInfoDatabaseInstanceId = new SchemaInfoProperty() { Name = propertyInfoDatabaseInstanceId.Name, PropertyType = propertyInfoDatabaseInstanceId.PropertyType.FullName };
                 }
 
                 SyncTypes.Add(type);
@@ -75,6 +101,7 @@ namespace NETCoreSync
             public SchemaInfoProperty PropertyInfoLastUpdated { get; set; }
             public SchemaInfoProperty PropertyInfoDeleted { get; set; }
             public SchemaInfoProperty PropertyInfoFriendlyId { get; set; }
+            public SchemaInfoProperty PropertyInfoDatabaseInstanceId { get; set; }
 
             public static SchemaInfo FromJObject(JObject jObject)
             {
@@ -112,6 +139,15 @@ namespace NETCoreSync
                     };
                 }
 
+                if (jObject[nameof(PropertyInfoDatabaseInstanceId)] != null)
+                {
+                    schemaInfo.PropertyInfoDatabaseInstanceId = new SchemaInfoProperty()
+                    {
+                        Name = jObject.SelectToken($"{nameof(PropertyInfoDatabaseInstanceId)}.{nameof(schemaInfo.PropertyInfoDatabaseInstanceId.Name)}").Value<string>(),
+                        PropertyType = jObject.SelectToken($"{nameof(PropertyInfoDatabaseInstanceId)}.{nameof(schemaInfo.PropertyInfoDatabaseInstanceId.PropertyType)}").Value<string>()
+                    };
+                }
+
                 return schemaInfo;
             }
 
@@ -144,6 +180,14 @@ namespace NETCoreSync
                     jObjectPropertyInfoFriendlyId[nameof(PropertyInfoFriendlyId.Name)] = PropertyInfoFriendlyId.Name;
                     jObjectPropertyInfoFriendlyId[nameof(PropertyInfoFriendlyId.PropertyType)] = PropertyInfoFriendlyId.PropertyType;
                     jObject[nameof(PropertyInfoFriendlyId)] = jObjectPropertyInfoFriendlyId;
+                }
+
+                if (PropertyInfoDatabaseInstanceId != null)
+                {
+                    JObject jObjectPropertyInfoDatabaseInstanceId = new JObject();
+                    jObjectPropertyInfoDatabaseInstanceId[nameof(PropertyInfoDatabaseInstanceId.Name)] = PropertyInfoDatabaseInstanceId.Name;
+                    jObjectPropertyInfoDatabaseInstanceId[nameof(PropertyInfoDatabaseInstanceId.PropertyType)] = PropertyInfoDatabaseInstanceId.PropertyType;
+                    jObject[nameof(PropertyInfoDatabaseInstanceId)] = jObjectPropertyInfoDatabaseInstanceId;
                 }
 
                 return jObject;

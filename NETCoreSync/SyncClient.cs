@@ -27,60 +27,68 @@ namespace NETCoreSync
             
             try
             {
-                long lastSync = syncEngine.InvokeGetClientLastSync();
-
-                (byte[] compressed, long clientPayloadMaxTimeStamp, List<SyncLog.SyncLogData> logChanges) = syncEngine.PreparePayload(result.Log, synchronizationId, lastSync, customInfo);
-                result.ClientLog.SentChanges.AddRange(logChanges);
-
-                result.Log.Add($"Sending Data to {serverUrl}...");
-                JObject jObjectResponse = null;
-                using (var httpClient = new HttpClient())
+                if (syncEngine.SyncConfiguration.TimeStampStrategy == SyncConfiguration.TimeStampStrategyEnum.UseGlobalTimeStamp)
                 {
-                    using (var multipartFormDataContent = new MultipartFormDataContent())
+                    long lastSync = syncEngine.InvokeGetClientLastSync();
+
+                    (byte[] compressed, long clientPayloadMaxTimeStamp, List<SyncLog.SyncLogData> logChanges) = syncEngine.PreparePayload(result.Log, synchronizationId, lastSync, customInfo);
+                    result.ClientLog.SentChanges.AddRange(logChanges);
+
+                    result.Log.Add($"Sending Data to {serverUrl}...");
+                    JObject jObjectResponse = null;
+                    using (var httpClient = new HttpClient())
                     {
-                        ByteArrayContent byteArrayContent = new ByteArrayContent(compressed);
-                        multipartFormDataContent.Add(byteArrayContent, "files", "compressed.data");
-                        var response = await httpClient.PostAsync(serverUrl, multipartFormDataContent);
-                        if (response.IsSuccessStatusCode)
+                        using (var multipartFormDataContent = new MultipartFormDataContent())
                         {
-                            string responseContent = await response.Content.ReadAsStringAsync();
-                            try
+                            ByteArrayContent byteArrayContent = new ByteArrayContent(compressed);
+                            multipartFormDataContent.Add(byteArrayContent, "files", "compressed.data");
+                            var response = await httpClient.PostAsync(serverUrl, multipartFormDataContent);
+                            if (response.IsSuccessStatusCode)
                             {
-                                jObjectResponse = JsonConvert.DeserializeObject<JObject>(responseContent);
+                                string responseContent = await response.Content.ReadAsStringAsync();
+                                try
+                                {
+                                    jObjectResponse = JsonConvert.DeserializeObject<JObject>(responseContent);
+                                }
+                                catch (Exception eInner)
+                                {
+                                    throw new Exception($"Unable to parse Response as JObject: {eInner.Message}. Response: {responseContent}");
+                                }
+                                if (jObjectResponse.ContainsKey("errorMessage"))
+                                {
+                                    AddServerLogIfExist(jObjectResponse, result);
+                                    throw new Exception($"ServerMessage: {jObjectResponse["errorMessage"].Value<string>()}");
+                                }
                             }
-                            catch (Exception eInner)
+                            else
                             {
-                                throw new Exception($"Unable to parse Response as JObject: {eInner.Message}. Response: {responseContent}");
+                                throw new Exception($"Response StatusCode: {response.StatusCode}, ReasonPhrase: {response.ReasonPhrase}");
                             }
-                            if (jObjectResponse.ContainsKey("errorMessage"))
-                            {
-                                AddServerLogIfExist(jObjectResponse, result);
-                                throw new Exception($"ServerMessage: {jObjectResponse["errorMessage"].Value<string>()}");
-                            }
-                        }
-                        else
-                        {
-                            throw new Exception($"Response StatusCode: {response.StatusCode}, ReasonPhrase: {response.ReasonPhrase}");
                         }
                     }
+
+                    AddServerLogIfExist(jObjectResponse, result);
+                    result.Log.Add($"Processing Data from {serverUrl}...");
+                    string base64SyncDataBytes = jObjectResponse["payload"].Value<string>();
+                    byte[] syncDataBytes = Convert.FromBase64String(base64SyncDataBytes);
+                    (_, List<SyncLog.SyncLogData> inserts, List<SyncLog.SyncLogData> updates, List<SyncLog.SyncLogData> deletes, List<SyncLog.SyncLogConflict> conflicts) = syncEngine.ProcessPayload(result.Log, syncDataBytes);
+                    result.ClientLog.AppliedChanges.Inserts.AddRange(inserts);
+                    result.ClientLog.AppliedChanges.Updates.AddRange(updates);
+                    result.ClientLog.AppliedChanges.Deletes.AddRange(deletes);
+                    result.ClientLog.AppliedChanges.Conflicts.AddRange(conflicts);
+                    long serverMaxTimeStamp = jObjectResponse["maxTimeStamp"].Value<long>();
+                    long maxLastSync = lastSync;
+                    if (clientPayloadMaxTimeStamp > maxLastSync) maxLastSync = clientPayloadMaxTimeStamp;
+                    if (serverMaxTimeStamp > maxLastSync) maxLastSync = serverMaxTimeStamp;
+                    result.Log.Add($"LastSync Updated To: {maxLastSync}");
+                    syncEngine.SetClientLastSync(maxLastSync);
+                    result.Log.Add($"Synchronize Finished");
                 }
 
-                AddServerLogIfExist(jObjectResponse, result);
-                result.Log.Add($"Processing Data from {serverUrl}...");
-                string base64SyncDataBytes = jObjectResponse["payload"].Value<string>();
-                byte[] syncDataBytes = Convert.FromBase64String(base64SyncDataBytes);
-                (_, List<SyncLog.SyncLogData> inserts, List<SyncLog.SyncLogData> updates, List<SyncLog.SyncLogData> deletes, List<SyncLog.SyncLogConflict> conflicts) = syncEngine.ProcessPayload(result.Log, syncDataBytes);
-                result.ClientLog.AppliedChanges.Inserts.AddRange(inserts);
-                result.ClientLog.AppliedChanges.Updates.AddRange(updates);
-                result.ClientLog.AppliedChanges.Deletes.AddRange(deletes);
-                result.ClientLog.AppliedChanges.Conflicts.AddRange(conflicts);
-                long serverMaxTimeStamp = jObjectResponse["maxTimeStamp"].Value<long>();
-                long maxLastSync = lastSync;
-                if (clientPayloadMaxTimeStamp > maxLastSync) maxLastSync = clientPayloadMaxTimeStamp;
-                if (serverMaxTimeStamp > maxLastSync) maxLastSync = serverMaxTimeStamp;
-                result.Log.Add($"LastSync Updated To: {maxLastSync}");
-                syncEngine.SetClientLastSync(maxLastSync);
-                result.Log.Add($"Synchronize Finished");
+                if (syncEngine.SyncConfiguration.TimeStampStrategy == SyncConfiguration.TimeStampStrategyEnum.UseEachDatabaseInstanceTimeStamp)
+                {
+                    //SAMPE SINI!!
+                }
             }
             catch (Exception e)
             {

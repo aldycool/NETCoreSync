@@ -25,14 +25,45 @@ namespace NETCoreSync
         public enum OperationType
         {
             GetChanges = 1,
-            ApplyChanges = 2
+            ApplyChanges = 2,
+            NextTimeStamp = 3
         }
 
-        public abstract bool IsServerEngine();
+        public virtual bool IsServerEngine()
+        {
+            //must implement if SyncConfiguration.TimeStampStrategy = UseGlobalTimeStamp
+            throw new NotImplementedException();
+        }
 
-        public abstract long GetClientLastSync();
+        public virtual long GetClientLastSync()
+        {
+            //must implement if SyncConfiguration.TimeStampStrategy = UseGlobalTimeStamp
+            throw new NotImplementedException();
+        }
 
-        public abstract void SetClientLastSync(long lastSync);
+        public virtual void SetClientLastSync(long lastSync)
+        {
+            //must implement if SyncConfiguration.TimeStampStrategy = UseGlobalTimeStamp
+            throw new NotImplementedException();
+        }
+
+        public virtual long GetNextTimeStamp(object transaction)
+        {
+            //must implement if SyncConfiguration.TimeStampStrategy = UseEachDatabaseInstanceTimeStamp
+            throw new NotImplementedException();
+        }
+
+        public virtual void CreateOrUpdateDatabaseInstanceInfo(DatabaseInstanceInfo databaseInstanceInfo)
+        {
+            //must implement if SyncConfiguration.TimeStampStrategy = UseEachDatabaseInstanceTimeStamp
+            throw new NotImplementedException();
+        }
+
+        public virtual DatabaseInstanceInfo GetDatabaseInstanceInfo(string databaseInstanceId)
+        {
+            //must implement if SyncConfiguration.TimeStampStrategy = UseEachDatabaseInstanceTimeStamp
+            throw new NotImplementedException();
+        }
 
         public virtual object StartTransaction(Type classType, OperationType operationType, string synchronizationId, Dictionary<string, object> customInfo)
         {
@@ -70,30 +101,79 @@ namespace NETCoreSync
         {
         }
 
-        public void HookPreInsertOrUpdate(object data)
+        public void HookPreInsertOrUpdate(object data, bool isAlreadyInTransaction = false)
         {
             if (data == null) throw new NullReferenceException(nameof(data));
-            long nowTicks = GetNowTicks();
-            if (!IsServerEngine())
-            {
-                long lastSync = GetClientLastSync();
-                if (nowTicks <= lastSync) throw new SyncEngineConstraintException("System Date and Time is older than the lastSync value");
-            }
             SyncConfiguration.SchemaInfo schemaInfo = GetSchemaInfo(SyncConfiguration, data.GetType());
-            data.GetType().GetProperty(schemaInfo.PropertyInfoLastUpdated.Name).SetValue(data, nowTicks);
+            if (SyncConfiguration.TimeStampStrategy == SyncConfiguration.TimeStampStrategyEnum.UseGlobalTimeStamp)
+            {
+                long nowTicks = GetNowTicks();
+                if (!IsServerEngine())
+                {
+                    long lastSync = GetClientLastSync();
+                    if (nowTicks <= lastSync) throw new SyncEngineConstraintException("System Date and Time is older than the lastSync value");
+                }
+                data.GetType().GetProperty(schemaInfo.PropertyInfoLastUpdated.Name).SetValue(data, nowTicks);
+            }
+            if (SyncConfiguration.TimeStampStrategy == SyncConfiguration.TimeStampStrategyEnum.UseEachDatabaseInstanceTimeStamp)
+            {
+                long timeStamp = 0;
+                object transaction = isAlreadyInTransaction ? null : StartTransaction(null, OperationType.NextTimeStamp, null, null);
+                try
+                {
+                    timeStamp = GetNextTimeStamp(transaction);
+                    CommitTransaction(null, transaction, OperationType.NextTimeStamp, null, null);
+                }
+                catch (Exception)
+                {
+                    RollbackTransaction(null, transaction, OperationType.NextTimeStamp, null, null);
+                    throw;
+                }
+                finally
+                {
+                    EndTransaction(null, transaction, OperationType.NextTimeStamp, null, null);
+                }
+                data.GetType().GetProperty(schemaInfo.PropertyInfoDatabaseInstanceId.Name).SetValue(data, null);
+                data.GetType().GetProperty(schemaInfo.PropertyInfoLastUpdated.Name).SetValue(data, timeStamp);
+            }
         }
 
-        public void HookPreDelete(object data)
+        public void HookPreDelete(object data, bool isAlreadyInTransaction = false)
         {
             if (data == null) throw new NullReferenceException(nameof(data));
-            long nowTicks = GetNowTicks();
-            if (!IsServerEngine())
-            {
-                long lastSync = GetClientLastSync();
-                if (nowTicks <= lastSync) throw new SyncEngineConstraintException("System Date and Time is older than the lastSync value");
-            }
             SyncConfiguration.SchemaInfo schemaInfo = GetSchemaInfo(SyncConfiguration, data.GetType());
-            data.GetType().GetProperty(schemaInfo.PropertyInfoDeleted.Name).SetValue(data, nowTicks);
+            if (SyncConfiguration.TimeStampStrategy == SyncConfiguration.TimeStampStrategyEnum.UseGlobalTimeStamp)
+            {
+                long nowTicks = GetNowTicks();
+                if (!IsServerEngine())
+                {
+                    long lastSync = GetClientLastSync();
+                    if (nowTicks <= lastSync) throw new SyncEngineConstraintException("System Date and Time is older than the lastSync value");
+                }
+                data.GetType().GetProperty(schemaInfo.PropertyInfoDeleted.Name).SetValue(data, nowTicks);
+            }
+            if (SyncConfiguration.TimeStampStrategy == SyncConfiguration.TimeStampStrategyEnum.UseEachDatabaseInstanceTimeStamp)
+            {
+                long timeStamp = 0;
+                object transaction = isAlreadyInTransaction ? null : StartTransaction(null, OperationType.NextTimeStamp, null, null);
+                try
+                {
+                    timeStamp = GetNextTimeStamp(transaction);
+                    CommitTransaction(null, transaction, OperationType.NextTimeStamp, null, null);
+                }
+                catch (Exception)
+                {
+                    RollbackTransaction(null, transaction, OperationType.NextTimeStamp, null, null);
+                    throw;
+                }
+                finally
+                {
+                    EndTransaction(null, transaction, OperationType.NextTimeStamp, null, null);
+                }
+                data.GetType().GetProperty(schemaInfo.PropertyInfoDatabaseInstanceId.Name).SetValue(data, null);
+                data.GetType().GetProperty(schemaInfo.PropertyInfoLastUpdated.Name).SetValue(data, timeStamp);
+                data.GetType().GetProperty(schemaInfo.PropertyInfoDeleted.Name).SetValue(data, true);
+            }
         }
 
         internal (byte[] compressed, long maxTimeStamp, List<SyncLog.SyncLogData> logChanges) PreparePayload(List<string> log, string synchronizationId, long? lastSync = null, Dictionary<string, object> customInfo = null, Dictionary<Type, List<object>> dictAppliedIds = null)
@@ -461,6 +541,13 @@ namespace NETCoreSync
         internal static long GetMinValueTicks()
         {
             return DateTime.MinValue.Ticks;
+        }
+
+        public class DatabaseInstanceInfo
+        {
+            public string DatabaseInstanceId { get; set; }
+            public bool IsLocal { get; set; }
+            public long LastSyncTimeStamp { get; set; }
         }
 
         //NOTE: OBSOLETE, now using System.Linq.Dynamic.Core
