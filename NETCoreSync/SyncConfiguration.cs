@@ -13,15 +13,15 @@ namespace NETCoreSync
     {
         public enum TimeStampStrategyEnum
         {
-            UseGlobalTimeStamp,
-            UseEachDatabaseInstanceTimeStamp
+            GlobalTimeStamp,
+            DatabaseTimeStamp
         }
 
-        internal TimeStampStrategyEnum TimeStampStrategy = TimeStampStrategyEnum.UseGlobalTimeStamp;
+        internal TimeStampStrategyEnum TimeStampStrategy = TimeStampStrategyEnum.GlobalTimeStamp;
         internal readonly List<Type> SyncTypes = new List<Type>();
         internal readonly Dictionary<Type, SchemaInfo> SyncSchemaInfos = new Dictionary<Type, SchemaInfo>();
 
-        public SyncConfiguration(Assembly[] assemblies) : this(assemblies, TimeStampStrategyEnum.UseGlobalTimeStamp)
+        public SyncConfiguration(Assembly[] assemblies) : this(assemblies, TimeStampStrategyEnum.GlobalTimeStamp)
         {
         }
 
@@ -32,7 +32,7 @@ namespace NETCoreSync
             Build(types, timeStampStrategy);
         }
 
-        public SyncConfiguration(Type[] types) : this(types, TimeStampStrategyEnum.UseGlobalTimeStamp)
+        public SyncConfiguration(Type[] types) : this(types, TimeStampStrategyEnum.GlobalTimeStamp)
         {
         }
 
@@ -70,8 +70,8 @@ namespace NETCoreSync
 
                 PropertyInfo propertyInfoDeleted = type.GetProperties().Where(w => w.GetCustomAttribute<SyncPropertyAttribute>() != null && w.GetCustomAttribute<SyncPropertyAttribute>().PropertyIndicator == SyncPropertyAttribute.PropertyIndicatorEnum.Deleted).FirstOrDefault();
                 if (propertyInfoDeleted == null) throw new SyncConfigurationMissingSyncPropertyAttributeException(SyncPropertyAttribute.PropertyIndicatorEnum.Deleted, type);
-                if (TimeStampStrategy == TimeStampStrategyEnum.UseGlobalTimeStamp && propertyInfoDeleted.PropertyType != typeof(long?)) throw new SyncConfigurationMismatchPropertyTypeException(propertyInfoDeleted, typeof(long?), type);
-                if (TimeStampStrategy == TimeStampStrategyEnum.UseEachDatabaseInstanceTimeStamp && propertyInfoDeleted.PropertyType != typeof(bool)) throw new SyncConfigurationMismatchPropertyTypeException(propertyInfoDeleted, typeof(bool), type);
+                if (TimeStampStrategy == TimeStampStrategyEnum.GlobalTimeStamp && propertyInfoDeleted.PropertyType != typeof(long?)) throw new SyncConfigurationMismatchPropertyTypeException(propertyInfoDeleted, typeof(long?), type);
+                if (TimeStampStrategy == TimeStampStrategyEnum.DatabaseTimeStamp && propertyInfoDeleted.PropertyType != typeof(bool)) throw new SyncConfigurationMismatchPropertyTypeException(propertyInfoDeleted, typeof(bool), type);
                 schemaInfo.PropertyInfoDeleted = new SchemaInfoProperty() { Name = propertyInfoDeleted.Name, PropertyType = propertyInfoDeleted.PropertyType.FullName };
 
                 PropertyInfo propertyInfoFriendlyId = type.GetProperties().Where(w => w.GetCustomAttribute<SyncFriendlyIdAttribute>() != null).FirstOrDefault();
@@ -81,7 +81,7 @@ namespace NETCoreSync
                     schemaInfo.PropertyInfoFriendlyId = new SchemaInfoProperty() { Name = propertyInfoFriendlyId.Name, PropertyType = propertyInfoFriendlyId.PropertyType.FullName };
                 }
 
-                if (TimeStampStrategy == TimeStampStrategyEnum.UseEachDatabaseInstanceTimeStamp)
+                if (TimeStampStrategy == TimeStampStrategyEnum.DatabaseTimeStamp)
                 {
                     PropertyInfo propertyInfoDatabaseInstanceId = type.GetProperties().Where(w => w.GetCustomAttribute<SyncPropertyAttribute>() != null && w.GetCustomAttribute<SyncPropertyAttribute>().PropertyIndicator == SyncPropertyAttribute.PropertyIndicatorEnum.DatabaseInstanceId).FirstOrDefault();
                     if (propertyInfoDatabaseInstanceId == null) throw new SyncConfigurationMissingSyncPropertyAttributeException(SyncPropertyAttribute.PropertyIndicatorEnum.DatabaseInstanceId, type);

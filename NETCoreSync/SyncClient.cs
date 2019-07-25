@@ -29,11 +29,11 @@ namespace NETCoreSync
             {
                 SyncEngine.PreparePayloadParameter baseParameter = null;
 
-                if (syncEngine.SyncConfiguration.TimeStampStrategy == SyncConfiguration.TimeStampStrategyEnum.UseGlobalTimeStamp)
+                if (syncEngine.SyncConfiguration.TimeStampStrategy == SyncConfiguration.TimeStampStrategyEnum.GlobalTimeStamp)
                 {
                     baseParameter = new SyncEngine.PreparePayloadGlobalTimeStampParameter();
                 }
-                else if (syncEngine.SyncConfiguration.TimeStampStrategy == SyncConfiguration.TimeStampStrategyEnum.UseEachDatabaseInstanceTimeStamp)
+                else if (syncEngine.SyncConfiguration.TimeStampStrategy == SyncConfiguration.TimeStampStrategyEnum.DatabaseTimeStamp)
                 {
                     baseParameter = new SyncEngine.PreparePayloadDatabaseTimeStampParameter();
                 }
@@ -46,7 +46,7 @@ namespace NETCoreSync
                 baseParameter.CustomInfo = customInfo;
                 baseParameter.Log = syncResult.Log;
 
-                if (syncEngine.SyncConfiguration.TimeStampStrategy == SyncConfiguration.TimeStampStrategyEnum.UseGlobalTimeStamp)
+                if (syncEngine.SyncConfiguration.TimeStampStrategy == SyncConfiguration.TimeStampStrategyEnum.GlobalTimeStamp)
                 {
                     baseParameter.PayloadAction = SyncEngine.PayloadAction.Synchronize;
 
@@ -80,7 +80,7 @@ namespace NETCoreSync
                     syncEngine.SetClientLastSync(maxLastSync);
                     syncResult.Log.Add($"Synchronize Finished");
                 }
-                else if (syncEngine.SyncConfiguration.TimeStampStrategy == SyncConfiguration.TimeStampStrategyEnum.UseEachDatabaseInstanceTimeStamp)
+                else if (syncEngine.SyncConfiguration.TimeStampStrategy == SyncConfiguration.TimeStampStrategyEnum.DatabaseTimeStamp)
                 {
 
                 }

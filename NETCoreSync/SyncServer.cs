@@ -43,11 +43,11 @@ namespace NETCoreSync
             JObject jsonResult = JsonDefaultResponse();
 
             SyncEngine.ProcessPayloadParameter baseParameter = null;
-            if (syncEngine.SyncConfiguration.TimeStampStrategy == SyncConfiguration.TimeStampStrategyEnum.UseGlobalTimeStamp)
+            if (syncEngine.SyncConfiguration.TimeStampStrategy == SyncConfiguration.TimeStampStrategyEnum.GlobalTimeStamp)
             {
                 baseParameter = new SyncEngine.ProcessPayloadGlobalTimeStampParameter(syncDataBytes);
             }
-            else if (syncEngine.SyncConfiguration.TimeStampStrategy == SyncConfiguration.TimeStampStrategyEnum.UseEachDatabaseInstanceTimeStamp)
+            else if (syncEngine.SyncConfiguration.TimeStampStrategy == SyncConfiguration.TimeStampStrategyEnum.DatabaseTimeStamp)
             {
                 baseParameter = new SyncEngine.ProcessPayloadDatabaseTimeStampParameter(syncDataBytes);
             }
@@ -76,7 +76,7 @@ namespace NETCoreSync
 
                 SyncEngine.ProcessPayloadResult baseResult = syncEngine.ProcessPayload(baseParameter);
 
-                if (syncEngine.SyncConfiguration.TimeStampStrategy == SyncConfiguration.TimeStampStrategyEnum.UseGlobalTimeStamp)
+                if (syncEngine.SyncConfiguration.TimeStampStrategy == SyncConfiguration.TimeStampStrategyEnum.GlobalTimeStamp)
                 {
                     SyncEngine.PreparePayloadParameter preparePayloadParameter = null;
                     preparePayloadParameter = new SyncEngine.PreparePayloadGlobalTimeStampParameter();
@@ -94,7 +94,7 @@ namespace NETCoreSync
                     jsonResult["maxTimeStamp"] = preparePayloadResult.MaxTimeStamp;
                     jsonResult["sentChanges"] = JArray.FromObject(preparePayloadResult.LogChanges);
                 }
-                else if (syncEngine.SyncConfiguration.TimeStampStrategy == SyncConfiguration.TimeStampStrategyEnum.UseEachDatabaseInstanceTimeStamp)
+                else if (syncEngine.SyncConfiguration.TimeStampStrategy == SyncConfiguration.TimeStampStrategyEnum.DatabaseTimeStamp)
                 {
 
                 }

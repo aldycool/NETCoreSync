@@ -105,7 +105,7 @@ namespace NETCoreSync
         {
             if (data == null) throw new NullReferenceException(nameof(data));
             SyncConfiguration.SchemaInfo schemaInfo = GetSchemaInfo(SyncConfiguration, data.GetType());
-            if (SyncConfiguration.TimeStampStrategy == SyncConfiguration.TimeStampStrategyEnum.UseGlobalTimeStamp)
+            if (SyncConfiguration.TimeStampStrategy == SyncConfiguration.TimeStampStrategyEnum.GlobalTimeStamp)
             {
                 long nowTicks = GetNowTicks();
                 if (!IsServerEngine())
@@ -115,7 +115,7 @@ namespace NETCoreSync
                 }
                 data.GetType().GetProperty(schemaInfo.PropertyInfoLastUpdated.Name).SetValue(data, nowTicks);
             }
-            if (SyncConfiguration.TimeStampStrategy == SyncConfiguration.TimeStampStrategyEnum.UseEachDatabaseInstanceTimeStamp)
+            if (SyncConfiguration.TimeStampStrategy == SyncConfiguration.TimeStampStrategyEnum.DatabaseTimeStamp)
             {
                 long timeStamp = 0;
                 object transaction = isAlreadyInTransaction ? null : StartTransaction(null, OperationType.NextTimeStamp, null, null);
@@ -142,7 +142,7 @@ namespace NETCoreSync
         {
             if (data == null) throw new NullReferenceException(nameof(data));
             SyncConfiguration.SchemaInfo schemaInfo = GetSchemaInfo(SyncConfiguration, data.GetType());
-            if (SyncConfiguration.TimeStampStrategy == SyncConfiguration.TimeStampStrategyEnum.UseGlobalTimeStamp)
+            if (SyncConfiguration.TimeStampStrategy == SyncConfiguration.TimeStampStrategyEnum.GlobalTimeStamp)
             {
                 long nowTicks = GetNowTicks();
                 if (!IsServerEngine())
@@ -152,7 +152,7 @@ namespace NETCoreSync
                 }
                 data.GetType().GetProperty(schemaInfo.PropertyInfoDeleted.Name).SetValue(data, nowTicks);
             }
-            if (SyncConfiguration.TimeStampStrategy == SyncConfiguration.TimeStampStrategyEnum.UseEachDatabaseInstanceTimeStamp)
+            if (SyncConfiguration.TimeStampStrategy == SyncConfiguration.TimeStampStrategyEnum.DatabaseTimeStamp)
             {
                 long timeStamp = 0;
                 object transaction = isAlreadyInTransaction ? null : StartTransaction(null, OperationType.NextTimeStamp, null, null);
@@ -188,7 +188,7 @@ namespace NETCoreSync
             if (string.IsNullOrEmpty(preparePayloadParameter.SynchronizationId)) throw new NullReferenceException(nameof(preparePayloadParameter.SynchronizationId));
             if (preparePayloadParameter.CustomInfo == null) preparePayloadParameter.CustomInfo = new Dictionary<string, object>();
 
-            if (SyncConfiguration.TimeStampStrategy == SyncConfiguration.TimeStampStrategyEnum.UseGlobalTimeStamp)
+            if (SyncConfiguration.TimeStampStrategy == SyncConfiguration.TimeStampStrategyEnum.GlobalTimeStamp)
             {
                 if (preparePayloadParameter.PayloadAction != PayloadAction.Synchronize) throw new NotImplementedException(preparePayloadParameter.PayloadAction.ToString());
 
@@ -219,7 +219,7 @@ namespace NETCoreSync
                 result.SetCustomPayload(nameof(changes), changes);
                 return result;
             }
-            else if (SyncConfiguration.TimeStampStrategy == SyncConfiguration.TimeStampStrategyEnum.UseEachDatabaseInstanceTimeStamp)
+            else if (SyncConfiguration.TimeStampStrategy == SyncConfiguration.TimeStampStrategyEnum.DatabaseTimeStamp)
             {
                 throw new NotImplementedException();
             }
@@ -294,7 +294,7 @@ namespace NETCoreSync
             if (processPayloadParameter == null) throw new NullReferenceException(nameof(processPayloadParameter));
             if (string.IsNullOrEmpty(processPayloadParameter.SynchronizationId)) throw new NullReferenceException(nameof(processPayloadParameter.SynchronizationId));
 
-            if (SyncConfiguration.TimeStampStrategy == SyncConfiguration.TimeStampStrategyEnum.UseGlobalTimeStamp)
+            if (SyncConfiguration.TimeStampStrategy == SyncConfiguration.TimeStampStrategyEnum.GlobalTimeStamp)
             {
                 if (processPayloadParameter.PayloadAction != PayloadAction.Synchronize) throw new NotImplementedException(processPayloadParameter.PayloadAction.ToString());
 
@@ -339,7 +339,7 @@ namespace NETCoreSync
                 }
                 return result;
             }
-            else if (SyncConfiguration.TimeStampStrategy == SyncConfiguration.TimeStampStrategyEnum.UseEachDatabaseInstanceTimeStamp)
+            else if (SyncConfiguration.TimeStampStrategy == SyncConfiguration.TimeStampStrategyEnum.DatabaseTimeStamp)
             {
                 throw new NotImplementedException();
             }
