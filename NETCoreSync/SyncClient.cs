@@ -27,67 +27,51 @@ namespace NETCoreSync
             
             try
             {
+                SyncEngine.PreparePayloadParameter baseParameter = null;
+
                 if (syncEngine.SyncConfiguration.TimeStampStrategy == SyncConfiguration.TimeStampStrategyEnum.UseGlobalTimeStamp)
                 {
-                    SyncEngine.PreparePayloadGlobalTimeStampParameter parameter = new SyncEngine.PreparePayloadGlobalTimeStampParameter();
-                    parameter.SynchronizationId = synchronizationId;
-                    parameter.CustomInfo = customInfo;
-                    parameter.PayloadAction = SyncEngine.PayloadAction.Synchronize;
-                    parameter.Log = syncResult.Log;
+                    baseParameter = new SyncEngine.PreparePayloadGlobalTimeStampParameter();
+                }
+                else if (syncEngine.SyncConfiguration.TimeStampStrategy == SyncConfiguration.TimeStampStrategyEnum.UseEachDatabaseInstanceTimeStamp)
+                {
+                    baseParameter = new SyncEngine.PreparePayloadDatabaseTimeStampParameter();
+                }
+                else
+                {
+                    throw new NotImplementedException(syncEngine.SyncConfiguration.TimeStampStrategy.ToString());
+                }
 
+                baseParameter.SynchronizationId = synchronizationId;
+                baseParameter.CustomInfo = customInfo;
+                baseParameter.Log = syncResult.Log;
+
+                if (syncEngine.SyncConfiguration.TimeStampStrategy == SyncConfiguration.TimeStampStrategyEnum.UseGlobalTimeStamp)
+                {
+                    baseParameter.PayloadAction = SyncEngine.PayloadAction.Synchronize;
+
+                    SyncEngine.PreparePayloadGlobalTimeStampParameter parameter = (SyncEngine.PreparePayloadGlobalTimeStampParameter)baseParameter; 
                     parameter.LastSync = syncEngine.InvokeGetClientLastSync();
 
                     SyncEngine.PreparePayloadGlobalTimeStampResult result = (SyncEngine.PreparePayloadGlobalTimeStampResult)syncEngine.PreparePayload(parameter);
-
                     syncResult.ClientLog.SentChanges.AddRange(result.LogChanges);
 
                     syncResult.Log.Add($"Sending Data to {serverUrl}...");
-                    JObject jObjectResponse = null;
-                    using (var httpClient = new HttpClient())
-                    {
-                        using (var multipartFormDataContent = new MultipartFormDataContent())
-                        {
-                            ByteArrayContent byteArrayContent = new ByteArrayContent(result.GetCompressed());
-                            multipartFormDataContent.Add(byteArrayContent, "files", "compressed.data");
-                            var response = await httpClient.PostAsync(serverUrl, multipartFormDataContent);
-                            if (response.IsSuccessStatusCode)
-                            {
-                                string responseContent = await response.Content.ReadAsStringAsync();
-                                try
-                                {
-                                    jObjectResponse = JsonConvert.DeserializeObject<JObject>(responseContent);
-                                }
-                                catch (Exception eInner)
-                                {
-                                    throw new Exception($"Unable to parse Response as JObject: {eInner.Message}. Response: {responseContent}");
-                                }
-                                if (jObjectResponse.ContainsKey("errorMessage"))
-                                {
-                                    AddServerLogIfExist(jObjectResponse, syncResult);
-                                    throw new Exception($"ServerMessage: {jObjectResponse["errorMessage"].Value<string>()}");
-                                }
-                            }
-                            else
-                            {
-                                throw new Exception($"Response StatusCode: {response.StatusCode}, ReasonPhrase: {response.ReasonPhrase}");
-                            }
-                        }
-                    }
-
+                    JObject jObjectResponse = await SendToServer(result.GetCompressed(), syncResult);
                     AddServerLogIfExist(jObjectResponse, syncResult);
+
                     syncResult.Log.Add($"Processing Data from {serverUrl}...");
                     string base64SyncDataBytes = jObjectResponse["payload"].Value<string>();
                     long serverMaxTimeStamp = jObjectResponse["maxTimeStamp"].Value<long>();
                     byte[] syncDataBytes = Convert.FromBase64String(base64SyncDataBytes);
                     
                     SyncEngine.ProcessPayloadGlobalTimeStampParameter processParameter = new SyncEngine.ProcessPayloadGlobalTimeStampParameter(syncDataBytes);
-                    SyncEngine.ProcessPayloadResult processResult = syncEngine.ProcessPayload(processParameter);
-                    syncResult.Log.AddRange(processParameter.Log);
-
-                    syncResult.ClientLog.AppliedChanges.Inserts.AddRange(processResult.Inserts);
-                    syncResult.ClientLog.AppliedChanges.Updates.AddRange(processResult.Updates);
-                    syncResult.ClientLog.AppliedChanges.Deletes.AddRange(processResult.Deletes);
-                    syncResult.ClientLog.AppliedChanges.Conflicts.AddRange(processResult.Conflicts);
+                    processParameter.Log = syncResult.Log;
+                    processParameter.Inserts = syncResult.ClientLog.AppliedChanges.Inserts;
+                    processParameter.Updates = syncResult.ClientLog.AppliedChanges.Updates;
+                    processParameter.Deletes = syncResult.ClientLog.AppliedChanges.Deletes;
+                    processParameter.Conflicts = syncResult.ClientLog.AppliedChanges.Conflicts;
+                    syncEngine.ProcessPayload(processParameter);
 
                     long maxLastSync = parameter.LastSync.HasValue ? parameter.LastSync.Value : SyncEngine.GetMinValueTicks();
                     if (result.MaxTimeStamp > maxLastSync) maxLastSync = result.MaxTimeStamp;
@@ -96,9 +80,13 @@ namespace NETCoreSync
                     syncEngine.SetClientLastSync(maxLastSync);
                     syncResult.Log.Add($"Synchronize Finished");
                 }
-
-                if (syncEngine.SyncConfiguration.TimeStampStrategy == SyncConfiguration.TimeStampStrategyEnum.UseEachDatabaseInstanceTimeStamp)
+                else if (syncEngine.SyncConfiguration.TimeStampStrategy == SyncConfiguration.TimeStampStrategyEnum.UseEachDatabaseInstanceTimeStamp)
                 {
+
+                }
+                else
+                {
+                    throw new NotImplementedException(syncEngine.SyncConfiguration.TimeStampStrategy.ToString());
                 }
             }
             catch (Exception e)
@@ -107,6 +95,42 @@ namespace NETCoreSync
                 syncResult.Log.Add($"Error: {e.Message}");
             }
             return syncResult;
+        }
+
+        private async Task<JObject> SendToServer(byte[] compressed, SyncResult syncResult)
+        {
+            using (var httpClient = new HttpClient())
+            {
+                using (var multipartFormDataContent = new MultipartFormDataContent())
+                {
+                    ByteArrayContent byteArrayContent = new ByteArrayContent(compressed);
+                    multipartFormDataContent.Add(byteArrayContent, "files", "compressed.data");
+                    var response = await httpClient.PostAsync(serverUrl, multipartFormDataContent);
+                    if (response.IsSuccessStatusCode)
+                    {
+                        string responseContent = await response.Content.ReadAsStringAsync();
+                        JObject jObjectResponse = null;
+                        try
+                        {
+                            jObjectResponse = JsonConvert.DeserializeObject<JObject>(responseContent);
+                        }
+                        catch (Exception eInner)
+                        {
+                            throw new Exception($"Unable to parse Response as JObject: {eInner.Message}. Response: {responseContent}");
+                        }
+                        if (jObjectResponse.ContainsKey("errorMessage"))
+                        {
+                            AddServerLogIfExist(jObjectResponse, syncResult);
+                            throw new Exception($"ServerMessage: {jObjectResponse["errorMessage"].Value<string>()}");
+                        }
+                        return jObjectResponse;
+                    }
+                    else
+                    {
+                        throw new Exception($"Response StatusCode: {response.StatusCode}, ReasonPhrase: {response.ReasonPhrase}");
+                    }
+                }
+            }
         }
 
         private void AddServerLogIfExist(JObject jObjectResponse, SyncResult result)

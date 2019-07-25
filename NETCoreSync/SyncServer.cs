@@ -47,9 +47,13 @@ namespace NETCoreSync
             {
                 baseParameter = new SyncEngine.ProcessPayloadGlobalTimeStampParameter(syncDataBytes);
             }
-            if (syncEngine.SyncConfiguration.TimeStampStrategy == SyncConfiguration.TimeStampStrategyEnum.UseEachDatabaseInstanceTimeStamp)
+            else if (syncEngine.SyncConfiguration.TimeStampStrategy == SyncConfiguration.TimeStampStrategyEnum.UseEachDatabaseInstanceTimeStamp)
             {
-                
+                baseParameter = new SyncEngine.ProcessPayloadDatabaseTimeStampParameter(syncDataBytes);
+            }
+            else
+            {
+                throw new NotImplementedException(syncEngine.SyncConfiguration.TimeStampStrategy.ToString());
             }
 
             SyncServerLockObject syncServerLockObject = null;
@@ -72,10 +76,9 @@ namespace NETCoreSync
 
                 SyncEngine.ProcessPayloadResult baseResult = syncEngine.ProcessPayload(baseParameter);
 
-                SyncEngine.PreparePayloadParameter preparePayloadParameter = null;
-
                 if (syncEngine.SyncConfiguration.TimeStampStrategy == SyncConfiguration.TimeStampStrategyEnum.UseGlobalTimeStamp)
                 {
+                    SyncEngine.PreparePayloadParameter preparePayloadParameter = null;
                     preparePayloadParameter = new SyncEngine.PreparePayloadGlobalTimeStampParameter();
                     preparePayloadParameter.SynchronizationId = baseParameter.SynchronizationId;
                     preparePayloadParameter.CustomInfo = baseParameter.CustomInfo;
@@ -90,11 +93,14 @@ namespace NETCoreSync
                     jsonResult["payload"] = base64Compressed;
                     jsonResult["maxTimeStamp"] = preparePayloadResult.MaxTimeStamp;
                     jsonResult["sentChanges"] = JArray.FromObject(preparePayloadResult.LogChanges);
-                    jsonResult["log"] = JArray.FromObject(preparePayloadParameter.Log);
-                    jsonResult["serverInserts"] = JArray.FromObject(baseResult.Inserts);
-                    jsonResult["serverUpdates"] = JArray.FromObject(baseResult.Updates);
-                    jsonResult["serverDeletes"] = JArray.FromObject(baseResult.Deletes);
-                    jsonResult["serverConflicts"] = JArray.FromObject(baseResult.Conflicts);
+                }
+                else if (syncEngine.SyncConfiguration.TimeStampStrategy == SyncConfiguration.TimeStampStrategyEnum.UseEachDatabaseInstanceTimeStamp)
+                {
+
+                }
+                else
+                {
+                    throw new NotImplementedException(syncEngine.SyncConfiguration.TimeStampStrategy.ToString());
                 }
             }
             catch (Exception e)
@@ -105,6 +111,12 @@ namespace NETCoreSync
             }
             finally
             {
+                jsonResult["log"] = JArray.FromObject(baseParameter.Log);
+                jsonResult["serverInserts"] = JArray.FromObject(baseParameter.Inserts);
+                jsonResult["serverUpdates"] = JArray.FromObject(baseParameter.Updates);
+                jsonResult["serverDeletes"] = JArray.FromObject(baseParameter.Deletes);
+                jsonResult["serverConflicts"] = JArray.FromObject(baseParameter.Conflicts);
+
                 if (lockTaken)
                 {
                     Monitor.Exit(syncServerLockObject);

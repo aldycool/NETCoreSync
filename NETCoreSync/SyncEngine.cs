@@ -13,7 +13,7 @@ using System.IO.Compression;
 
 namespace NETCoreSync
 {
-    public abstract class SyncEngine
+    public abstract partial class SyncEngine
     {
         internal readonly SyncConfiguration SyncConfiguration;
 
@@ -178,7 +178,8 @@ namespace NETCoreSync
 
         internal enum PayloadAction
         {
-            Synchronize
+            Synchronize,
+            Metadata
         }
 
         internal PreparePayloadResult PreparePayload(PreparePayloadParameter preparePayloadParameter)
@@ -189,11 +190,12 @@ namespace NETCoreSync
 
             if (SyncConfiguration.TimeStampStrategy == SyncConfiguration.TimeStampStrategyEnum.UseGlobalTimeStamp)
             {
+                if (preparePayloadParameter.PayloadAction != PayloadAction.Synchronize) throw new NotImplementedException(preparePayloadParameter.PayloadAction.ToString());
+
                 PreparePayloadGlobalTimeStampParameter parameter = (PreparePayloadGlobalTimeStampParameter)preparePayloadParameter;
                 if (parameter.LastSync == null) parameter.LastSync = GetMinValueTicks();
 
                 PreparePayloadGlobalTimeStampResult result = new PreparePayloadGlobalTimeStampResult(parameter);
-                result.LogChanges = new List<SyncLog.SyncLogData>();
                 result.MaxTimeStamp = GetMinValueTicks();
 
                 parameter.Log.Add($"Preparing Data Since LastSync: {parameter.LastSync}");
@@ -217,11 +219,14 @@ namespace NETCoreSync
                 result.SetCustomPayload(nameof(changes), changes);
                 return result;
             }
-            if (SyncConfiguration.TimeStampStrategy == SyncConfiguration.TimeStampStrategyEnum.UseEachDatabaseInstanceTimeStamp)
+            else if (SyncConfiguration.TimeStampStrategy == SyncConfiguration.TimeStampStrategyEnum.UseEachDatabaseInstanceTimeStamp)
             {
-
+                throw new NotImplementedException();
             }
-            throw new NotImplementedException();
+            else
+            {
+                throw new NotImplementedException(SyncConfiguration.TimeStampStrategy.ToString());
+            }
         }
 
         internal (JObject typeChanges, int typeChangesCount, long maxTimeStamp, List<SyncLog.SyncLogData> logChanges) GetTypeChanges(long? lastSync, Type syncType, string synchronizationId, Dictionary<string, object> customInfo, List<object> appliedIds)
@@ -291,6 +296,8 @@ namespace NETCoreSync
 
             if (SyncConfiguration.TimeStampStrategy == SyncConfiguration.TimeStampStrategyEnum.UseGlobalTimeStamp)
             {
+                if (processPayloadParameter.PayloadAction != PayloadAction.Synchronize) throw new NotImplementedException(processPayloadParameter.PayloadAction.ToString());
+
                 ProcessPayloadGlobalTimeStampParameter parameter = (ProcessPayloadGlobalTimeStampParameter)processPayloadParameter;
 
                 ProcessPayloadGlobalTimeStampResult result = new ProcessPayloadGlobalTimeStampResult();
@@ -304,11 +311,7 @@ namespace NETCoreSync
                 {
                     JObject typeChanges = changes[i].Value<JObject>();
                     parameter.Log.Add($"Applying Type: {typeChanges["syncType"].Value<string>()}...");
-                    (Type localSyncType, List<object> appliedIds, List<object> deletedIds, List<SyncLog.SyncLogData> typeInserts, List<SyncLog.SyncLogData> typeUpdates, List<SyncLog.SyncLogData> typeDeletes, List<SyncLog.SyncLogConflict> typeConflicts) = ApplyTypeChanges(parameter.Log, typeChanges, parameter.SynchronizationId, parameter.CustomInfo);
-                    result.Inserts.AddRange(typeInserts);
-                    result.Updates.AddRange(typeUpdates);
-                    result.Deletes.AddRange(typeDeletes);
-                    result.Conflicts.AddRange(typeConflicts);
+                    (Type localSyncType, List<object> appliedIds, List<object> deletedIds) = ApplyTypeChanges(parameter.Log, parameter.Inserts, parameter.Updates, parameter.Deletes, parameter.Conflicts, typeChanges, parameter.SynchronizationId, parameter.CustomInfo);
                     parameter.Log.Add($"Type: {typeChanges["syncType"].Value<string>()} Applied, Count: {appliedIds.Count}");
                     result.AppliedIds[localSyncType] = appliedIds;
                     if (deletedIds.Count > 0)
@@ -334,21 +337,26 @@ namespace NETCoreSync
                         }
                     }
                 }
-
                 return result;
             }
-
-            throw new NotImplementedException();
+            else if (SyncConfiguration.TimeStampStrategy == SyncConfiguration.TimeStampStrategyEnum.UseEachDatabaseInstanceTimeStamp)
+            {
+                throw new NotImplementedException();
+            }
+            else
+            {
+                throw new NotImplementedException(SyncConfiguration.TimeStampStrategy.ToString());
+            }
         }
 
-        internal (Type localSyncType, List<object> appliedIds, List<object> deletedIds, List<SyncLog.SyncLogData> inserts, List<SyncLog.SyncLogData> updates, List<SyncLog.SyncLogData> deletes, List<SyncLog.SyncLogConflict> conflicts) ApplyTypeChanges(List<string> log, JObject typeChanges, string synchronizationId, Dictionary<string, object> customInfo)
+        internal (Type localSyncType, List<object> appliedIds, List<object> deletedIds) ApplyTypeChanges(List<string> log, List<SyncLog.SyncLogData> inserts, List<SyncLog.SyncLogData> updates, List<SyncLog.SyncLogData> deletes, List<SyncLog.SyncLogConflict> conflicts, JObject typeChanges, string synchronizationId, Dictionary<string, object> customInfo)
         {
             List<object> appliedIds = new List<object>();
             List<object> deletedIds = new List<object>();
-            List<SyncLog.SyncLogData> inserts = new List<SyncLog.SyncLogData>();
-            List<SyncLog.SyncLogData> updates = new List<SyncLog.SyncLogData>();
-            List<SyncLog.SyncLogData> deletes = new List<SyncLog.SyncLogData>();
-            List<SyncLog.SyncLogConflict> conflicts = new List<SyncLog.SyncLogConflict>();
+            if (inserts == null) inserts = new List<SyncLog.SyncLogData>();
+            if (updates == null) updates = new List<SyncLog.SyncLogData>();
+            if (deletes == null) deletes = new List<SyncLog.SyncLogData>();
+            if (conflicts == null) conflicts = new List<SyncLog.SyncLogConflict>();
             string syncTypeName = typeChanges["syncType"].Value<string>();
             JObject jObjectSchemaInfo = typeChanges["schemaInfo"].Value<JObject>();
             SyncConfiguration.SchemaInfo schemaInfo = SyncConfiguration.SchemaInfo.FromJObject(jObjectSchemaInfo);
@@ -427,7 +435,7 @@ namespace NETCoreSync
                 EndTransaction(localSyncType, transaction, operationType, synchronizationId, customInfo);
             }
 
-            return (localSyncType, appliedIds, deletedIds, inserts, updates, deletes, conflicts);
+            return (localSyncType, appliedIds, deletedIds);
         }
 
         private IQueryable InvokeGetQueryable(Type classType, object transaction, OperationType operationType, string synchronizationId, Dictionary<string, object> customInfo)
@@ -490,22 +498,6 @@ namespace NETCoreSync
             return syncConfiguration.SyncSchemaInfos[type];
         }
 
-        internal static (string synchronizationId, long lastSync, Dictionary<string, object> customInfo) ExtractInfo(byte[] syncDataBytes)
-        {
-            if (syncDataBytes == null) throw new Exception($"{nameof(syncDataBytes)} cannot be null");
-            string content = Decompress(syncDataBytes);
-            JObject payload = JsonConvert.DeserializeObject<JObject>(content);
-            return ExtractInfo(payload);
-        }
-
-        private static (string synchronizationId, long lastSync, Dictionary<string, object> customInfo) ExtractInfo(JObject payload)
-        {
-            string synchronizationId = payload["synchronizationId"].Value<string>();
-            long lastSync = payload["lastSync"].Value<long>();
-            Dictionary<string, object> customInfo = payload["customInfo"].ToObject<Dictionary<string, object>>();
-            return (synchronizationId, lastSync, customInfo);
-        }
-
         private static byte[] Compress(string text)
         {
             var bytes = Encoding.Unicode.GetBytes(text);
@@ -545,114 +537,6 @@ namespace NETCoreSync
         internal static long GetMinValueTicks()
         {
             return DateTime.MinValue.Ticks;
-        }
-
-        internal abstract class PreparePayloadParameter
-        {
-            public PayloadAction PayloadAction { get; set; }
-            public string SynchronizationId { get; set; }
-            public Dictionary<string, object> CustomInfo { get; set; }
-            public List<string> Log { get; set; }
-        }
-
-        internal class PreparePayloadGlobalTimeStampParameter : PreparePayloadParameter
-        {
-            public long? LastSync { get; set; }
-            public Dictionary<Type, List<object>> AppliedIds { get; set; }
-        }
-
-        internal abstract class PreparePayloadResult
-        {
-            public readonly JObject Payload;
-
-            public PreparePayloadResult(PreparePayloadParameter parameter)
-            {
-                Payload = new JObject();
-                Payload[nameof(parameter.SynchronizationId)] = parameter.SynchronizationId;
-                Payload[nameof(parameter.CustomInfo)] = JObject.FromObject(parameter.CustomInfo);
-                Payload[nameof(parameter.PayloadAction)] = parameter.PayloadAction.ToString();
-
-                if (parameter is PreparePayloadGlobalTimeStampParameter)
-                {
-                    Payload[nameof(PreparePayloadGlobalTimeStampParameter.LastSync)] = ((PreparePayloadGlobalTimeStampParameter)parameter).LastSync;
-                }
-            }
-
-            public void SetCustomPayload(string key, JToken value)
-            {
-                Payload[key] = value;
-            }
-
-            public byte[] GetCompressed()
-            {
-                string json = JsonConvert.SerializeObject(Payload);
-                byte[] compressed = Compress(json);
-                return compressed;
-            }
-        }
-
-        internal class PreparePayloadGlobalTimeStampResult : PreparePayloadResult
-        {
-            public long MaxTimeStamp { get; set; }
-            public List<SyncLog.SyncLogData> LogChanges { get; set; }
-
-            public PreparePayloadGlobalTimeStampResult(PreparePayloadParameter parameter) : base(parameter)
-            {
-            }
-        }
-
-        internal abstract class ProcessPayloadParameter
-        {
-            public readonly JObject Payload;
-            public readonly PayloadAction PayloadAction;
-            public readonly string SynchronizationId;
-            public readonly Dictionary<string, object> CustomInfo;
-            public List<string> Log { get; set; } = new List<string>();
-
-            public ProcessPayloadParameter(byte[] syncDataBytes)
-            {
-                string json = Decompress(syncDataBytes);
-                Payload = JsonConvert.DeserializeObject<JObject>(json);
-                SynchronizationId = Payload[nameof(SynchronizationId)].Value<string>();
-                CustomInfo = Payload[nameof(CustomInfo)].ToObject<Dictionary<string, object>>();
-                PayloadAction = (PayloadAction)Enum.Parse(typeof(PayloadAction), Payload[nameof(PayloadAction)].Value<string>());
-            }
-
-            public JToken GetCustomPayload(string key)
-            {
-                JToken token = Payload[key];
-                return token;
-            }
-        }
-
-        internal class ProcessPayloadGlobalTimeStampParameter : ProcessPayloadParameter
-        {
-            public readonly long LastSync;
-
-            public ProcessPayloadGlobalTimeStampParameter(byte[] syncDataBytes) : base(syncDataBytes)
-            {
-                LastSync = Payload[nameof(LastSync)].Value<long>();   
-            }
-        }
-
-        internal class ProcessPayloadResult
-        {
-            public readonly List<SyncLog.SyncLogData> Inserts = new List<SyncLog.SyncLogData>();
-            public readonly List<SyncLog.SyncLogData> Updates = new List<SyncLog.SyncLogData>();
-            public readonly List<SyncLog.SyncLogData> Deletes = new List<SyncLog.SyncLogData>();
-            public readonly List<SyncLog.SyncLogConflict> Conflicts = new List<SyncLog.SyncLogConflict>();
-        }
-
-        internal class ProcessPayloadGlobalTimeStampResult : ProcessPayloadResult
-        {
-            public readonly Dictionary<Type, List<object>> AppliedIds = new Dictionary<Type, List<object>>();
-        }
-
-        public class DatabaseInstanceInfo
-        {
-            public string DatabaseInstanceId { get; set; }
-            public bool IsLocal { get; set; }
-            public long LastSyncTimeStamp { get; set; }
         }
     }
 }
