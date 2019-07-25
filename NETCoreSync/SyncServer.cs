@@ -41,66 +41,76 @@ namespace NETCoreSync
             if (syncDataBytes == null) throw new NullReferenceException(nameof(syncDataBytes));
 
             JObject jsonResult = JsonDefaultResponse();
-            List<string> log = new List<string>();
-            List<SyncLog.SyncLogData> sentChanges = new List<SyncLog.SyncLogData>();
-            List<SyncLog.SyncLogData> serverInserts = new List<SyncLog.SyncLogData>();
-            List<SyncLog.SyncLogData> serverUpdates = new List<SyncLog.SyncLogData>();
-            List<SyncLog.SyncLogData> serverDeletes = new List<SyncLog.SyncLogData>();
-            List<SyncLog.SyncLogConflict> serverConflicts = new List<SyncLog.SyncLogConflict>();
 
+            SyncEngine.ProcessPayloadParameter baseParameter = null;
             if (syncEngine.SyncConfiguration.TimeStampStrategy == SyncConfiguration.TimeStampStrategyEnum.UseGlobalTimeStamp)
             {
-                (string synchronizationId, long lastSync, Dictionary<string, object> customInfo) = SyncEngine.ExtractInfo(syncDataBytes);
-                SyncServerLockObject syncServerLockObject = null;
-                bool lockTaken = false;
+                baseParameter = new SyncEngine.ProcessPayloadGlobalTimeStampParameter(syncDataBytes);
+            }
+            if (syncEngine.SyncConfiguration.TimeStampStrategy == SyncConfiguration.TimeStampStrategyEnum.UseEachDatabaseInstanceTimeStamp)
+            {
+                
+            }
 
-                try
+            SyncServerLockObject syncServerLockObject = null;
+            bool lockTaken = false;
+
+            try
+            {
+                lock (serverLock)
                 {
-                    lock (serverLock)
+                    if (!serverLockObjects.ContainsKey(baseParameter.SynchronizationId))
                     {
-                        if (!serverLockObjects.ContainsKey(synchronizationId))
-                        {
-                            SyncServerLockObject newLockObject = new SyncServerLockObject(synchronizationId);
-                            serverLockObjects.Add(synchronizationId, newLockObject);
-                        }
-                        syncServerLockObject = serverLockObjects[synchronizationId];
+                        SyncServerLockObject newLockObject = new SyncServerLockObject(baseParameter.SynchronizationId);
+                        serverLockObjects.Add(baseParameter.SynchronizationId, newLockObject);
                     }
+                    syncServerLockObject = serverLockObjects[baseParameter.SynchronizationId];
+                }
 
-                    Monitor.TryEnter(syncServerLockObject, 0, ref lockTaken);
-                    if (!lockTaken) throw new Exception($"{nameof(SyncServerLockObject.SynchronizationId)}: {syncServerLockObject.SynchronizationId}, Synchronization process is already in progress");
+                Monitor.TryEnter(syncServerLockObject, 0, ref lockTaken);
+                if (!lockTaken) throw new Exception($"{nameof(SyncServerLockObject.SynchronizationId)}: {syncServerLockObject.SynchronizationId}, Synchronization process is already in progress");
 
-                    (Dictionary<Type, List<object>> dictAppliedIds, List<SyncLog.SyncLogData> inserts, List<SyncLog.SyncLogData> updates, List<SyncLog.SyncLogData> deletes, List<SyncLog.SyncLogConflict> conflicts) = syncEngine.ProcessPayload(log, syncDataBytes);
-                    serverInserts.AddRange(inserts);
-                    serverUpdates.AddRange(updates);
-                    serverDeletes.AddRange(deletes);
-                    serverConflicts.AddRange(conflicts);
-                    (byte[] compressed, long maxTimeStamp, List<SyncLog.SyncLogData> logChanges) = syncEngine.PreparePayload(log, synchronizationId, lastSync, customInfo, dictAppliedIds);
-                    sentChanges.AddRange(logChanges);
+                SyncEngine.ProcessPayloadResult baseResult = syncEngine.ProcessPayload(baseParameter);
+
+                SyncEngine.PreparePayloadParameter preparePayloadParameter = null;
+
+                if (syncEngine.SyncConfiguration.TimeStampStrategy == SyncConfiguration.TimeStampStrategyEnum.UseGlobalTimeStamp)
+                {
+                    preparePayloadParameter = new SyncEngine.PreparePayloadGlobalTimeStampParameter();
+                    preparePayloadParameter.SynchronizationId = baseParameter.SynchronizationId;
+                    preparePayloadParameter.CustomInfo = baseParameter.CustomInfo;
+                    preparePayloadParameter.PayloadAction = baseParameter.PayloadAction;
+                    preparePayloadParameter.Log = baseParameter.Log;
+                    ((SyncEngine.PreparePayloadGlobalTimeStampParameter)preparePayloadParameter).LastSync = ((SyncEngine.ProcessPayloadGlobalTimeStampParameter)baseParameter).LastSync;
+                    ((SyncEngine.PreparePayloadGlobalTimeStampParameter)preparePayloadParameter).AppliedIds = ((SyncEngine.ProcessPayloadGlobalTimeStampResult)baseResult).AppliedIds;
+
+                    SyncEngine.PreparePayloadGlobalTimeStampResult preparePayloadResult = (SyncEngine.PreparePayloadGlobalTimeStampResult)syncEngine.PreparePayload(preparePayloadParameter);
+                    byte[] compressed = preparePayloadResult.GetCompressed();
                     string base64Compressed = Convert.ToBase64String(compressed);
                     jsonResult["payload"] = base64Compressed;
-                    jsonResult["maxTimeStamp"] = maxTimeStamp;
+                    jsonResult["maxTimeStamp"] = preparePayloadResult.MaxTimeStamp;
+                    jsonResult["sentChanges"] = JArray.FromObject(preparePayloadResult.LogChanges);
+                    jsonResult["log"] = JArray.FromObject(preparePayloadParameter.Log);
+                    jsonResult["serverInserts"] = JArray.FromObject(baseResult.Inserts);
+                    jsonResult["serverUpdates"] = JArray.FromObject(baseResult.Updates);
+                    jsonResult["serverDeletes"] = JArray.FromObject(baseResult.Deletes);
+                    jsonResult["serverConflicts"] = JArray.FromObject(baseResult.Conflicts);
                 }
-                catch (Exception e)
+            }
+            catch (Exception e)
+            {
+                jsonResult["isOK"] = false;
+                jsonResult["errorMessage"] = e.Message;
+                baseParameter.Log.Add($"Error: {e.Message}");
+            }
+            finally
+            {
+                if (lockTaken)
                 {
-                    jsonResult["isOK"] = false;
-                    jsonResult["errorMessage"] = e.Message;
-                    log.Add($"Error: {e.Message}");
-                }
-                finally
-                {
-                    if (lockTaken)
-                    {
-                        Monitor.Exit(syncServerLockObject);
-                    }
+                    Monitor.Exit(syncServerLockObject);
                 }
             }
 
-            jsonResult[nameof(log)] = JArray.FromObject(log);
-            jsonResult[nameof(sentChanges)] = JArray.FromObject(sentChanges);
-            jsonResult[nameof(serverInserts)] = JArray.FromObject(serverInserts);
-            jsonResult[nameof(serverUpdates)] = JArray.FromObject(serverUpdates);
-            jsonResult[nameof(serverDeletes)] = JArray.FromObject(serverDeletes);
-            jsonResult[nameof(serverConflicts)] = JArray.FromObject(serverConflicts);
             return jsonResult;
         }
 

@@ -176,44 +176,52 @@ namespace NETCoreSync
             }
         }
 
-        internal (byte[] compressed, long maxTimeStamp, List<SyncLog.SyncLogData> logChanges) PreparePayload(List<string> log, string synchronizationId, long? lastSync = null, Dictionary<string, object> customInfo = null, Dictionary<Type, List<object>> dictAppliedIds = null)
+        internal enum PayloadAction
         {
-            if (string.IsNullOrEmpty(synchronizationId)) throw new NullReferenceException(nameof(synchronizationId));
-            if (lastSync == null) lastSync = GetMinValueTicks();
-            if (customInfo == null) customInfo = new Dictionary<string, object>();
-            long maxTimeStamp = GetMinValueTicks();
-            List<SyncLog.SyncLogData> logChanges = new List<SyncLog.SyncLogData>();
+            Synchronize
+        }
 
-            log.Add($"Preparing Data Since LastSync: {lastSync}");
-            JObject payload = new JObject();
-            payload[nameof(synchronizationId)] = synchronizationId;
-            payload[nameof(lastSync)] = lastSync;
-            payload[nameof(customInfo)] = JObject.FromObject(customInfo);
+        internal PreparePayloadResult PreparePayload(PreparePayloadParameter preparePayloadParameter)
+        {
+            if (preparePayloadParameter == null) throw new NullReferenceException(nameof(preparePayloadParameter));
+            if (string.IsNullOrEmpty(preparePayloadParameter.SynchronizationId)) throw new NullReferenceException(nameof(preparePayloadParameter.SynchronizationId));
+            if (preparePayloadParameter.CustomInfo == null) preparePayloadParameter.CustomInfo = new Dictionary<string, object>();
 
-            JArray changes = new JArray();
-            log.Add($"SyncTypes Count: {SyncConfiguration.SyncTypes.Count}");
-            for (int i = 0; i < SyncConfiguration.SyncTypes.Count; i++)
+            if (SyncConfiguration.TimeStampStrategy == SyncConfiguration.TimeStampStrategyEnum.UseGlobalTimeStamp)
             {
-                Type syncType = SyncConfiguration.SyncTypes[i];
-                log.Add($"Processing Type: {syncType.Name} ({i + 1} of {SyncConfiguration.SyncTypes.Count})");
-                log.Add($"Getting Type Changes...");
-                List<object> appliedIds = null;
-                if (dictAppliedIds != null && dictAppliedIds.ContainsKey(syncType)) appliedIds = dictAppliedIds[syncType];
-                (JObject typeChanges, int typeChangesCount, long typeMaxTimeStamp, List<SyncLog.SyncLogData> typeLogChanges) = GetTypeChanges(lastSync, syncType, synchronizationId, customInfo, appliedIds);
-                log.Add($"Type Changes Count: {typeChangesCount}");
-                if (typeChangesCount != 0 && typeChanges != null) changes.Add(typeChanges);
-                if (typeMaxTimeStamp > maxTimeStamp) maxTimeStamp = typeMaxTimeStamp;
-                logChanges.AddRange(typeLogChanges);
-                log.Add($"Type: {syncType.Name} Processed");
+                PreparePayloadGlobalTimeStampParameter parameter = (PreparePayloadGlobalTimeStampParameter)preparePayloadParameter;
+                if (parameter.LastSync == null) parameter.LastSync = GetMinValueTicks();
+
+                PreparePayloadGlobalTimeStampResult result = new PreparePayloadGlobalTimeStampResult(parameter);
+                result.LogChanges = new List<SyncLog.SyncLogData>();
+                result.MaxTimeStamp = GetMinValueTicks();
+
+                parameter.Log.Add($"Preparing Data Since LastSync: {parameter.LastSync}");
+                
+                JArray changes = new JArray();
+                parameter.Log.Add($"SyncTypes Count: {SyncConfiguration.SyncTypes.Count}");
+                for (int i = 0; i < SyncConfiguration.SyncTypes.Count; i++)
+                {
+                    Type syncType = SyncConfiguration.SyncTypes[i];
+                    parameter.Log.Add($"Processing Type: {syncType.Name} ({i + 1} of {SyncConfiguration.SyncTypes.Count})");
+                    parameter.Log.Add($"Getting Type Changes...");
+                    List<object> appliedIds = null;
+                    if (parameter.AppliedIds != null && parameter.AppliedIds.ContainsKey(syncType)) appliedIds = parameter.AppliedIds[syncType];
+                    (JObject typeChanges, int typeChangesCount, long typeMaxTimeStamp, List<SyncLog.SyncLogData> typeLogChanges) = GetTypeChanges(parameter.LastSync, syncType, parameter.SynchronizationId, parameter.CustomInfo, appliedIds);
+                    parameter.Log.Add($"Type Changes Count: {typeChangesCount}");
+                    if (typeChangesCount != 0 && typeChanges != null) changes.Add(typeChanges);
+                    if (typeMaxTimeStamp > result.MaxTimeStamp) result.MaxTimeStamp = typeMaxTimeStamp;
+                    result.LogChanges.AddRange(typeLogChanges);
+                    parameter.Log.Add($"Type: {syncType.Name} Processed");
+                }
+                result.SetCustomPayload(nameof(changes), changes);
+                return result;
             }
-            payload[nameof(changes)] = changes;
+            if (SyncConfiguration.TimeStampStrategy == SyncConfiguration.TimeStampStrategyEnum.UseEachDatabaseInstanceTimeStamp)
+            {
 
-            log.Add($"Compressing Type Changes...");
-            string jsonPayload = JsonConvert.SerializeObject(payload);
-            byte[] compressed = Compress(jsonPayload);
-            log.Add($"Type Changes Compressed");
-
-            return (compressed, maxTimeStamp, logChanges);
+            }
+            throw new NotImplementedException();
         }
 
         internal (JObject typeChanges, int typeChangesCount, long maxTimeStamp, List<SyncLog.SyncLogData> logChanges) GetTypeChanges(long? lastSync, Type syncType, string synchronizationId, Dictionary<string, object> customInfo, List<object> appliedIds)
@@ -276,65 +284,61 @@ namespace NETCoreSync
             return (typeChanges, datas.Count, maxTimeStamp, logChanges);
         }
 
-        internal (Dictionary<Type, List<object>> dictAppliedIds, List<SyncLog.SyncLogData> inserts, List<SyncLog.SyncLogData> updates, List<SyncLog.SyncLogData> deletes, List<SyncLog.SyncLogConflict> conflicts) ProcessPayload(List<string> log, byte[] syncDataBytes)
+        internal ProcessPayloadResult ProcessPayload(ProcessPayloadParameter processPayloadParameter)
         {
-            List<SyncLog.SyncLogData> inserts = new List<SyncLog.SyncLogData>();
-            List<SyncLog.SyncLogData> updates = new List<SyncLog.SyncLogData>();
-            List<SyncLog.SyncLogData> deletes = new List<SyncLog.SyncLogData>();
-            List<SyncLog.SyncLogConflict> conflicts = new List<SyncLog.SyncLogConflict>();
+            if (processPayloadParameter == null) throw new NullReferenceException(nameof(processPayloadParameter));
+            if (string.IsNullOrEmpty(processPayloadParameter.SynchronizationId)) throw new NullReferenceException(nameof(processPayloadParameter.SynchronizationId));
 
-            if (syncDataBytes == null) throw new Exception($"{nameof(syncDataBytes)} cannot be null");
-            log.Add($"Decompressing Type Changes...");
-            string content = Decompress(syncDataBytes);
-            log.Add($"Type Changes Decompressed");
-            log.Add($"Deserialize Data...");
-            JObject payload = JsonConvert.DeserializeObject<JObject>(content);
-            log.Add($"Data Deserialized");
-
-            (string synchronizationId, long lastSync, Dictionary<string, object> customInfo) = ExtractInfo(payload);
-
-            log.Add("Applying Data Type Changes...");
-            JArray changes = payload["changes"].Value<JArray>();
-            log.Add($"SyncTypes Count: {changes.Count}");
-            Dictionary<Type, List<object>> dictAppliedIds = new Dictionary<Type, List<object>>();
-            List<Type> postEventTypes = new List<Type>();
-            Dictionary<Type, List<object>> dictDeletedIds = new Dictionary<Type, List<object>>();
-            for (int i = 0; i < changes.Count; i++)
+            if (SyncConfiguration.TimeStampStrategy == SyncConfiguration.TimeStampStrategyEnum.UseGlobalTimeStamp)
             {
-                JObject typeChanges = changes[i].Value<JObject>();
-                log.Add($"Applying Type: {typeChanges["syncType"].Value<string>()}...");
-                (Type localSyncType, List<object> appliedIds, List<object> deletedIds, List<SyncLog.SyncLogData> typeInserts, List<SyncLog.SyncLogData> typeUpdates, List<SyncLog.SyncLogData> typeDeletes, List<SyncLog.SyncLogConflict> typeConflicts) = ApplyTypeChanges(log, typeChanges, synchronizationId, customInfo);
-                inserts.AddRange(typeInserts);
-                updates.AddRange(typeUpdates);
-                deletes.AddRange(typeDeletes);
-                conflicts.AddRange(typeConflicts);
-                log.Add($"Type: {typeChanges["syncType"].Value<string>()} Applied, Count: {appliedIds.Count}");
-                dictAppliedIds[localSyncType] = appliedIds;
-                if (deletedIds.Count > 0)
+                ProcessPayloadGlobalTimeStampParameter parameter = (ProcessPayloadGlobalTimeStampParameter)processPayloadParameter;
+
+                ProcessPayloadGlobalTimeStampResult result = new ProcessPayloadGlobalTimeStampResult();
+
+                parameter.Log.Add("Applying Data Type Changes...");
+                JArray changes = parameter.GetCustomPayload(nameof(changes)).Value<JArray>();
+                parameter.Log.Add($"SyncTypes Count: {changes.Count}");
+                List<Type> postEventTypes = new List<Type>();
+                Dictionary<Type, List<object>> dictDeletedIds = new Dictionary<Type, List<object>>();
+                for (int i = 0; i < changes.Count; i++)
                 {
-                    if (!postEventTypes.Contains(localSyncType)) postEventTypes.Add(localSyncType);
-                    dictDeletedIds[localSyncType] = deletedIds;
-                }
-            }
-            if (postEventTypes.Count > 0)
-            {
-                log.Add("Processing Post Events...");
-                log.Add($"Post Event Types Count: {postEventTypes.Count}");
-                for (int i = 0; i < postEventTypes.Count; i++)
-                {
-                    Type postEventType = postEventTypes[i];
-                    if (dictDeletedIds.ContainsKey(postEventType))
+                    JObject typeChanges = changes[i].Value<JObject>();
+                    parameter.Log.Add($"Applying Type: {typeChanges["syncType"].Value<string>()}...");
+                    (Type localSyncType, List<object> appliedIds, List<object> deletedIds, List<SyncLog.SyncLogData> typeInserts, List<SyncLog.SyncLogData> typeUpdates, List<SyncLog.SyncLogData> typeDeletes, List<SyncLog.SyncLogConflict> typeConflicts) = ApplyTypeChanges(parameter.Log, typeChanges, parameter.SynchronizationId, parameter.CustomInfo);
+                    result.Inserts.AddRange(typeInserts);
+                    result.Updates.AddRange(typeUpdates);
+                    result.Deletes.AddRange(typeDeletes);
+                    result.Conflicts.AddRange(typeConflicts);
+                    parameter.Log.Add($"Type: {typeChanges["syncType"].Value<string>()} Applied, Count: {appliedIds.Count}");
+                    result.AppliedIds[localSyncType] = appliedIds;
+                    if (deletedIds.Count > 0)
                     {
-                        log.Add($"Processing Post Event Delete for Type: {postEventType.Name}, Count: {dictDeletedIds[postEventType].Count}");
-                        for (int j = 0; j < dictDeletedIds[postEventType].Count; j++)
+                        if (!postEventTypes.Contains(localSyncType)) postEventTypes.Add(localSyncType);
+                        dictDeletedIds[localSyncType] = deletedIds;
+                    }
+                }
+                if (postEventTypes.Count > 0)
+                {
+                    parameter.Log.Add("Processing Post Events...");
+                    parameter.Log.Add($"Post Event Types Count: {postEventTypes.Count}");
+                    for (int i = 0; i < postEventTypes.Count; i++)
+                    {
+                        Type postEventType = postEventTypes[i];
+                        if (dictDeletedIds.ContainsKey(postEventType))
                         {
-                            PostEventDelete(postEventType, dictDeletedIds[postEventType][j], synchronizationId, customInfo);
+                            parameter.Log.Add($"Processing Post Event Delete for Type: {postEventType.Name}, Count: {dictDeletedIds[postEventType].Count}");
+                            for (int j = 0; j < dictDeletedIds[postEventType].Count; j++)
+                            {
+                                PostEventDelete(postEventType, dictDeletedIds[postEventType][j], parameter.SynchronizationId, parameter.CustomInfo);
+                            }
                         }
                     }
                 }
+
+                return result;
             }
 
-            return (dictAppliedIds, inserts, updates, deletes, conflicts);
+            throw new NotImplementedException();
         }
 
         internal (Type localSyncType, List<object> appliedIds, List<object> deletedIds, List<SyncLog.SyncLogData> inserts, List<SyncLog.SyncLogData> updates, List<SyncLog.SyncLogData> deletes, List<SyncLog.SyncLogConflict> conflicts) ApplyTypeChanges(List<string> log, JObject typeChanges, string synchronizationId, Dictionary<string, object> customInfo)
@@ -543,52 +547,112 @@ namespace NETCoreSync
             return DateTime.MinValue.Ticks;
         }
 
+        internal abstract class PreparePayloadParameter
+        {
+            public PayloadAction PayloadAction { get; set; }
+            public string SynchronizationId { get; set; }
+            public Dictionary<string, object> CustomInfo { get; set; }
+            public List<string> Log { get; set; }
+        }
+
+        internal class PreparePayloadGlobalTimeStampParameter : PreparePayloadParameter
+        {
+            public long? LastSync { get; set; }
+            public Dictionary<Type, List<object>> AppliedIds { get; set; }
+        }
+
+        internal abstract class PreparePayloadResult
+        {
+            public readonly JObject Payload;
+
+            public PreparePayloadResult(PreparePayloadParameter parameter)
+            {
+                Payload = new JObject();
+                Payload[nameof(parameter.SynchronizationId)] = parameter.SynchronizationId;
+                Payload[nameof(parameter.CustomInfo)] = JObject.FromObject(parameter.CustomInfo);
+                Payload[nameof(parameter.PayloadAction)] = parameter.PayloadAction.ToString();
+
+                if (parameter is PreparePayloadGlobalTimeStampParameter)
+                {
+                    Payload[nameof(PreparePayloadGlobalTimeStampParameter.LastSync)] = ((PreparePayloadGlobalTimeStampParameter)parameter).LastSync;
+                }
+            }
+
+            public void SetCustomPayload(string key, JToken value)
+            {
+                Payload[key] = value;
+            }
+
+            public byte[] GetCompressed()
+            {
+                string json = JsonConvert.SerializeObject(Payload);
+                byte[] compressed = Compress(json);
+                return compressed;
+            }
+        }
+
+        internal class PreparePayloadGlobalTimeStampResult : PreparePayloadResult
+        {
+            public long MaxTimeStamp { get; set; }
+            public List<SyncLog.SyncLogData> LogChanges { get; set; }
+
+            public PreparePayloadGlobalTimeStampResult(PreparePayloadParameter parameter) : base(parameter)
+            {
+            }
+        }
+
+        internal abstract class ProcessPayloadParameter
+        {
+            public readonly JObject Payload;
+            public readonly PayloadAction PayloadAction;
+            public readonly string SynchronizationId;
+            public readonly Dictionary<string, object> CustomInfo;
+            public List<string> Log { get; set; } = new List<string>();
+
+            public ProcessPayloadParameter(byte[] syncDataBytes)
+            {
+                string json = Decompress(syncDataBytes);
+                Payload = JsonConvert.DeserializeObject<JObject>(json);
+                SynchronizationId = Payload[nameof(SynchronizationId)].Value<string>();
+                CustomInfo = Payload[nameof(CustomInfo)].ToObject<Dictionary<string, object>>();
+                PayloadAction = (PayloadAction)Enum.Parse(typeof(PayloadAction), Payload[nameof(PayloadAction)].Value<string>());
+            }
+
+            public JToken GetCustomPayload(string key)
+            {
+                JToken token = Payload[key];
+                return token;
+            }
+        }
+
+        internal class ProcessPayloadGlobalTimeStampParameter : ProcessPayloadParameter
+        {
+            public readonly long LastSync;
+
+            public ProcessPayloadGlobalTimeStampParameter(byte[] syncDataBytes) : base(syncDataBytes)
+            {
+                LastSync = Payload[nameof(LastSync)].Value<long>();   
+            }
+        }
+
+        internal class ProcessPayloadResult
+        {
+            public readonly List<SyncLog.SyncLogData> Inserts = new List<SyncLog.SyncLogData>();
+            public readonly List<SyncLog.SyncLogData> Updates = new List<SyncLog.SyncLogData>();
+            public readonly List<SyncLog.SyncLogData> Deletes = new List<SyncLog.SyncLogData>();
+            public readonly List<SyncLog.SyncLogConflict> Conflicts = new List<SyncLog.SyncLogConflict>();
+        }
+
+        internal class ProcessPayloadGlobalTimeStampResult : ProcessPayloadResult
+        {
+            public readonly Dictionary<Type, List<object>> AppliedIds = new Dictionary<Type, List<object>>();
+        }
+
         public class DatabaseInstanceInfo
         {
             public string DatabaseInstanceId { get; set; }
             public bool IsLocal { get; set; }
             public long LastSyncTimeStamp { get; set; }
         }
-
-        //NOTE: OBSOLETE, now using System.Linq.Dynamic.Core
-        //private void FilterForPush(IQueryable queryable, SyncConfiguration.SchemaInfo schemaInfo, DateTimeOffset? lastSync)
-        //{
-        //    if (lastSync == null) throw new SyncEngineConstraintException($"{nameof(lastSync)} cannot be null");
-
-        //    ParameterExpression parameterExpression = Expression.Parameter(queryable.ElementType);
-        //    MemberExpression propertyLastUpdated = Expression.Property(parameterExpression, schemaInfo.PropertyInfoLastUpdated.Name);
-        //    ConstantExpression constantLastSyncOffset = Expression.Constant(lastSync.Value, typeof(DateTimeOffset));
-        //    BinaryExpression binaryLastUpdatedGreaterThanOrEqualLastSyncOffset = Expression.GreaterThanOrEqual(propertyLastUpdated, constantLastSyncOffset);
-
-        //    MemberExpression propertyDeleted = Expression.Property(parameterExpression, schemaInfo.PropertyInfoDeleted.Name);
-        //    ConstantExpression constantNullDateTimeOffsetNullable = Expression.Constant(null, typeof(DateTimeOffset?));
-        //    BinaryExpression binaryDeletedNotNull = Expression.NotEqual(propertyDeleted, constantNullDateTimeOffsetNullable);
-
-        //    ConstantExpression constantLastSyncOffsetNullable = Expression.Constant(lastSync, typeof(DateTimeOffset?));
-        //    BinaryExpression binaryDeletedGreaterThanOrEqualLastSyncOffset = Expression.GreaterThanOrEqual(propertyDeleted, constantLastSyncOffsetNullable);
-
-        //    BinaryExpression binaryDeleted = Expression.And(binaryDeletedNotNull, binaryDeletedGreaterThanOrEqualLastSyncOffset);
-        //    BinaryExpression binaryWhere = Expression.Or(binaryLastUpdatedGreaterThanOrEqualLastSyncOffset, binaryDeleted);
-
-        //    Type delegateType = typeof(Func<,>).MakeGenericType(queryable.ElementType, typeof(bool));
-        //    LambdaExpression predicate = Expression.Lambda(delegateType, binaryWhere, parameterExpression);
-
-        //    var whereMethods = typeof(Queryable).GetMethods(BindingFlags.Static | BindingFlags.Public).Where(mi => mi.Name == "Where");
-        //    MethodInfo whereMethod = null;
-        //    foreach (var methodInfo in whereMethods)
-        //    {
-        //        var expressionType = methodInfo.GetParameters()[1].ParameterType;
-        //        var funcType = expressionType.GetGenericArguments()[0];
-        //        if (funcType.GetGenericArguments().Count() == 2)
-        //        {
-        //            // we are looking for Expression<Func<TSource, bool>>, the other has 3
-        //            whereMethod = methodInfo;
-        //            break;
-        //        }
-        //    }
-        //    if (whereMethod == null) throw new Exception("whereMethod is null");
-        //    whereMethod = whereMethod.MakeGenericMethod(queryable.ElementType);
-        //    queryable = whereMethod.Invoke(queryable, new object[] { queryable, predicate }) as IQueryable;
-        //}
     }
 }
