@@ -1,0 +1,35 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<mvvm:BaseContentPage xmlns="http://xamarin.com/schemas/2014/forms"
+                      xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+                      xmlns:mvvm="clr-namespace:MobileSample.Views"
+                      xmlns:vm="clr-namespace:MobileSample.ViewModels"
+                      x:Class="MobileSample.Views.EmployeeListPage"
+                      x:TypeArguments="vm:EmployeeListViewModel"
+                      Title="{Binding Title}">
+    <ContentPage.ToolbarItems>
+        <ToolbarItem Text="Add" Command="{Binding AddCommand}" />
+    </ContentPage.ToolbarItems>
+    <ContentPage.Content>
+        <ListView 
+            ItemsSource="{Binding Items}" 
+            SelectedItem="{Binding SelectedItem, Mode=TwoWay}">
+            <ListView.ItemTemplate>
+                <DataTemplate>
+                    <ViewCell>
+                        <ViewCell.View>
+                            <StackLayout   
+                            Padding="20,0,20,0"                       
+                            Orientation="Horizontal"       
+                            HorizontalOptions="FillAndExpand">
+                                <Label 
+                                Text="{Binding Name}"
+                                VerticalTextAlignment="Start"
+                                HorizontalOptions="StartAndExpand" />
+                            </StackLayout>
+                        </ViewCell.View>
+                    </ViewCell>
+                </DataTemplate>
+            </ListView.ItemTemplate>
+        </ListView>
+    </ContentPage.Content>
+</mvvm:BaseContentPage>

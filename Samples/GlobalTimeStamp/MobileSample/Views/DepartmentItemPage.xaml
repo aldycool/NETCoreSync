@@ -1,0 +1,21 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<mvvm:BaseContentPage xmlns="http://xamarin.com/schemas/2014/forms"
+                      xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+                      xmlns:mvvm="clr-namespace:MobileSample.Views"
+                      xmlns:vm="clr-namespace:MobileSample.ViewModels"
+                      x:Class="MobileSample.Views.DepartmentItemPage"
+                      x:TypeArguments="vm:DepartmentItemViewModel"
+                      Title="{Binding Title}">
+    <ContentPage.ToolbarItems>
+        <ToolbarItem Text="Delete" Command="{Binding DeleteCommand}" />
+        <ToolbarItem Text="Save" Command="{Binding SaveCommand}" />
+    </ContentPage.ToolbarItems>
+    <ContentPage.Content>
+        <ScrollView>
+            <StackLayout Spacing="20" Padding="15">
+                <Label Text="Name" />
+                <Entry Text="{Binding Data.Name}" />
+            </StackLayout>
+        </ScrollView>
+    </ContentPage.Content>
+</mvvm:BaseContentPage>
