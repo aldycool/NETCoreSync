@@ -1,179 +1,138 @@
 ﻿using System;
 using System.Linq;
+using System.IO;
 using System.Collections.Generic;
 using System.Text;
 using MobileSample.Models;
 using NETCoreSync;
 using Xamarin.Forms;
+using Realms;
 
 namespace MobileSample.Services
 {
     public class DatabaseService
     {
         private const string SYNCHRONIZATIONID_KEY = "SynchronizationId";
-        private const string LASTSYNC_KEY = "LastSync";
         private const string SERVERURL_KEY = "ServerUrl";
 
-        public DatabaseContext GetDatabaseContext()
+        private string GetDatabaseFilePath()
         {
-            DatabaseContext databaseContext = new DatabaseContext();
-            return databaseContext;
+            string databaseFilePath = Environment.GetFolderPath(Environment.SpecialFolder.Personal);
+            databaseFilePath = Path.Combine(databaseFilePath, $"{nameof(MobileSample)}.realm");
+            return databaseFilePath;
+        }
+
+        private RealmConfiguration GetRealmConfiguration(string databaseFilePath = null)
+        {
+            if (string.IsNullOrEmpty(databaseFilePath)) databaseFilePath = GetDatabaseFilePath();
+            RealmConfiguration realmConfiguration = new RealmConfiguration(databaseFilePath);
+#if DEBUG
+            realmConfiguration.ShouldDeleteIfMigrationNeeded = true;
+#endif
+            return realmConfiguration;
+        }
+
+        public void ResetInstance()
+        {
+            string databaseFilePath = GetDatabaseFilePath();
+            RealmConfiguration realmConfiguration = GetRealmConfiguration(databaseFilePath);
+
+            if (File.Exists(databaseFilePath))
+            {
+                Realm.DeleteRealm(realmConfiguration);
+            }
+        }
+
+        public Realm GetInstance()
+        {
+            RealmConfiguration realmConfiguration = GetRealmConfiguration();
+            Realm realm = Realm.GetInstance(realmConfiguration);
+            return realm;
         }
 
         public bool IsDatabaseReady()
         {
-            using (var databaseContext = GetDatabaseContext())
-            {
-                Configuration configurationSynchronizationId = databaseContext.Configurations.Where(w => w.Key == SYNCHRONIZATIONID_KEY).FirstOrDefault();
-                if (configurationSynchronizationId == null) return false;
-            }
-            return true;
-        }
-
-        public IQueryable<Department> GetDepartments(DatabaseContext databaseContext)
-        {
-            return databaseContext.Departments.Where(w => w.Deleted == null);
-        }
-
-        public IQueryable<Employee> GetEmployees(DatabaseContext databaseContext)
-        {
-            return databaseContext.Employees.Where(w => w.Deleted == null);
+            Realm realm = GetInstance();
+            Configuration configurationSynchronizationId = realm.All<Configuration>().Where(w => w.Key == SYNCHRONIZATIONID_KEY).FirstOrDefault();
+            return configurationSynchronizationId == null ? false : true;
         }
 
         public string GetSynchronizationId()
         {
-            using (var databaseContext = GetDatabaseContext())
-            {
-                Configuration configurationSynchronizationId = databaseContext.Configurations.Where(w => w.Key == SYNCHRONIZATIONID_KEY).FirstOrDefault();
-                if (configurationSynchronizationId == null) return null;
-                return configurationSynchronizationId.Value;
-            }
+            Realm realm = GetInstance();
+            Configuration configurationSynchronizationId = realm.All<Configuration>().Where(w => w.Key == SYNCHRONIZATIONID_KEY).FirstOrDefault();
+            return configurationSynchronizationId == null ? null : configurationSynchronizationId.Value;
         }
 
         public void SetSynchronizationId(string synchronizationId)
         {
-            using (var databaseContext = GetDatabaseContext())
+            Realm realm = GetInstance();
+            realm.Write(() => 
             {
                 bool isNew = false;
-                Configuration configurationSynchronizationId = databaseContext.Configurations.Where(w => w.Key == SYNCHRONIZATIONID_KEY).FirstOrDefault();
+                Configuration configurationSynchronizationId = realm.All<Configuration>().Where(w => w.Key == SYNCHRONIZATIONID_KEY).FirstOrDefault();
                 if (configurationSynchronizationId == null)
                 {
                     isNew = true;
-                    configurationSynchronizationId = new Configuration()
-                    {
-                        Id = Guid.NewGuid().ToString(),
-                        Key = SYNCHRONIZATIONID_KEY
-                    };
+                    configurationSynchronizationId = new Configuration();
+                    configurationSynchronizationId.Key = SYNCHRONIZATIONID_KEY;
                 }
                 configurationSynchronizationId.Value = synchronizationId;
-                if (isNew)
-                {
-                    databaseContext.Add(configurationSynchronizationId);
-                }
-                else
-                {
-                    databaseContext.Update(configurationSynchronizationId);
-                }
-                databaseContext.SaveChanges();
-            }
-        }
-
-        public long GetLastSync()
-        {
-            using (var databaseContext = GetDatabaseContext())
-            {
-                Configuration configurationLastSync = databaseContext.Configurations.Where(w => w.Key == LASTSYNC_KEY).FirstOrDefault();
-                if (configurationLastSync == null)
-                {
-                    SetLastSync(0);
-                    configurationLastSync = databaseContext.Configurations.Where(w => w.Key == LASTSYNC_KEY).First();
-                }
-                return Convert.ToInt64(configurationLastSync.Value);
-            }
-        }
-
-        public void SetLastSync(long lastSync)
-        {
-            using (var databaseContext = GetDatabaseContext())
-            {
-                bool isNew = false;
-                Configuration configurationLastSync = databaseContext.Configurations.Where(w => w.Key == LASTSYNC_KEY).FirstOrDefault();
-                if (configurationLastSync == null)
-                {
-                    isNew = true;
-                    configurationLastSync = new Configuration()
-                    {
-                        Id = Guid.NewGuid().ToString(),
-                        Key = LASTSYNC_KEY
-                    };
-                }
-                configurationLastSync.Value = Convert.ToString(lastSync);
-                if (isNew)
-                {
-                    databaseContext.Add(configurationLastSync);
-                }
-                else
-                {
-                    databaseContext.Update(configurationLastSync);
-                }
-                databaseContext.SaveChanges();
-            }
+                if (isNew) realm.Add(configurationSynchronizationId);
+            });
         }
 
         public string GetServerUrl()
         {
-            using (var databaseContext = GetDatabaseContext())
+            Realm realm = GetInstance();
+            Configuration configurationServerUrl = realm.All<Configuration>().Where(w => w.Key == SERVERURL_KEY).FirstOrDefault();
+            if (configurationServerUrl == null)
             {
-                Configuration configurationServerUrl = databaseContext.Configurations.Where(w => w.Key == SERVERURL_KEY).FirstOrDefault();
-                if (configurationServerUrl == null)
+                string defaultServerUrl = null;
+                if (Device.RuntimePlatform == "Android")
                 {
-                    string defaultServerUrl = null;
-                    if (Device.RuntimePlatform == "Android")
-                    {
-                        defaultServerUrl = "http://10.0.2.2:5000/Sync";
-                    }
-                    else if (Device.RuntimePlatform == "iOS")
-                    {
-                        defaultServerUrl = "http://192.168.56.1:5000/Sync";
-                    }
-                    else
-                    {
-                        throw new NotImplementedException();
-                    }
-
-                    SetServerUrl(defaultServerUrl);
-                    configurationServerUrl = databaseContext.Configurations.Where(w => w.Key == SERVERURL_KEY).FirstOrDefault();
+                    defaultServerUrl = "http://10.0.2.2:5000/Sync";
                 }
-                return configurationServerUrl.Value;
+                else if (Device.RuntimePlatform == "iOS")
+                {
+                    defaultServerUrl = "http://192.168.56.1:5000/Sync";
+                }
+                else
+                {
+                    throw new NotImplementedException();
+                }
+                SetServerUrl(defaultServerUrl);
+                configurationServerUrl = realm.All<Configuration>().Where(w => w.Key == SERVERURL_KEY).First();
             }
+            return configurationServerUrl.Value;
         }
 
         public void SetServerUrl(string serverUrl)
         {
-            using (var databaseContext = GetDatabaseContext())
+            Realm realm = GetInstance();
+            realm.Write(() =>
             {
                 bool isNew = false;
-                Configuration configurationServerUrl = databaseContext.Configurations.Where(w => w.Key == SERVERURL_KEY).FirstOrDefault();
+                Configuration configurationServerUrl = realm.All<Configuration>().Where(w => w.Key == SERVERURL_KEY).FirstOrDefault();
                 if (configurationServerUrl == null)
                 {
                     isNew = true;
-                    configurationServerUrl = new Configuration()
-                    {
-                        Id = Guid.NewGuid().ToString(),
-                        Key = SERVERURL_KEY
-                    };
+                    configurationServerUrl = new Configuration();
+                    configurationServerUrl.Key = SERVERURL_KEY;
                 }
                 configurationServerUrl.Value = serverUrl;
-                if (isNew)
-                {
-                    databaseContext.Add(configurationServerUrl);
-                }
-                else
-                {
-                    databaseContext.Update(configurationServerUrl);
-                }
-                databaseContext.SaveChanges();
-            }
+                if (isNew) realm.Add(configurationServerUrl);
+            });
+        }
+
+        public IQueryable<Department> GetDepartments(Realm realm)
+        {
+            return realm.All<Department>().Where(w => !w.Deleted);
+        }
+
+        public IQueryable<Employee> GetEmployees(Realm realm)
+        {
+            return realm.All<Employee>().Where(w => !w.Deleted);
         }
     }
 }

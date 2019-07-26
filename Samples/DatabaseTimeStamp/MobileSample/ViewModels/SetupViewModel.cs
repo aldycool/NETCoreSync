@@ -50,15 +50,8 @@ namespace MobileSample.ViewModels
                 if (!isAccept) return;
             }
 
-            using (var databaseContext = databaseService.GetDatabaseContext())
-            {
-                databaseContext.Employees.RemoveRange(databaseContext.Employees);
-                databaseContext.Departments.RemoveRange(databaseContext.Departments);
-                databaseContext.Configurations.RemoveRange(databaseContext.Configurations);
-                await databaseContext.SaveChangesAsync();
-
-                databaseService.SetSynchronizationId(SynchronizationId);
-            }
+            databaseService.ResetInstance();
+            databaseService.SetSynchronizationId(SynchronizationId);
 
             await Application.Current.MainPage.DisplayAlert("Success", "Synchronization ID is successfully set", "OK");
             Application.Current.MainPage = new Views.MainPage();

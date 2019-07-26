@@ -22,8 +22,8 @@ namespace MobileSample.ViewModels
             this.databaseService = databaseService;
         }
 
-        private ObservableCollection<Department> items;
-        public ObservableCollection<Department> Items
+        private IEnumerable<Department> items;
+        public IEnumerable<Department> Items
         {
             get { return items; }
             set { SetProperty(ref items, value); }
@@ -36,7 +36,7 @@ namespace MobileSample.ViewModels
             set
             {
                 SetProperty(ref selectedItem, value);
-                DepartmentItemPage page = new DepartmentItemPage(selectedItem);
+                DepartmentItemPage page = new DepartmentItemPage(selectedItem.Id);
                 navigation.PushAsync(page);
             }
         }
@@ -45,12 +45,7 @@ namespace MobileSample.ViewModels
         {
             base.ViewAppearing(sender, e);
             Title = MainMenuItem.GetMenus().Where(w => w.Id == MenuItemType.DepartmentList).First().Title;
-            List<Department> listData = null;
-            using (var databaseContext = databaseService.GetDatabaseContext())
-            {
-                listData = databaseService.GetDepartments(databaseContext).ToList();
-            }
-            Items = new ObservableCollection<Department>(listData);
+            Items = databaseService.GetDepartments(databaseService.GetInstance());
         }
 
         public ICommand AddCommand => new Command(async () => 

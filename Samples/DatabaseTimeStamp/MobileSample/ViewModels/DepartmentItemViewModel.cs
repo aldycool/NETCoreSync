@@ -7,20 +7,21 @@ using Xamarin.Forms;
 using MobileSample.Models;
 using MobileSample.Services;
 using NETCoreSync;
+using Realms;
 
 namespace MobileSample.ViewModels
 {
     public class DepartmentItemViewModel : BaseViewModel
     {
         private readonly INavigation navigation;
-        private readonly DatabaseService databaseService;
-        private readonly SyncConfiguration syncConfiguration;
+        private readonly CustomSyncEngine customSyncEngine;
+        private readonly Transaction transaction;
 
         public DepartmentItemViewModel(INavigation navigation, DatabaseService databaseService, SyncConfiguration syncConfiguration)
         {
             this.navigation = navigation;
-            this.databaseService = databaseService;
-            this.syncConfiguration = syncConfiguration;
+            customSyncEngine = new CustomSyncEngine(databaseService, syncConfiguration);
+            transaction = customSyncEngine.Realm.BeginWrite();
         }
 
         private bool isNewData;
@@ -40,13 +41,16 @@ namespace MobileSample.ViewModels
         public override void Init(object initData)
         {
             base.Init(initData);
-            Data = (Department)initData;
+            string id = (string)initData;
+            if (!string.IsNullOrEmpty(id))
+            {
+                Data = customSyncEngine.Realm.All<Department>().Where(w => w.Id == id).FirstOrDefault();
+            }
             if (Data == null)
             {
                 Title = $"Add {nameof(Department)}";
-                isNewData = true;
+                IsNewData = true;
                 Data = new Department();
-                Data.Id = Guid.NewGuid().ToString();
             }
             else
             {
@@ -56,21 +60,14 @@ namespace MobileSample.ViewModels
 
         public ICommand SaveCommand => new Command(async () =>
         {
-            CustomSyncEngine customSyncEngine = new CustomSyncEngine(databaseService, syncConfiguration);
             customSyncEngine.HookPreInsertOrUpdate(Data);
 
-            using (var databaseContext = databaseService.GetDatabaseContext())
+            if (IsNewData)
             {
-                if (IsNewData)
-                {
-                    databaseContext.Add(Data);
-                }
-                else
-                {
-                    databaseContext.Update(Data);
-                }
-                await databaseContext.SaveChangesAsync();   
+                customSyncEngine.Realm.Add(Data);
             }
+
+            transaction.Commit();
 
             await navigation.PopAsync();
         });
@@ -79,24 +76,23 @@ namespace MobileSample.ViewModels
         {
             if (IsNewData) return;
 
-            using (var databaseContext = databaseService.GetDatabaseContext())
+            Employee dependentEmployee = customSyncEngine.Realm.All<Employee>().Where(w => w.Department.Id == Data.Id).FirstOrDefault();
+            if (dependentEmployee != null)
             {
-                Employee dependentEmployee = databaseService.GetEmployees(databaseContext).Where(w => w.DepartmentId == Data.Id).FirstOrDefault();
-                if (dependentEmployee != null)
-                {
-                    await Application.Current.MainPage.DisplayAlert("Data Already Used", $"The data is already used by Employee Name: {dependentEmployee.Name}", "OK");
-                    return;
-                }
-
-                CustomSyncEngine customSyncEngine = new CustomSyncEngine(databaseService, syncConfiguration);
-                customSyncEngine.HookPreDelete(Data);
-
-                databaseContext.Update(Data);
-                //databaseContext.Remove(Data);
-                await databaseContext.SaveChangesAsync();
+                await Application.Current.MainPage.DisplayAlert("Data Already Used", $"The data is already used by Employee Name: {dependentEmployee.Name}", "OK");
+                return;
             }
+
+            customSyncEngine.HookPreDelete(Data);
+
+            transaction.Commit();
 
             await navigation.PopAsync();
         });
+
+        protected override void ViewDisappearing(object sender, EventArgs e)
+        {
+            transaction.Dispose();
+        }
     }
 }

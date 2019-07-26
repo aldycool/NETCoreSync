@@ -9,31 +9,35 @@ using NETCoreSync;
 namespace MobileSample.Models
 {
     [SyncSchema(MapToClassName = "SyncEmployee")]
-    public class Employee
+    public class Employee : Realms.RealmObject
     {
-        [Key]
-        [DatabaseGenerated(DatabaseGeneratedOption.None)]
+        [Realms.PrimaryKey()]
         [SyncProperty(PropertyIndicator = SyncPropertyAttribute.PropertyIndicatorEnum.Id)]
-        public string Id { get; set; }
+        public string Id { get; set; } = Guid.NewGuid().ToString();
 
         [SyncFriendlyId]
         public string Name { get; set; }
 
-        public DateTime Birthday { get; set; }
+        public DateTimeOffset Birthday { get; set; }
 
         public int NumberOfComputers { get; set; }
 
-        public decimal SavingAmount { get; set; }
+        public long SavingAmount { get; set; }
 
         public bool IsActive { get; set; }
 
-        public string DepartmentId { get; set; }
         public Department Department { get; set; }
+
+        [Realms.Ignored]
+        public ReferenceItem DepartmentRef { get; set; }
 
         [SyncProperty(PropertyIndicator = SyncPropertyAttribute.PropertyIndicatorEnum.LastUpdated)]
         public long LastUpdated { get; set; }
 
         [SyncProperty(PropertyIndicator = SyncPropertyAttribute.PropertyIndicatorEnum.Deleted)]
-        public long? Deleted { get; set; }
+        public bool Deleted { get; set; }
+
+        [SyncProperty(PropertyIndicator = SyncPropertyAttribute.PropertyIndicatorEnum.DatabaseInstanceId)]
+        public string DatabaseInstanceId { get; set; }
     }
 }

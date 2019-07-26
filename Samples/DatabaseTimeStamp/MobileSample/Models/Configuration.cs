@@ -6,11 +6,10 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace MobileSample.Models
 {
-    public class Configuration
+    public class Configuration : Realms.RealmObject
     {
-        [Key]
-        [DatabaseGenerated(DatabaseGeneratedOption.None)]
-        public string Id { get; set; }
+        [Realms.PrimaryKey()]
+        public string Id { get; set; } = Guid.NewGuid().ToString();
         public string Key { get; set; }
         public string Value { get; set; }
     }

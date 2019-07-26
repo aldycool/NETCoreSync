@@ -8,14 +8,15 @@ using Microsoft.EntityFrameworkCore;
 using MobileSample.Models;
 using MobileSample.Services;
 using NETCoreSync;
+using Realms;
 
 namespace MobileSample.ViewModels
 {
     public class EmployeeItemViewModel : BaseViewModel
     {
         private readonly INavigation navigation;
-        private readonly DatabaseService databaseService;
-        private readonly SyncConfiguration syncConfiguration;
+        private readonly CustomSyncEngine customSyncEngine;
+        private readonly Transaction transaction;
 
         private List<bool> isActiveItems;
         public List<bool> IsActiveItems
@@ -24,8 +25,8 @@ namespace MobileSample.ViewModels
             set { SetProperty(ref isActiveItems, value); }
         }
 
-        private List<Department> departmentItems;
-        public List<Department> DepartmentItems
+        private List<ReferenceItem> departmentItems;
+        public List<ReferenceItem> DepartmentItems
         {
             get { return departmentItems; }
             set { SetProperty(ref departmentItems, value); }
@@ -34,16 +35,13 @@ namespace MobileSample.ViewModels
         public EmployeeItemViewModel(INavigation navigation, DatabaseService databaseService, SyncConfiguration syncConfiguration)
         {
             this.navigation = navigation;
-            this.databaseService = databaseService;
-            this.syncConfiguration = syncConfiguration;
+            customSyncEngine = new CustomSyncEngine(databaseService, syncConfiguration);
+            transaction = customSyncEngine.Realm.BeginWrite();
 
             IsActiveItems = new List<bool>() { true, false };
-            DepartmentItems = new List<Department>();
-            DepartmentItems.Add(new Department() { Id = Guid.Empty.ToString(), Name = "[None]" });
-            using (var databaseContext = databaseService.GetDatabaseContext())
-            {
-                DepartmentItems.AddRange(databaseService.GetDepartments(databaseContext).AsNoTracking().ToList());
-            }
+            DepartmentItems = new List<ReferenceItem>();
+            DepartmentItems.Add(new ReferenceItem() { Id = Guid.Empty.ToString(), Name = "[None]" });
+            DepartmentItems.AddRange(databaseService.GetDepartments(customSyncEngine.Realm).Select(s => new ReferenceItem() { Id = s.Id, Name = s.Name }).ToList());
         }
 
         private bool isNewData;
@@ -63,13 +61,16 @@ namespace MobileSample.ViewModels
         public override void Init(object initData)
         {
             base.Init(initData);
-            Data = (Employee)initData;
+            string id = (string)initData;
+            if (!string.IsNullOrEmpty(id))
+            {
+                Data = customSyncEngine.Realm.All<Employee>().Where(w => w.Id == id).FirstOrDefault();
+            }
             if (Data == null)
             {
                 Title = $"Add {nameof(Employee)}";
-                isNewData = true;
+                IsNewData = true;
                 Data = new Employee();
-                Data.Id = Guid.NewGuid().ToString();
                 Data.Birthday = DateTime.Now;
             }
             else
@@ -78,42 +79,43 @@ namespace MobileSample.ViewModels
             }
 
             //Prepare the navigation property for binding
-            Data.Department = DepartmentItems.Where(w => w.Id == Guid.Empty.ToString()).First();
-            if (!string.IsNullOrEmpty(Data.DepartmentId))
+            if (Data.Department == null)
             {
-                Data.Department = DepartmentItems.Where(w => w.Id == Data.DepartmentId).FirstOrDefault();
+                Data.DepartmentRef = DepartmentItems.Where(w => w.Id == Guid.Empty.ToString()).First();
             }
-        }
-
-        private void NormalizeForeignKeyBindings()
-        {
-            //Prepare the foreign key property after binding, to ensure successful database modification
-            string departmentId = null;
-            if (Data.Department != null) departmentId = Data.Department.Id;
-            if (departmentId == Guid.Empty.ToString()) departmentId = null;
-            Data.Department = null;
-            Data.DepartmentId = departmentId;
+            else
+            {
+                ReferenceItem referenceItem = DepartmentItems.Where(w => w.Id == Data.Department.Id).FirstOrDefault();
+                if (referenceItem == null)
+                {
+                    Data.DepartmentRef = DepartmentItems.Where(w => w.Id == Guid.Empty.ToString()).First();
+                }
+                else
+                {
+                    Data.DepartmentRef = referenceItem;
+                }
+            }
         }
 
         public ICommand SaveCommand => new Command(async () =>
         {
-            NormalizeForeignKeyBindings();
+            if (Data.DepartmentRef == null && Data.DepartmentRef.Id == Guid.Empty.ToString())
+            {
+                Data.Department = null;
+            }
+            else
+            {
+                Data.Department = customSyncEngine.Realm.All<Department>().Where(w => w.Id == Data.DepartmentRef.Id).First();
+            }
 
-            CustomSyncEngine customSyncEngine = new CustomSyncEngine(databaseService, syncConfiguration);
             customSyncEngine.HookPreInsertOrUpdate(Data);
 
-            using (var databaseContext = databaseService.GetDatabaseContext())
+            if (IsNewData)
             {
-                if (IsNewData)
-                {
-                    databaseContext.Add(Data);
-                }
-                else
-                {
-                    databaseContext.Update(Data);
-                }
-                await databaseContext.SaveChangesAsync();
+                customSyncEngine.Realm.Add(Data);
             }
+
+            transaction.Commit();
 
             await navigation.PopAsync();
         });
@@ -122,19 +124,16 @@ namespace MobileSample.ViewModels
         {
             if (IsNewData) return;
 
-            NormalizeForeignKeyBindings();
-
-            CustomSyncEngine customSyncEngine = new CustomSyncEngine(databaseService, syncConfiguration);
             customSyncEngine.HookPreDelete(Data);
 
-            using (var databaseContext = databaseService.GetDatabaseContext())
-            {
-                databaseContext.Update(Data);
-                //databaseContext.Remove(Data);
-                await databaseContext.SaveChangesAsync();
-            }
+            transaction.Commit();
 
             await navigation.PopAsync();
         });
+
+        protected override void ViewDisappearing(object sender, EventArgs e)
+        {
+            transaction.Dispose();
+        }
     }
 }

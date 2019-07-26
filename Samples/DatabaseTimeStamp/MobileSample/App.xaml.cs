@@ -36,7 +36,7 @@ namespace MobileSample
             //NOTE: Navigation (INavigation) is registered per life time scope basis on  BaseContentPage.cs
 
             List<Type> syncTypes = new List<Type>() { typeof(Department), typeof(Employee) };
-            SyncConfiguration syncConfiguration = new SyncConfiguration(syncTypes.ToArray());
+            SyncConfiguration syncConfiguration = new SyncConfiguration(syncTypes.ToArray(), SyncConfiguration.TimeStampStrategyEnum.DatabaseTimeStamp);
             builder.RegisterInstance(syncConfiguration);
 
             Container = builder.Build();

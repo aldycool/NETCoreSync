@@ -23,14 +23,60 @@ namespace WebSample.Models
             customContractResolvers = new Dictionary<Type, CustomContractResolver>();
         }
 
-        public override long GetNextTimeStamp(object transaction)
+        public override long GetNextTimeStamp()
         {
-            using (var command = databaseContext.Database.GetDbConnection().CreateCommand())
+            DbQueryTimeStampResult result = databaseContext.DbQueryTimeStampResults.FromSql("SELECT CAST((EXTRACT(EPOCH FROM NOW() AT TIME ZONE 'UTC') * 1000) AS bigint) AS TimeStamp").First();
+            return result.TimeStamp;
+        }
+
+        public override void CreateOrUpdateDatabaseInstanceInfo(DatabaseInstanceInfo databaseInstanceInfo)
+        {
+            Guid id = new Guid(databaseInstanceInfo.DatabaseInstanceId);
+            Models.DatabaseInstanceInfo info = databaseContext.DatabaseInstanceInfos.Where(w => w.DatabaseInstanceId == id).FirstOrDefault();
+            if (info == null)
             {
-                command.CommandType = System.Data.CommandType.Text;
-                command.CommandText = "select CAST((EXTRACT(EPOCH FROM NOW() AT TIME ZONE 'UTC') * 1000) AS bigint) AS TimeStamp";
-                throw new NotImplementedException();
+                info = new Models.DatabaseInstanceInfo();
+                info.DatabaseInstanceId = id;
+                databaseContext.Add(info);
+                databaseContext.SaveChanges();
+                info = databaseContext.DatabaseInstanceInfos.Where(w => w.DatabaseInstanceId == id).First();
             }
+            info.IsLocal = databaseInstanceInfo.IsLocal;
+            info.LastSyncTimeStamp = databaseInstanceInfo.LastSyncTimeStamp;
+            databaseContext.Update(info);
+            databaseContext.SaveChanges();
+        }
+
+        public override DatabaseInstanceInfo GetLocalDatabaseInstanceInfo()
+        {
+            return GetDatabaseInstanceInfoImpl(true, null);
+        }
+
+        public override DatabaseInstanceInfo GetRemoteDatabaseInstanceInfo(string databaseInstanceId)
+        {
+            return GetDatabaseInstanceInfoImpl(false, databaseInstanceId);
+        }
+
+        private DatabaseInstanceInfo GetDatabaseInstanceInfoImpl(bool isLocal, string databaseInstanceId)
+        {
+            Models.DatabaseInstanceInfo info = null;
+            if (isLocal)
+            {
+                info = databaseContext.DatabaseInstanceInfos.Where(w => w.IsLocal).FirstOrDefault();
+            }
+            else
+            {
+                Guid id = new Guid(databaseInstanceId);
+                info = databaseContext.DatabaseInstanceInfos.Where(w => w.DatabaseInstanceId == id).FirstOrDefault();
+            }
+            if (info == null) return null;
+            DatabaseInstanceInfo databaseInstanceInfo = new DatabaseInstanceInfo()
+            {
+                DatabaseInstanceId = info.DatabaseInstanceId.ToString(),
+                IsLocal = info.IsLocal,
+                LastSyncTimeStamp = info.LastSyncTimeStamp
+            };
+            return databaseInstanceInfo;
         }
 
         public override IQueryable GetQueryable(Type classType, object transaction, OperationType operationType, string synchronizationId, Dictionary<string, object> customInfo)
@@ -42,6 +88,7 @@ namespace WebSample.Models
 
         public override string SerializeDataToJson(Type classType, object data, object transaction, OperationType operationType, string synchronizationId, Dictionary<string, object> customInfo)
         {
+            //SAMPE SINI!
             Dictionary<string, string> renameProperties = new Dictionary<string, string>();
             if (classType == typeof(SyncEmployee)) renameProperties.Add("DepartmentID", "DepartmentId");
             List<string> ignoreProperties = new List<string>();
@@ -127,6 +174,11 @@ namespace WebSample.Models
                 }
                 return jsonProperty;
             }
+        }
+
+        public class DbQueryTimeStampResult
+        {
+            public long TimeStamp { get; set; }
         }
     }
 }

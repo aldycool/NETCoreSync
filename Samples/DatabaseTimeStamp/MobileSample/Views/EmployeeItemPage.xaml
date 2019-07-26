@@ -24,7 +24,7 @@
                 <Label Text="Is Active" />
                 <Picker Title="Select Status" ItemsSource="{Binding IsActiveItems}" SelectedItem="{Binding Data.IsActive, Mode=TwoWay}" />
                 <Label Text="Department" />
-                <Picker Title="Select Department" ItemsSource="{Binding DepartmentItems}" ItemDisplayBinding="{Binding Name}" SelectedItem="{Binding Data.Department, Mode=TwoWay}"  />
+                <Picker Title="Select Department" ItemsSource="{Binding DepartmentItems}" ItemDisplayBinding="{Binding Name}" SelectedItem="{Binding Data.DepartmentRef, Mode=TwoWay}"  />
             </StackLayout>
         </ScrollView>
     </ContentPage.Content>

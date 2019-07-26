@@ -25,8 +25,7 @@ namespace NETCoreSync
         public enum OperationType
         {
             GetChanges = 1,
-            ApplyChanges = 2,
-            NextTimeStamp = 3
+            ApplyChanges = 2
         }
 
         public virtual bool IsServerEngine()
@@ -47,7 +46,7 @@ namespace NETCoreSync
             throw new NotImplementedException();
         }
 
-        public virtual long GetNextTimeStamp(object transaction)
+        public virtual long GetNextTimeStamp()
         {
             //must implement if SyncConfiguration.TimeStampStrategy = UseEachDatabaseInstanceTimeStamp
             throw new NotImplementedException();
@@ -59,7 +58,13 @@ namespace NETCoreSync
             throw new NotImplementedException();
         }
 
-        public virtual DatabaseInstanceInfo GetDatabaseInstanceInfo(string databaseInstanceId)
+        public virtual DatabaseInstanceInfo GetLocalDatabaseInstanceInfo()
+        {
+            //must implement if SyncConfiguration.TimeStampStrategy = UseEachDatabaseInstanceTimeStamp
+            throw new NotImplementedException();
+        }
+
+        public virtual DatabaseInstanceInfo GetRemoteDatabaseInstanceInfo(string databaseInstanceId)
         {
             //must implement if SyncConfiguration.TimeStampStrategy = UseEachDatabaseInstanceTimeStamp
             throw new NotImplementedException();
@@ -101,7 +106,7 @@ namespace NETCoreSync
         {
         }
 
-        public void HookPreInsertOrUpdate(object data, bool isAlreadyInTransaction = false)
+        public void HookPreInsertOrUpdate(object data)
         {
             if (data == null) throw new NullReferenceException(nameof(data));
             SyncConfiguration.SchemaInfo schemaInfo = GetSchemaInfo(SyncConfiguration, data.GetType());
@@ -117,28 +122,13 @@ namespace NETCoreSync
             }
             if (SyncConfiguration.TimeStampStrategy == SyncConfiguration.TimeStampStrategyEnum.DatabaseTimeStamp)
             {
-                long timeStamp = 0;
-                object transaction = isAlreadyInTransaction ? null : StartTransaction(null, OperationType.NextTimeStamp, null, null);
-                try
-                {
-                    timeStamp = GetNextTimeStamp(transaction);
-                    CommitTransaction(null, transaction, OperationType.NextTimeStamp, null, null);
-                }
-                catch (Exception)
-                {
-                    RollbackTransaction(null, transaction, OperationType.NextTimeStamp, null, null);
-                    throw;
-                }
-                finally
-                {
-                    EndTransaction(null, transaction, OperationType.NextTimeStamp, null, null);
-                }
+                long timeStamp = GetNextTimeStamp();
                 data.GetType().GetProperty(schemaInfo.PropertyInfoDatabaseInstanceId.Name).SetValue(data, null);
                 data.GetType().GetProperty(schemaInfo.PropertyInfoLastUpdated.Name).SetValue(data, timeStamp);
             }
         }
 
-        public void HookPreDelete(object data, bool isAlreadyInTransaction = false)
+        public void HookPreDelete(object data)
         {
             if (data == null) throw new NullReferenceException(nameof(data));
             SyncConfiguration.SchemaInfo schemaInfo = GetSchemaInfo(SyncConfiguration, data.GetType());
@@ -154,22 +144,7 @@ namespace NETCoreSync
             }
             if (SyncConfiguration.TimeStampStrategy == SyncConfiguration.TimeStampStrategyEnum.DatabaseTimeStamp)
             {
-                long timeStamp = 0;
-                object transaction = isAlreadyInTransaction ? null : StartTransaction(null, OperationType.NextTimeStamp, null, null);
-                try
-                {
-                    timeStamp = GetNextTimeStamp(transaction);
-                    CommitTransaction(null, transaction, OperationType.NextTimeStamp, null, null);
-                }
-                catch (Exception)
-                {
-                    RollbackTransaction(null, transaction, OperationType.NextTimeStamp, null, null);
-                    throw;
-                }
-                finally
-                {
-                    EndTransaction(null, transaction, OperationType.NextTimeStamp, null, null);
-                }
+                long timeStamp = GetNextTimeStamp();
                 data.GetType().GetProperty(schemaInfo.PropertyInfoDatabaseInstanceId.Name).SetValue(data, null);
                 data.GetType().GetProperty(schemaInfo.PropertyInfoLastUpdated.Name).SetValue(data, timeStamp);
                 data.GetType().GetProperty(schemaInfo.PropertyInfoDeleted.Name).SetValue(data, true);

@@ -16,5 +16,7 @@ namespace WebSample.Models
         public DbSet<DatabaseInstanceInfo> DatabaseInstanceInfos { get; set; }
         public DbSet<SyncDepartment> Departments { get; set; }
         public DbSet<SyncEmployee> Employees { get; set; }
+
+        public DbQuery<CustomSyncEngine.DbQueryTimeStampResult> DbQueryTimeStampResults { get; set; }
     }
 }
