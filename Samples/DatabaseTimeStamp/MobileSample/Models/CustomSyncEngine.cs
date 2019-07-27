@@ -124,13 +124,7 @@ namespace MobileSample.Models
 
         public override string SerializeDataToJson(Type classType, object data, object transaction, OperationType operationType, string synchronizationId, Dictionary<string, object> customInfo)
         {
-            //SAMPE SINI!
-            Dictionary<string, string> renameProperties = new Dictionary<string, string>();
-            if (classType == typeof(Employee)) renameProperties.Add("DepartmentId", "DepartmentID");
-            List<string> ignoreProperties = new List<string>();
-            if (classType == typeof(Department)) ignoreProperties.Add("Employees");
-            if (classType == typeof(Employee)) ignoreProperties.Add("Department");
-            if (!customContractResolvers.ContainsKey(classType)) customContractResolvers.Add(classType, new CustomContractResolver(renameProperties, ignoreProperties));
+            if (!customContractResolvers.ContainsKey(classType)) customContractResolvers.Add(classType, new CustomContractResolver(classType));
             CustomContractResolver customContractResolver = customContractResolvers[classType];
             string json = JsonConvert.SerializeObject(data, new JsonSerializerSettings() { ContractResolver = customContractResolver });
             return json;
@@ -139,14 +133,29 @@ namespace MobileSample.Models
         public override object DeserializeJsonToNewData(Type classType, JObject jObject, object transaction, OperationType operationType, string synchronizationId, Dictionary<string, object> customInfo)
         {
             object data = Activator.CreateInstance(classType);
+            ConvertServerObjectToLocal(classType, jObject, data);
             JsonConvert.PopulateObject(jObject.ToString(), data);
             return data;
         }
 
         public override object DeserializeJsonToExistingData(Type classType, JObject jObject, object data, object transaction, OperationType operationType, string synchronizationId, Dictionary<string, object> customInfo)
         {
+            ConvertServerObjectToLocal(classType, jObject, data);
             JsonConvert.PopulateObject(jObject.ToString(), data);
             return data;
+        }
+
+        private void ConvertServerObjectToLocal(Type classType, JObject jObject, object data)
+        {
+            if (classType == typeof(Employee))
+            {
+                string departmentId = jObject.Value<string>("DepartmentID");
+                if (!string.IsNullOrEmpty(departmentId))
+                {
+                    data.GetType().GetProperty("Department").SetValue(data, Realm.Find<Department>(departmentId));
+                }
+                jObject.Remove("DepartmentID");
+            }
         }
 
         public override void PersistData(Type classType, object data, bool isNew, object transaction, OperationType operationType, string synchronizationId, Dictionary<string, object> customInfo)
@@ -187,28 +196,21 @@ namespace MobileSample.Models
 
         public class CustomContractResolver : DefaultContractResolver
         {
-            private readonly Dictionary<string, string> renameProperties;
-            private readonly List<string> ignoreProperties;
+            private readonly Type rootType;
 
-            public CustomContractResolver(Dictionary<string, string> renameProperties, List<string> ignoreProperties)
+            public CustomContractResolver(Type rootType)
             {
-                this.renameProperties = renameProperties;
-                this.ignoreProperties = ignoreProperties;
+                this.rootType = rootType;
             }
 
-            protected override JsonProperty CreateProperty(MemberInfo member, MemberSerialization memberSerialization)
+            protected override IList<JsonProperty> CreateProperties(Type type, MemberSerialization memberSerialization)
             {
-                JsonProperty jsonProperty = base.CreateProperty(member, memberSerialization);
-                if (renameProperties != null && renameProperties.ContainsKey(jsonProperty.PropertyName))
-                {
-                    jsonProperty.PropertyName = renameProperties[jsonProperty.PropertyName];
-                }
-                if (ignoreProperties != null && ignoreProperties.Contains(jsonProperty.PropertyName))
-                {
-                    jsonProperty.ShouldSerialize = i => false;
-                    jsonProperty.Ignored = true;
-                }
-                return jsonProperty;
+                var list = base.CreateProperties(type, memberSerialization);
+                list = list.Where(w => w.DeclaringType.FullName == type.FullName).ToList();
+                list = list.Where(w => !(w.PropertyType.IsGenericType && w.PropertyType.GetGenericTypeDefinition() == typeof(IQueryable<>))).ToList();
+                list = list.Where(w => w.PropertyType != typeof(ReferenceItem)).ToList();
+                if (type != rootType) list = list.Where(w => w.PropertyName == "Id").ToList();
+                return list;
             }
         }
     }

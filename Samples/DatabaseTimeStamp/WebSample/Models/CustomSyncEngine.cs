@@ -88,14 +88,11 @@ namespace WebSample.Models
 
         public override string SerializeDataToJson(Type classType, object data, object transaction, OperationType operationType, string synchronizationId, Dictionary<string, object> customInfo)
         {
-            //SAMPE SINI!
-            Dictionary<string, string> renameProperties = new Dictionary<string, string>();
-            if (classType == typeof(SyncEmployee)) renameProperties.Add("DepartmentID", "DepartmentId");
             List<string> ignoreProperties = new List<string>();
             ignoreProperties.Add("SynchronizationID");
             if (classType == typeof(SyncDepartment)) ignoreProperties.Add("Employees");
             if (classType == typeof(SyncEmployee)) ignoreProperties.Add("Department");
-            if (!customContractResolvers.ContainsKey(classType)) customContractResolvers.Add(classType, new CustomContractResolver(renameProperties, ignoreProperties));
+            if (!customContractResolvers.ContainsKey(classType)) customContractResolvers.Add(classType, new CustomContractResolver(null, ignoreProperties));
             CustomContractResolver customContractResolver = customContractResolvers[classType];
             string json = JsonConvert.SerializeObject(data, new JsonSerializerSettings() { ContractResolver = customContractResolver });
             return json;
@@ -104,6 +101,7 @@ namespace WebSample.Models
         public override object DeserializeJsonToNewData(Type classType, JObject jObject, object transaction, OperationType operationType, string synchronizationId, Dictionary<string, object> customInfo)
         {
             object data = Activator.CreateInstance(classType);
+            ConvertClientObjectToLocal(classType, jObject, data);
             JsonConvert.PopulateObject(jObject.ToString(), data);
             classType.GetProperty("SynchronizationID").SetValue(data, synchronizationId);
             return data;
@@ -111,8 +109,23 @@ namespace WebSample.Models
 
         public override object DeserializeJsonToExistingData(Type classType, JObject jObject, object data, object transaction, OperationType operationType, string synchronizationId, Dictionary<string, object> customInfo)
         {
+            ConvertClientObjectToLocal(classType, jObject, data);
             JsonConvert.PopulateObject(jObject.ToString(), data);
             return data;
+        }
+
+        private void ConvertClientObjectToLocal(Type classType, JObject jObject, object data)
+        {
+            if (classType == typeof(SyncEmployee))
+            {
+                JObject objDepartment = jObject.Value<JObject>("Department");
+                string departmentId = objDepartment == null ? null : objDepartment.Value<string>("Id");
+                if (!string.IsNullOrEmpty(departmentId))
+                {
+                    data.GetType().GetProperty("DepartmentID").SetValue(data, new Guid(departmentId));
+                }
+                jObject.Remove("Department");
+            }
         }
 
         public override void PersistData(Type classType, object data, bool isNew, object transaction, OperationType operationType, string synchronizationId, Dictionary<string, object> customInfo)
