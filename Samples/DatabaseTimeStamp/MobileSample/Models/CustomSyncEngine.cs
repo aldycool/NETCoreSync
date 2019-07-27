@@ -36,7 +36,7 @@ namespace MobileSample.Models
             return timeStamp.Counter;
         }
 
-        public override void CreateOrUpdateDatabaseInstanceInfo(DatabaseInstanceInfo databaseInstanceInfo)
+        public override void CreateOrUpdateDatabaseInstanceInfo(string synchronizationId, DatabaseInstanceInfo databaseInstanceInfo)
         {
             Realm.Write(() =>
             {
@@ -58,7 +58,7 @@ namespace MobileSample.Models
             return GetDatabaseInstanceInfoImpl(true, null);
         }
 
-        public override DatabaseInstanceInfo GetRemoteDatabaseInstanceInfo(string databaseInstanceId)
+        public override DatabaseInstanceInfo GetRemoteDatabaseInstanceInfo(string synchronizationId, string databaseInstanceId)
         {
             return GetDatabaseInstanceInfoImpl(false, databaseInstanceId);
         }
@@ -160,16 +160,10 @@ namespace MobileSample.Models
 
         public override void PersistData(Type classType, object data, bool isNew, object transaction, OperationType operationType, string synchronizationId, Dictionary<string, object> customInfo)
         {
-            //DatabaseContext databaseContext = databaseService.GetDatabaseContext();
-            //if (isNew)
-            //{
-            //    databaseContext.Add(data);
-            //}
-            //else
-            //{
-            //    databaseContext.Update(data);
-            //}
-            //databaseContext.SaveChanges();
+            if (isNew)
+            {
+                Realm.Add((RealmObject)data);
+            }
         }
 
         public override object TransformIdType(Type classType, JValue id, object transaction, OperationType operationType, string synchronizationId, Dictionary<string, object> customInfo)
@@ -179,19 +173,22 @@ namespace MobileSample.Models
 
         public override void PostEventDelete(Type classType, object id, string synchronizationId, Dictionary<string, object> customInfo)
         {
-            //if (classType == typeof(Department))
-            //{
-            //    string stringId = (string)id;
-            //    DatabaseContext databaseContext = databaseService.GetDatabaseContext();
-            //    List<Employee> dependentEmployees = databaseContext.Employees.Where(w => w.DepartmentId == stringId).ToList();
-            //    for (int i = 0; i < dependentEmployees.Count; i++)
-            //    {
-            //        dependentEmployees[i].Department = null;
-            //        dependentEmployees[i].DepartmentId = null;
-            //        databaseContext.Update(dependentEmployees[i]);
-            //    }
-            //    databaseContext.SaveChanges();
-            //}
+            if (classType == typeof(Department))
+            {
+                Realm.Write(() =>
+                {
+                    string dataId = (string)id;
+                    Department department = Realm.Find<Department>(dataId);
+                    if (department != null)
+                    {
+                        List<Employee> employees = Realm.All<Employee>().Where(w => w.Department == department).ToList();
+                        for (int i = 0; i < employees.Count; i++)
+                        {
+                            employees[i].Department = null;
+                        }
+                    }
+                });
+            }
         }
 
         public class CustomContractResolver : DefaultContractResolver

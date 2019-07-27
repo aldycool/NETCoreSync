@@ -29,17 +29,20 @@ namespace WebSample.Models
             return result.TimeStamp;
         }
 
-        public override void CreateOrUpdateDatabaseInstanceInfo(DatabaseInstanceInfo databaseInstanceInfo)
+        public override void CreateOrUpdateDatabaseInstanceInfo(string synchronizationId, DatabaseInstanceInfo databaseInstanceInfo)
         {
+            string validSynchronizationId = null;
+            if (!databaseInstanceInfo.IsLocal) validSynchronizationId = synchronizationId;
             Guid id = new Guid(databaseInstanceInfo.DatabaseInstanceId);
-            Models.DatabaseInstanceInfo info = databaseContext.DatabaseInstanceInfos.Where(w => w.DatabaseInstanceId == id).FirstOrDefault();
+            Models.DatabaseInstanceInfo info = databaseContext.DatabaseInstanceInfos.Where(w => w.SynchronizationID == validSynchronizationId && w.DatabaseInstanceId == id).FirstOrDefault();
             if (info == null)
             {
                 info = new Models.DatabaseInstanceInfo();
                 info.DatabaseInstanceId = id;
+                info.SynchronizationID = validSynchronizationId;
                 databaseContext.Add(info);
                 databaseContext.SaveChanges();
-                info = databaseContext.DatabaseInstanceInfos.Where(w => w.DatabaseInstanceId == id).First();
+                info = databaseContext.DatabaseInstanceInfos.Where(w => w.SynchronizationID == validSynchronizationId && w.DatabaseInstanceId == id).First();
             }
             info.IsLocal = databaseInstanceInfo.IsLocal;
             info.LastSyncTimeStamp = databaseInstanceInfo.LastSyncTimeStamp;
@@ -49,15 +52,15 @@ namespace WebSample.Models
 
         public override DatabaseInstanceInfo GetLocalDatabaseInstanceInfo()
         {
-            return GetDatabaseInstanceInfoImpl(true, null);
+            return GetDatabaseInstanceInfoImpl(true, null, null);
         }
 
-        public override DatabaseInstanceInfo GetRemoteDatabaseInstanceInfo(string databaseInstanceId)
+        public override DatabaseInstanceInfo GetRemoteDatabaseInstanceInfo(string synchronizationId, string databaseInstanceId)
         {
-            return GetDatabaseInstanceInfoImpl(false, databaseInstanceId);
+            return GetDatabaseInstanceInfoImpl(false, synchronizationId, databaseInstanceId);
         }
 
-        private DatabaseInstanceInfo GetDatabaseInstanceInfoImpl(bool isLocal, string databaseInstanceId)
+        private DatabaseInstanceInfo GetDatabaseInstanceInfoImpl(bool isLocal, string synchronizationId, string databaseInstanceId)
         {
             Models.DatabaseInstanceInfo info = null;
             if (isLocal)
@@ -67,7 +70,7 @@ namespace WebSample.Models
             else
             {
                 Guid id = new Guid(databaseInstanceId);
-                info = databaseContext.DatabaseInstanceInfos.Where(w => w.DatabaseInstanceId == id).FirstOrDefault();
+                info = databaseContext.DatabaseInstanceInfos.Where(w => w.SynchronizationID == synchronizationId && w.DatabaseInstanceId == id).FirstOrDefault();
             }
             if (info == null) return null;
             DatabaseInstanceInfo databaseInstanceInfo = new DatabaseInstanceInfo()

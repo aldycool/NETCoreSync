@@ -14,6 +14,8 @@ namespace WebSample.Models
         [DatabaseGenerated(DatabaseGeneratedOption.None)]
         public Guid DatabaseInstanceId { get; set; }
 
+        public string SynchronizationID { get; set; }
+
         public bool IsLocal { get; set; }
 
         public long LastSyncTimeStamp { get; set; }

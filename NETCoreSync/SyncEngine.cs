@@ -52,7 +52,7 @@ namespace NETCoreSync
             throw new NotImplementedException();
         }
 
-        public virtual void CreateOrUpdateDatabaseInstanceInfo(DatabaseInstanceInfo databaseInstanceInfo)
+        public virtual void CreateOrUpdateDatabaseInstanceInfo(string synchronizationId, DatabaseInstanceInfo databaseInstanceInfo)
         {
             //must implement if SyncConfiguration.TimeStampStrategy = UseEachDatabaseInstanceTimeStamp
             throw new NotImplementedException();
@@ -64,7 +64,7 @@ namespace NETCoreSync
             throw new NotImplementedException();
         }
 
-        public virtual DatabaseInstanceInfo GetRemoteDatabaseInstanceInfo(string databaseInstanceId)
+        public virtual DatabaseInstanceInfo GetRemoteDatabaseInstanceInfo(string synchronizationId, string databaseInstanceId)
         {
             //must implement if SyncConfiguration.TimeStampStrategy = UseEachDatabaseInstanceTimeStamp
             throw new NotImplementedException();
