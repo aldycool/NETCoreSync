@@ -52,9 +52,6 @@
     <PackageReference Include="Autofac">
       <Version>4.9.2</Version>
     </PackageReference>
-    <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite">
-      <Version>2.1.11</Version>
-    </PackageReference>
     <PackageReference Include="Realm">
       <Version>3.4.0</Version>
     </PackageReference>

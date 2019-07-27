@@ -2,8 +2,6 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using System.ComponentModel.DataAnnotations;
-using System.ComponentModel.DataAnnotations.Schema;
 using NETCoreSync;
 
 namespace MobileSample.Models
@@ -27,9 +25,6 @@ namespace MobileSample.Models
         public bool IsActive { get; set; }
 
         public Department Department { get; set; }
-
-        [Realms.Ignored]
-        public ReferenceItem DepartmentRef { get; set; }
 
         [SyncProperty(PropertyIndicator = SyncPropertyAttribute.PropertyIndicatorEnum.LastUpdated)]
         public long LastUpdated { get; set; }

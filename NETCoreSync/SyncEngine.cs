@@ -504,12 +504,12 @@ namespace NETCoreSync
             return Encoding.Unicode.GetString(buffer);
         }
 
-        internal static long GetNowTicks()
+        internal protected static long GetNowTicks()
         {
             return DateTime.Now.Ticks;
         }
 
-        internal static long GetMinValueTicks()
+        internal protected static long GetMinValueTicks()
         {
             return DateTime.MinValue.Ticks;
         }

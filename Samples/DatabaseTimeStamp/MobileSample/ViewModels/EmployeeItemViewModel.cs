@@ -4,7 +4,6 @@ using System.Collections.Generic;
 using System.Text;
 using System.Windows.Input;
 using Xamarin.Forms;
-using Microsoft.EntityFrameworkCore;
 using MobileSample.Models;
 using MobileSample.Services;
 using NETCoreSync;
@@ -32,6 +31,20 @@ namespace MobileSample.ViewModels
             set { SetProperty(ref departmentItems, value); }
         }
 
+        private ReferenceItem selectedDepartmentItem;
+        public ReferenceItem SelectedDepartmentItem
+        {
+            get { return selectedDepartmentItem; }
+            set { SetProperty(ref selectedDepartmentItem, value); }
+        }
+
+        private DateTime dateTimeBirthday;
+        public DateTime DateTimeBirthday
+        {
+            get { return dateTimeBirthday; }
+            set { SetProperty(ref dateTimeBirthday, value); }
+        }
+
         public EmployeeItemViewModel(INavigation navigation, DatabaseService databaseService, SyncConfiguration syncConfiguration)
         {
             this.navigation = navigation;
@@ -41,7 +54,11 @@ namespace MobileSample.ViewModels
             IsActiveItems = new List<bool>() { true, false };
             DepartmentItems = new List<ReferenceItem>();
             DepartmentItems.Add(new ReferenceItem() { Id = Guid.Empty.ToString(), Name = "[None]" });
-            DepartmentItems.AddRange(databaseService.GetDepartments(customSyncEngine.Realm).Select(s => new ReferenceItem() { Id = s.Id, Name = s.Name }).ToList());
+            List<Department> departments = databaseService.GetDepartments(customSyncEngine.Realm).ToList();
+            for (int i = 0; i < departments.Count; i++)
+            {
+                DepartmentItems.Add(new ReferenceItem() { Id = departments[i].Id, Name = departments[i].Name });
+            }
         }
 
         private bool isNewData;
@@ -77,36 +94,38 @@ namespace MobileSample.ViewModels
             {
                 Title = $"Edit {nameof(Employee)}";
             }
+            DateTimeBirthday = Data.Birthday.LocalDateTime;
 
             //Prepare the navigation property for binding
             if (Data.Department == null)
             {
-                Data.DepartmentRef = DepartmentItems.Where(w => w.Id == Guid.Empty.ToString()).First();
+                SelectedDepartmentItem = DepartmentItems.Where(w => w.Id == Guid.Empty.ToString()).First();
             }
             else
             {
                 ReferenceItem referenceItem = DepartmentItems.Where(w => w.Id == Data.Department.Id).FirstOrDefault();
                 if (referenceItem == null)
                 {
-                    Data.DepartmentRef = DepartmentItems.Where(w => w.Id == Guid.Empty.ToString()).First();
+                    SelectedDepartmentItem = DepartmentItems.Where(w => w.Id == Guid.Empty.ToString()).First();
                 }
                 else
                 {
-                    Data.DepartmentRef = referenceItem;
+                    SelectedDepartmentItem = referenceItem;
                 }
             }
         }
 
         public ICommand SaveCommand => new Command(async () =>
         {
-            if (Data.DepartmentRef == null && Data.DepartmentRef.Id == Guid.Empty.ToString())
+            if (SelectedDepartmentItem == null || SelectedDepartmentItem.Id == Guid.Empty.ToString())
             {
                 Data.Department = null;
             }
             else
             {
-                Data.Department = customSyncEngine.Realm.All<Department>().Where(w => w.Id == Data.DepartmentRef.Id).First();
+                Data.Department = customSyncEngine.Realm.All<Department>().Where(w => w.Id == SelectedDepartmentItem.Id).First();
             }
+            Data.Birthday = DateTimeBirthday;
 
             customSyncEngine.HookPreInsertOrUpdate(Data);
 

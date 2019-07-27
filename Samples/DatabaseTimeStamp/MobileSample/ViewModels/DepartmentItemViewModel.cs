@@ -76,7 +76,7 @@ namespace MobileSample.ViewModels
         {
             if (IsNewData) return;
 
-            Employee dependentEmployee = customSyncEngine.Realm.All<Employee>().Where(w => w.Department.Id == Data.Id).FirstOrDefault();
+            Employee dependentEmployee = customSyncEngine.Realm.All<Employee>().Filter($"Department.Id == '{Data.Id}'").FirstOrDefault();
             if (dependentEmployee != null)
             {
                 await Application.Current.MainPage.DisplayAlert("Data Already Used", $"The data is already used by Employee Name: {dependentEmployee.Name}", "OK");

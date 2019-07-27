@@ -205,7 +205,6 @@ namespace MobileSample.Models
                 var list = base.CreateProperties(type, memberSerialization);
                 list = list.Where(w => w.DeclaringType.FullName == type.FullName).ToList();
                 list = list.Where(w => !(w.PropertyType.IsGenericType && w.PropertyType.GetGenericTypeDefinition() == typeof(IQueryable<>))).ToList();
-                list = list.Where(w => w.PropertyType != typeof(ReferenceItem)).ToList();
                 if (type != rootType) list = list.Where(w => w.PropertyName == "Id").ToList();
                 return list;
             }

@@ -17,8 +17,18 @@ namespace MobileSample.Services
 
         private string GetDatabaseFilePath()
         {
-            string databaseFilePath = Environment.GetFolderPath(Environment.SpecialFolder.Personal);
-            databaseFilePath = Path.Combine(databaseFilePath, $"{nameof(MobileSample)}.realm");
+            string databaseFileName = $"{nameof(MobileSample)}.realm";
+            string databaseFilePath = null;
+            if (Device.RuntimePlatform == "Android")
+            {
+                databaseFilePath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Personal), databaseFileName);
+            }
+            else if (Device.RuntimePlatform == "iOS")
+            {
+                databaseFilePath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "..", "Library", databaseFileName);
+            }
+            if (string.IsNullOrEmpty(databaseFilePath)) throw new NotImplementedException();
+
             return databaseFilePath;
         }
 
@@ -55,6 +65,18 @@ namespace MobileSample.Services
             Realm realm = GetInstance();
             Configuration configurationSynchronizationId = realm.All<Configuration>().Where(w => w.Key == SYNCHRONIZATIONID_KEY).FirstOrDefault();
             return configurationSynchronizationId == null ? false : true;
+        }
+
+        public void ResetAllData()
+        {
+            Realm realm = GetInstance();
+            realm.Write(() => 
+            {
+                realm.RemoveAll<Employee>();
+                realm.RemoveAll<Department>();
+                realm.RemoveAll<DatabaseInstanceInfo>();
+                realm.RemoveAll<TimeStamp>();
+            });
         }
 
         public string GetSynchronizationId()

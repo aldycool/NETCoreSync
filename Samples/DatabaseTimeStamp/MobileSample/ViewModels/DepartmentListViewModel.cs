@@ -36,8 +36,10 @@ namespace MobileSample.ViewModels
             set
             {
                 SetProperty(ref selectedItem, value);
+                if (selectedItem == null) return;
                 DepartmentItemPage page = new DepartmentItemPage(selectedItem.Id);
                 navigation.PushAsync(page);
+                SelectedItem = null;
             }
         }
 

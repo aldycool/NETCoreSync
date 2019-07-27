@@ -24,8 +24,6 @@ namespace MobileSample.iOS
         {
             global::Xamarin.Forms.Forms.Init();
 
-            SQLitePCL.Batteries_V2.Init();
-
             LoadApplication(new App());
 
             return base.FinishedLaunching(app, options);

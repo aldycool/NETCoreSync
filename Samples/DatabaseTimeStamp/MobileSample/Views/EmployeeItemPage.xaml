@@ -16,7 +16,7 @@
                 <Label Text="Name" />
                 <Entry Text="{Binding Data.Name}" />
                 <Label Text="Birthday" />
-                <DatePicker Date="{Binding Data.Birthday}" />
+                <DatePicker Date="{Binding DateTimeBirthday}" />
                 <Label Text="Number of Computers" />
                 <Entry Text="{Binding Data.NumberOfComputers}" Keyboard="Numeric" />
                 <Label Text="Saving Amount" />
@@ -24,7 +24,7 @@
                 <Label Text="Is Active" />
                 <Picker Title="Select Status" ItemsSource="{Binding IsActiveItems}" SelectedItem="{Binding Data.IsActive, Mode=TwoWay}" />
                 <Label Text="Department" />
-                <Picker Title="Select Department" ItemsSource="{Binding DepartmentItems}" ItemDisplayBinding="{Binding Name}" SelectedItem="{Binding Data.DepartmentRef, Mode=TwoWay}"  />
+                <Picker Title="Select Department" ItemsSource="{Binding DepartmentItems}" ItemDisplayBinding="{Binding Name}" SelectedItem="{Binding SelectedDepartmentItem, Mode=TwoWay}"  />
             </StackLayout>
         </ScrollView>
     </ContentPage.Content>
