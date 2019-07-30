@@ -25,7 +25,8 @@ namespace NETCoreSync
         public enum OperationType
         {
             GetChanges = 1,
-            ApplyChanges = 2
+            ApplyChanges = 2,
+            ProvisionKnowledge = 3
         }
 
         public virtual bool IsServerEngine()
@@ -52,19 +53,13 @@ namespace NETCoreSync
             throw new NotImplementedException();
         }
 
-        public virtual void CreateOrUpdateDatabaseInstanceInfo(string synchronizationId, DatabaseInstanceInfo databaseInstanceInfo)
+        public virtual List<DatabaseInstanceInfo> GetAllDatabaseInstanceInfos(string synchronizationId, Dictionary<string, object> customInfo)
         {
             //must implement if SyncConfiguration.TimeStampStrategy = UseEachDatabaseInstanceTimeStamp
             throw new NotImplementedException();
         }
 
-        public virtual DatabaseInstanceInfo GetLocalDatabaseInstanceInfo()
-        {
-            //must implement if SyncConfiguration.TimeStampStrategy = UseEachDatabaseInstanceTimeStamp
-            throw new NotImplementedException();
-        }
-
-        public virtual DatabaseInstanceInfo GetRemoteDatabaseInstanceInfo(string synchronizationId, string databaseInstanceId)
+        public virtual void CreateOrUpdateDatabaseInstanceInfo(DatabaseInstanceInfo databaseInstanceInfo, string synchronizationId, Dictionary<string, object> customInfo)
         {
             //must implement if SyncConfiguration.TimeStampStrategy = UseEachDatabaseInstanceTimeStamp
             throw new NotImplementedException();
@@ -373,6 +368,63 @@ namespace NETCoreSync
             return (localSyncType, appliedIds, deletedIds);
         }
 
+        internal List<DatabaseInstanceInfo> GetKnowledge(List<string> log, string synchronizationId, Dictionary<string, object> customInfo)
+        {
+            List<DatabaseInstanceInfo> databaseInstanceInfos = GetAllDatabaseInstanceInfos(synchronizationId, customInfo);
+            if (databaseInstanceInfos == null) databaseInstanceInfos = new List<DatabaseInstanceInfo>();
+            log.Add($"All DatabaseInstanceInfos Count: {databaseInstanceInfos.Count}");
+            if (databaseInstanceInfos.Where(w => w.IsLocal).Count() > 1) throw new SyncEngineConstraintException("Found multiple DatabaseInstanceInfo with IsLocal equals to true. IsLocal should be 1 (one) data only");
+            if (databaseInstanceInfos.Where(w => w.IsLocal).Count() == 1) return databaseInstanceInfos;
+            log.Add("Local DatabaseInstanceInfo is not found. Creating a new Local DatabaseInstanceInfo...");
+            DatabaseInstanceInfo localDatabaseInstanceInfo = new DatabaseInstanceInfo()
+            {
+                DatabaseInstanceId = Guid.NewGuid().ToString(),
+                IsLocal = true
+            };
+            log.Add("Getting Next TimeStamp...");
+            long nextTimeStamp = InvokeGetNextTimeStamp();
+            log.Add("Provisioning All Existing Data with the acquired TimeStamp and DatabaseInstanceId...");
+            log.Add($"SyncTypes Count: {SyncConfiguration.SyncTypes.Count}");
+            for (int i = 0; i < SyncConfiguration.SyncTypes.Count; i++)
+            {
+                Type syncType = SyncConfiguration.SyncTypes[i];
+                log.Add($"Processing Type: {syncType.Name} ({i + 1} of {SyncConfiguration.SyncTypes.Count})");
+                int dataCount = 0;
+                SyncConfiguration.SchemaInfo schemaInfo = GetSchemaInfo(SyncConfiguration, syncType);
+                OperationType operationType = OperationType.ProvisionKnowledge;
+                object transaction = StartTransaction(syncType, operationType, synchronizationId, customInfo);
+                try
+                {
+                    IQueryable queryable = InvokeGetQueryable(syncType, transaction, operationType, synchronizationId, customInfo);
+                    System.Collections.IEnumerator enumerator = queryable.GetEnumerator();
+                    while (enumerator.MoveNext())
+                    {
+                        dataCount += 1;
+                        object data = enumerator.Current;
+                        data.GetType().GetProperty(schemaInfo.PropertyInfoDatabaseInstanceId.Name).SetValue(data, null);
+                        data.GetType().GetProperty(schemaInfo.PropertyInfoLastUpdated.Name).SetValue(data, nextTimeStamp);
+                        PersistData(syncType, data, false, transaction, operationType, synchronizationId, customInfo);
+                    }
+                    CommitTransaction(syncType, transaction, operationType, synchronizationId, customInfo);
+                }
+                catch (Exception)
+                {
+                    RollbackTransaction(syncType, transaction, operationType, synchronizationId, customInfo);
+                    throw;
+                }
+                finally
+                {
+                    EndTransaction(syncType, transaction, operationType, synchronizationId, customInfo);
+                }
+                log.Add($"Type: {syncType.Name} Processed. Provisioned Data Count: {dataCount}");
+            }
+            localDatabaseInstanceInfo.LastSyncTimeStamp = nextTimeStamp;
+            log.Add("Saving Local DatabaseInstanceInfo...");
+            CreateOrUpdateDatabaseInstanceInfo(localDatabaseInstanceInfo, synchronizationId, customInfo);
+            databaseInstanceInfos = GetAllDatabaseInstanceInfos(synchronizationId, customInfo);
+            return databaseInstanceInfos;
+        }
+
         private IQueryable InvokeGetQueryable(Type classType, object transaction, OperationType operationType, string synchronizationId, Dictionary<string, object> customInfo)
         {
             IQueryable queryable = GetQueryable(classType, transaction, operationType, synchronizationId, customInfo);
@@ -424,6 +476,13 @@ namespace NETCoreSync
             long minValueTicks = GetMinValueTicks();
             if (lastSync < minValueTicks) lastSync = minValueTicks;
             return lastSync;
+        }
+
+        internal long InvokeGetNextTimeStamp()
+        {
+            long nextTimeStamp = GetNextTimeStamp();
+            if (nextTimeStamp == 0) throw new SyncEngineConstraintException("GetNextTimeStamp should return value greater than zero");
+            return nextTimeStamp;
         }
 
         private static SyncConfiguration.SchemaInfo GetSchemaInfo(SyncConfiguration syncConfiguration, Type type)

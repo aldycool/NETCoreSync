@@ -27,99 +27,21 @@ namespace NETCoreSync
             
             try
             {
-                syncResult.Log.Add("=== Client Get Changes ===");
-                SyncEngine.GetChangesParameter clientGetChangesParameter = new SyncEngine.GetChangesParameter(
-                    SyncEngine.PayloadAction.Synchronize, 
-                    synchronizationId, 
-                    customInfo);
-                clientGetChangesParameter.Log = syncResult.Log;
-                clientGetChangesParameter.LastSync = syncEngine.InvokeGetClientLastSync();
-                SyncEngine.GetChangesResult clientGetChangesResult = null;
-                try
+                syncResult.Log.Add($"=== Synchronize Started ===");
+
+                if (syncEngine.SyncConfiguration.TimeStampStrategy == SyncConfiguration.TimeStampStrategyEnum.GlobalTimeStamp)
                 {
-                    syncEngine.GetChanges(clientGetChangesParameter, ref clientGetChangesResult);
+                    await SynchronizeGlobalTimeStamp(customInfo, syncResult);
                 }
-                catch (Exception)
+                else if (syncEngine.SyncConfiguration.TimeStampStrategy == SyncConfiguration.TimeStampStrategyEnum.DatabaseTimeStamp)
                 {
-                    throw;
+                    await SynchronizeDatabaseTimeStamp(customInfo, syncResult);
                 }
-                finally
+                else
                 {
-                    if (clientGetChangesResult != null)
-                    {
-                        syncResult.ClientLog.SentChanges.AddRange(clientGetChangesResult.LogChanges);
-                    }
+                    throw new NotImplementedException(syncEngine.SyncConfiguration.TimeStampStrategy.ToString());
                 }
 
-                syncResult.Log.Add("=== Server Apply Changes ===");
-                SyncEngine.ApplyChangesParameter serverApplyChangesParameter = new SyncEngine.ApplyChangesParameter(
-                    SyncEngine.PayloadAction.Synchronize,
-                    synchronizationId,
-                    customInfo);
-                serverApplyChangesParameter.Changes = clientGetChangesResult.Changes;
-                SyncEngine.ApplyChangesResult serverApplyChangesResult = null;
-                (string serverApplyChangesErrMsg, JObject jObjectServerApplyChangesResult) = await ExecuteOnServer(serverApplyChangesParameter.GetCompressed(), syncResult);
-                if (jObjectServerApplyChangesResult != null)
-                {
-                    serverApplyChangesResult = SyncEngine.ApplyChangesResult.FromPayload(jObjectServerApplyChangesResult);
-                    syncResult.ServerLog.AppliedChanges.Inserts.AddRange(serverApplyChangesResult.Inserts);
-                    syncResult.ServerLog.AppliedChanges.Updates.AddRange(serverApplyChangesResult.Updates);
-                    syncResult.ServerLog.AppliedChanges.Deletes.AddRange(serverApplyChangesResult.Deletes);
-                    syncResult.ServerLog.AppliedChanges.Conflicts.AddRange(serverApplyChangesResult.Conflicts);
-                }
-                if (!string.IsNullOrEmpty(serverApplyChangesErrMsg)) throw new Exception(serverApplyChangesErrMsg);
-
-                syncResult.Log.Add("=== Server Get Changes ===");
-                SyncEngine.GetChangesParameter serverGetChangesParameter = new SyncEngine.GetChangesParameter(
-                    SyncEngine.PayloadAction.SynhronizeReverse,
-                    synchronizationId,
-                    customInfo);
-                serverGetChangesParameter.LastSync = clientGetChangesParameter.LastSync;
-                serverGetChangesParameter.PayloadAppliedIds = serverApplyChangesResult.PayloadAppliedIds;
-                SyncEngine.GetChangesResult serverGetChangesResult = null;
-                (string serverGetChangesErrMsg, JObject jObjectServerGetChangesResult) = await ExecuteOnServer(serverGetChangesParameter.GetCompressed(), syncResult);
-                if (jObjectServerGetChangesResult != null)
-                {
-                    serverGetChangesResult = SyncEngine.GetChangesResult.FromPayload(jObjectServerGetChangesResult);
-                    syncResult.ServerLog.SentChanges.AddRange(serverGetChangesResult.LogChanges);
-                }
-                if (!string.IsNullOrEmpty(serverGetChangesErrMsg)) throw new Exception(serverGetChangesErrMsg);
-
-                syncResult.Log.Add("=== Client Apply Changes ===");
-                SyncEngine.ApplyChangesParameter clientApplyChangesParameter = new SyncEngine.ApplyChangesParameter(
-                    SyncEngine.PayloadAction.Synchronize,
-                    synchronizationId,
-                    customInfo);
-                clientApplyChangesParameter.Log = syncResult.Log;
-                clientApplyChangesParameter.Changes = serverGetChangesResult.Changes;
-                SyncEngine.ApplyChangesResult clientApplyChangesResult = null;
-                try
-                {
-                    syncEngine.ApplyChanges(clientApplyChangesParameter, ref clientApplyChangesResult);
-                }
-                catch (Exception)
-                {
-                    throw;
-                }
-                finally
-                {
-                    if (clientApplyChangesResult != null)
-                    {
-                        syncResult.ClientLog.AppliedChanges.Inserts.AddRange(clientApplyChangesResult.Inserts);
-                        syncResult.ClientLog.AppliedChanges.Updates.AddRange(clientApplyChangesResult.Updates);
-                        syncResult.ClientLog.AppliedChanges.Deletes.AddRange(clientApplyChangesResult.Deletes);
-                        syncResult.ClientLog.AppliedChanges.Conflicts.AddRange(clientApplyChangesResult.Conflicts);
-                    }
-                }
-
-                syncResult.Log.Add($"===LastSync from Client Get Changes Parameter: {clientGetChangesParameter.LastSync} ===");
-                syncResult.Log.Add($"===MaxTimeStamp from Client Get Changes Result: {clientGetChangesResult.MaxTimeStamp} ===");
-                syncResult.Log.Add($"===MaxTimeStamp from Server Get Changes Result: {serverGetChangesResult.MaxTimeStamp} ===");
-                long maxLastSync = clientGetChangesParameter.LastSync;
-                if (clientGetChangesResult.MaxTimeStamp > maxLastSync) maxLastSync = clientGetChangesResult.MaxTimeStamp;
-                if (serverGetChangesResult.MaxTimeStamp > maxLastSync) maxLastSync = serverGetChangesResult.MaxTimeStamp;
-                syncResult.Log.Add($"=== LastSync Updated To: {maxLastSync} ===");
-                syncEngine.SetClientLastSync(maxLastSync);
                 syncResult.Log.Add($"=== Synchronize Finished ===");
             }
             catch (Exception e)
@@ -128,6 +50,108 @@ namespace NETCoreSync
                 syncResult.Log.Add($"=== Error: {e.Message} ===");
             }
             return syncResult;
+        }
+
+        private async Task SynchronizeDatabaseTimeStamp(Dictionary<string, object> customInfo, SyncResult syncResult)
+        {
+
+        }
+
+        private async Task SynchronizeGlobalTimeStamp(Dictionary<string, object> customInfo, SyncResult syncResult)
+        {
+            syncResult.Log.Add("=== Client Get Changes ===");
+            SyncEngine.GetChangesParameter clientGetChangesParameter = new SyncEngine.GetChangesParameter(
+                SyncEngine.PayloadAction.Synchronize,
+                synchronizationId,
+                customInfo);
+            clientGetChangesParameter.Log = syncResult.Log;
+            clientGetChangesParameter.LastSync = syncEngine.InvokeGetClientLastSync();
+            SyncEngine.GetChangesResult clientGetChangesResult = null;
+            try
+            {
+                syncEngine.GetChanges(clientGetChangesParameter, ref clientGetChangesResult);
+            }
+            catch (Exception)
+            {
+                throw;
+            }
+            finally
+            {
+                if (clientGetChangesResult != null)
+                {
+                    syncResult.ClientLog.SentChanges.AddRange(clientGetChangesResult.LogChanges);
+                }
+            }
+
+            syncResult.Log.Add("=== Server Apply Changes ===");
+            SyncEngine.ApplyChangesParameter serverApplyChangesParameter = new SyncEngine.ApplyChangesParameter(
+                SyncEngine.PayloadAction.Synchronize,
+                synchronizationId,
+                customInfo);
+            serverApplyChangesParameter.Changes = clientGetChangesResult.Changes;
+            SyncEngine.ApplyChangesResult serverApplyChangesResult = null;
+            (string serverApplyChangesErrMsg, JObject jObjectServerApplyChangesResult) = await ExecuteOnServer(serverApplyChangesParameter.GetCompressed(), syncResult);
+            if (jObjectServerApplyChangesResult != null)
+            {
+                serverApplyChangesResult = SyncEngine.ApplyChangesResult.FromPayload(jObjectServerApplyChangesResult);
+                syncResult.ServerLog.AppliedChanges.Inserts.AddRange(serverApplyChangesResult.Inserts);
+                syncResult.ServerLog.AppliedChanges.Updates.AddRange(serverApplyChangesResult.Updates);
+                syncResult.ServerLog.AppliedChanges.Deletes.AddRange(serverApplyChangesResult.Deletes);
+                syncResult.ServerLog.AppliedChanges.Conflicts.AddRange(serverApplyChangesResult.Conflicts);
+            }
+            if (!string.IsNullOrEmpty(serverApplyChangesErrMsg)) throw new Exception(serverApplyChangesErrMsg);
+
+            syncResult.Log.Add("=== Server Get Changes ===");
+            SyncEngine.GetChangesParameter serverGetChangesParameter = new SyncEngine.GetChangesParameter(
+                SyncEngine.PayloadAction.SynhronizeReverse,
+                synchronizationId,
+                customInfo);
+            serverGetChangesParameter.LastSync = clientGetChangesParameter.LastSync;
+            serverGetChangesParameter.PayloadAppliedIds = serverApplyChangesResult.PayloadAppliedIds;
+            SyncEngine.GetChangesResult serverGetChangesResult = null;
+            (string serverGetChangesErrMsg, JObject jObjectServerGetChangesResult) = await ExecuteOnServer(serverGetChangesParameter.GetCompressed(), syncResult);
+            if (jObjectServerGetChangesResult != null)
+            {
+                serverGetChangesResult = SyncEngine.GetChangesResult.FromPayload(jObjectServerGetChangesResult);
+                syncResult.ServerLog.SentChanges.AddRange(serverGetChangesResult.LogChanges);
+            }
+            if (!string.IsNullOrEmpty(serverGetChangesErrMsg)) throw new Exception(serverGetChangesErrMsg);
+
+            syncResult.Log.Add("=== Client Apply Changes ===");
+            SyncEngine.ApplyChangesParameter clientApplyChangesParameter = new SyncEngine.ApplyChangesParameter(
+                SyncEngine.PayloadAction.Synchronize,
+                synchronizationId,
+                customInfo);
+            clientApplyChangesParameter.Log = syncResult.Log;
+            clientApplyChangesParameter.Changes = serverGetChangesResult.Changes;
+            SyncEngine.ApplyChangesResult clientApplyChangesResult = null;
+            try
+            {
+                syncEngine.ApplyChanges(clientApplyChangesParameter, ref clientApplyChangesResult);
+            }
+            catch (Exception)
+            {
+                throw;
+            }
+            finally
+            {
+                if (clientApplyChangesResult != null)
+                {
+                    syncResult.ClientLog.AppliedChanges.Inserts.AddRange(clientApplyChangesResult.Inserts);
+                    syncResult.ClientLog.AppliedChanges.Updates.AddRange(clientApplyChangesResult.Updates);
+                    syncResult.ClientLog.AppliedChanges.Deletes.AddRange(clientApplyChangesResult.Deletes);
+                    syncResult.ClientLog.AppliedChanges.Conflicts.AddRange(clientApplyChangesResult.Conflicts);
+                }
+            }
+
+            syncResult.Log.Add($"===LastSync from Client Get Changes Parameter: {clientGetChangesParameter.LastSync} ===");
+            syncResult.Log.Add($"===MaxTimeStamp from Client Get Changes Result: {clientGetChangesResult.MaxTimeStamp} ===");
+            syncResult.Log.Add($"===MaxTimeStamp from Server Get Changes Result: {serverGetChangesResult.MaxTimeStamp} ===");
+            long maxLastSync = clientGetChangesParameter.LastSync;
+            if (clientGetChangesResult.MaxTimeStamp > maxLastSync) maxLastSync = clientGetChangesResult.MaxTimeStamp;
+            if (serverGetChangesResult.MaxTimeStamp > maxLastSync) maxLastSync = serverGetChangesResult.MaxTimeStamp;
+            syncResult.Log.Add($"=== LastSync Updated To: {maxLastSync} ===");
+            syncEngine.SetClientLastSync(maxLastSync);
         }
 
         private async Task<(string errorMessage, JObject payload)> ExecuteOnServer(byte[] compressed, SyncResult syncResult)

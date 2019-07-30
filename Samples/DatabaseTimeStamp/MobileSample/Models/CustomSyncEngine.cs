@@ -36,7 +36,23 @@ namespace MobileSample.Models
             return timeStamp.Counter;
         }
 
-        public override void CreateOrUpdateDatabaseInstanceInfo(string synchronizationId, DatabaseInstanceInfo databaseInstanceInfo)
+        public override List<DatabaseInstanceInfo> GetAllDatabaseInstanceInfos(string synchronizationId, Dictionary<string, object> customInfo)
+        {
+            List<Models.DatabaseInstanceInfo> infos = Realm.All<Models.DatabaseInstanceInfo>().ToList();
+            List<DatabaseInstanceInfo> result = new List<DatabaseInstanceInfo>();
+            for (int i = 0; i < infos.Count; i++)
+            {
+                result.Add(new DatabaseInstanceInfo()
+                {
+                    DatabaseInstanceId = infos[i].DatabaseInstanceId,
+                    IsLocal = infos[i].IsLocal,
+                    LastSyncTimeStamp = infos[i].LastSyncTimeStamp
+                });
+            }
+            return result;
+        }
+
+        public override void CreateOrUpdateDatabaseInstanceInfo(DatabaseInstanceInfo databaseInstanceInfo, string synchronizationId, Dictionary<string, object> customInfo)
         {
             Realm.Write(() =>
             {
@@ -53,41 +69,10 @@ namespace MobileSample.Models
             });
         }
 
-        public override DatabaseInstanceInfo GetLocalDatabaseInstanceInfo()
-        {
-            return GetDatabaseInstanceInfoImpl(true, null);
-        }
-
-        public override DatabaseInstanceInfo GetRemoteDatabaseInstanceInfo(string synchronizationId, string databaseInstanceId)
-        {
-            return GetDatabaseInstanceInfoImpl(false, databaseInstanceId);
-        }
-
-        private DatabaseInstanceInfo GetDatabaseInstanceInfoImpl(bool isLocal, string databaseInstanceId)
-        {
-            Models.DatabaseInstanceInfo info = null;
-            if (isLocal)
-            {
-                info = Realm.All<Models.DatabaseInstanceInfo>().Where(w => w.IsLocal).FirstOrDefault();
-            }
-            else
-            {
-                info = Realm.All<Models.DatabaseInstanceInfo>().Where(w => w.DatabaseInstanceId == databaseInstanceId).FirstOrDefault();
-            }
-            if (info == null) return null;
-            DatabaseInstanceInfo databaseInstanceInfo = new DatabaseInstanceInfo()
-            {
-                DatabaseInstanceId = info.DatabaseInstanceId,
-                IsLocal = info.IsLocal,
-                LastSyncTimeStamp = info.LastSyncTimeStamp
-            };
-            return databaseInstanceInfo;
-        }
-
         public override object StartTransaction(Type classType, OperationType operationType, string synchronizationId, Dictionary<string, object> customInfo)
         {
             Transaction transaction = null;
-            if (operationType == OperationType.ApplyChanges) transaction = Realm.BeginWrite();
+            if (operationType == OperationType.ApplyChanges || operationType == OperationType.ProvisionKnowledge) transaction = Realm.BeginWrite();
             return transaction;
         }
 

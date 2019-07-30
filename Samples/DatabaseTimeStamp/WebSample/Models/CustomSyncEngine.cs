@@ -29,57 +29,33 @@ namespace WebSample.Models
             return result.TimeStamp;
         }
 
-        public override void CreateOrUpdateDatabaseInstanceInfo(string synchronizationId, DatabaseInstanceInfo databaseInstanceInfo)
+        public override List<DatabaseInstanceInfo> GetAllDatabaseInstanceInfos(string synchronizationId, Dictionary<string, object> customInfo)
         {
-            string validSynchronizationId = null;
-            if (!databaseInstanceInfo.IsLocal) validSynchronizationId = synchronizationId;
+            return databaseContext.DatabaseInstanceInfos.Where(w => w.SynchronizationID == synchronizationId).Select(s => new DatabaseInstanceInfo()
+            {
+                DatabaseInstanceId = s.DatabaseInstanceId.ToString(),
+                IsLocal = s.IsLocal,
+                LastSyncTimeStamp = s.LastSyncTimeStamp
+            }).ToList();
+        }
+
+        public override void CreateOrUpdateDatabaseInstanceInfo(DatabaseInstanceInfo databaseInstanceInfo, string synchronizationId, Dictionary<string, object> customInfo)
+        {
             Guid id = new Guid(databaseInstanceInfo.DatabaseInstanceId);
-            Models.DatabaseInstanceInfo info = databaseContext.DatabaseInstanceInfos.Where(w => w.SynchronizationID == validSynchronizationId && w.DatabaseInstanceId == id).FirstOrDefault();
+            Models.DatabaseInstanceInfo info = databaseContext.DatabaseInstanceInfos.Where(w => w.SynchronizationID == synchronizationId && w.DatabaseInstanceId == id).FirstOrDefault();
             if (info == null)
             {
                 info = new Models.DatabaseInstanceInfo();
                 info.DatabaseInstanceId = id;
-                info.SynchronizationID = validSynchronizationId;
+                info.SynchronizationID = synchronizationId;
                 databaseContext.Add(info);
                 databaseContext.SaveChanges();
-                info = databaseContext.DatabaseInstanceInfos.Where(w => w.SynchronizationID == validSynchronizationId && w.DatabaseInstanceId == id).First();
+                info = databaseContext.DatabaseInstanceInfos.Where(w => w.SynchronizationID == synchronizationId && w.DatabaseInstanceId == id).First();
             }
             info.IsLocal = databaseInstanceInfo.IsLocal;
             info.LastSyncTimeStamp = databaseInstanceInfo.LastSyncTimeStamp;
             databaseContext.Update(info);
             databaseContext.SaveChanges();
-        }
-
-        public override DatabaseInstanceInfo GetLocalDatabaseInstanceInfo()
-        {
-            return GetDatabaseInstanceInfoImpl(true, null, null);
-        }
-
-        public override DatabaseInstanceInfo GetRemoteDatabaseInstanceInfo(string synchronizationId, string databaseInstanceId)
-        {
-            return GetDatabaseInstanceInfoImpl(false, synchronizationId, databaseInstanceId);
-        }
-
-        private DatabaseInstanceInfo GetDatabaseInstanceInfoImpl(bool isLocal, string synchronizationId, string databaseInstanceId)
-        {
-            Models.DatabaseInstanceInfo info = null;
-            if (isLocal)
-            {
-                info = databaseContext.DatabaseInstanceInfos.Where(w => w.IsLocal).FirstOrDefault();
-            }
-            else
-            {
-                Guid id = new Guid(databaseInstanceId);
-                info = databaseContext.DatabaseInstanceInfos.Where(w => w.SynchronizationID == synchronizationId && w.DatabaseInstanceId == id).FirstOrDefault();
-            }
-            if (info == null) return null;
-            DatabaseInstanceInfo databaseInstanceInfo = new DatabaseInstanceInfo()
-            {
-                DatabaseInstanceId = info.DatabaseInstanceId.ToString(),
-                IsLocal = info.IsLocal,
-                LastSyncTimeStamp = info.LastSyncTimeStamp
-            };
-            return databaseInstanceInfo;
         }
 
         public override IQueryable GetQueryable(Type classType, object transaction, OperationType operationType, string synchronizationId, Dictionary<string, object> customInfo)
