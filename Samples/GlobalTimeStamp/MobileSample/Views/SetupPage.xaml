@@ -12,6 +12,8 @@
                 <Label Text="Synchronization ID" />
                 <Entry Text="{Binding SynchronizationId}" />
                 <Button Text="Set" Command="{Binding SetSynchronizationIdCommand}" />
+                <BoxView VerticalOptions="Center" HorizontalOptions="Center" HeightRequest="1" WidthRequest="50" Color="#5b5d68" />
+                <Button Text="Date Time" Command="{Binding DateTimeCommand}" />
             </StackLayout>
         </ScrollView>
     </ContentPage.Content>

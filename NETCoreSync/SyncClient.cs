@@ -27,78 +27,113 @@ namespace NETCoreSync
             
             try
             {
-                SyncEngine.PreparePayloadParameter baseParameter = null;
-
-                if (syncEngine.SyncConfiguration.TimeStampStrategy == SyncConfiguration.TimeStampStrategyEnum.GlobalTimeStamp)
+                syncResult.Log.Add("=== Client Get Changes ===");
+                SyncEngine.GetChangesParameter clientGetChangesParameter = new SyncEngine.GetChangesParameter(
+                    SyncEngine.PayloadAction.Synchronize, 
+                    synchronizationId, 
+                    customInfo);
+                clientGetChangesParameter.Log = syncResult.Log;
+                clientGetChangesParameter.LastSync = syncEngine.InvokeGetClientLastSync();
+                SyncEngine.GetChangesResult clientGetChangesResult = null;
+                try
                 {
-                    baseParameter = new SyncEngine.PreparePayloadGlobalTimeStampParameter();
+                    syncEngine.GetChanges(clientGetChangesParameter, ref clientGetChangesResult);
                 }
-                else if (syncEngine.SyncConfiguration.TimeStampStrategy == SyncConfiguration.TimeStampStrategyEnum.DatabaseTimeStamp)
+                catch (Exception)
                 {
-                    baseParameter = new SyncEngine.PreparePayloadDatabaseTimeStampParameter();
+                    throw;
                 }
-                else
+                finally
                 {
-                    throw new NotImplementedException(syncEngine.SyncConfiguration.TimeStampStrategy.ToString());
+                    if (clientGetChangesResult != null)
+                    {
+                        syncResult.ClientLog.SentChanges.AddRange(clientGetChangesResult.LogChanges);
+                    }
                 }
 
-                baseParameter.SynchronizationId = synchronizationId;
-                baseParameter.CustomInfo = customInfo;
-                baseParameter.Log = syncResult.Log;
-
-                if (syncEngine.SyncConfiguration.TimeStampStrategy == SyncConfiguration.TimeStampStrategyEnum.GlobalTimeStamp)
+                syncResult.Log.Add("=== Server Apply Changes ===");
+                SyncEngine.ApplyChangesParameter serverApplyChangesParameter = new SyncEngine.ApplyChangesParameter(
+                    SyncEngine.PayloadAction.Synchronize,
+                    synchronizationId,
+                    customInfo);
+                serverApplyChangesParameter.Changes = clientGetChangesResult.Changes;
+                SyncEngine.ApplyChangesResult serverApplyChangesResult = null;
+                (string serverApplyChangesErrMsg, JObject jObjectServerApplyChangesResult) = await ExecuteOnServer(serverApplyChangesParameter.GetCompressed(), syncResult);
+                if (jObjectServerApplyChangesResult != null)
                 {
-                    baseParameter.PayloadAction = SyncEngine.PayloadAction.Synchronize;
-
-                    SyncEngine.PreparePayloadGlobalTimeStampParameter parameter = (SyncEngine.PreparePayloadGlobalTimeStampParameter)baseParameter; 
-                    parameter.LastSync = syncEngine.InvokeGetClientLastSync();
-
-                    SyncEngine.PreparePayloadGlobalTimeStampResult result = (SyncEngine.PreparePayloadGlobalTimeStampResult)syncEngine.PreparePayload(parameter);
-                    syncResult.ClientLog.SentChanges.AddRange(result.LogChanges);
-
-                    syncResult.Log.Add($"Sending Data to {serverUrl}...");
-                    JObject jObjectResponse = await SendToServer(result.GetCompressed(), syncResult);
-                    AddServerLogIfExist(jObjectResponse, syncResult);
-
-                    syncResult.Log.Add($"Processing Data from {serverUrl}...");
-                    string base64SyncDataBytes = jObjectResponse["payload"].Value<string>();
-                    long serverMaxTimeStamp = jObjectResponse["maxTimeStamp"].Value<long>();
-                    byte[] syncDataBytes = Convert.FromBase64String(base64SyncDataBytes);
-                    
-                    SyncEngine.ProcessPayloadGlobalTimeStampParameter processParameter = new SyncEngine.ProcessPayloadGlobalTimeStampParameter(syncDataBytes);
-                    processParameter.Log = syncResult.Log;
-                    processParameter.Inserts = syncResult.ClientLog.AppliedChanges.Inserts;
-                    processParameter.Updates = syncResult.ClientLog.AppliedChanges.Updates;
-                    processParameter.Deletes = syncResult.ClientLog.AppliedChanges.Deletes;
-                    processParameter.Conflicts = syncResult.ClientLog.AppliedChanges.Conflicts;
-                    syncEngine.ProcessPayload(processParameter);
-
-                    long maxLastSync = parameter.LastSync.HasValue ? parameter.LastSync.Value : SyncEngine.GetMinValueTicks();
-                    if (result.MaxTimeStamp > maxLastSync) maxLastSync = result.MaxTimeStamp;
-                    if (serverMaxTimeStamp > maxLastSync) maxLastSync = serverMaxTimeStamp;
-                    syncResult.Log.Add($"LastSync Updated To: {maxLastSync}");
-                    syncEngine.SetClientLastSync(maxLastSync);
-                    syncResult.Log.Add($"Synchronize Finished");
+                    serverApplyChangesResult = SyncEngine.ApplyChangesResult.FromPayload(jObjectServerApplyChangesResult);
+                    syncResult.ServerLog.AppliedChanges.Inserts.AddRange(serverApplyChangesResult.Inserts);
+                    syncResult.ServerLog.AppliedChanges.Updates.AddRange(serverApplyChangesResult.Updates);
+                    syncResult.ServerLog.AppliedChanges.Deletes.AddRange(serverApplyChangesResult.Deletes);
+                    syncResult.ServerLog.AppliedChanges.Conflicts.AddRange(serverApplyChangesResult.Conflicts);
                 }
-                else if (syncEngine.SyncConfiguration.TimeStampStrategy == SyncConfiguration.TimeStampStrategyEnum.DatabaseTimeStamp)
+                if (!string.IsNullOrEmpty(serverApplyChangesErrMsg)) throw new Exception(serverApplyChangesErrMsg);
+
+                syncResult.Log.Add("=== Server Get Changes ===");
+                SyncEngine.GetChangesParameter serverGetChangesParameter = new SyncEngine.GetChangesParameter(
+                    SyncEngine.PayloadAction.SynhronizeReverse,
+                    synchronizationId,
+                    customInfo);
+                serverGetChangesParameter.LastSync = clientGetChangesParameter.LastSync;
+                serverGetChangesParameter.PayloadAppliedIds = serverApplyChangesResult.PayloadAppliedIds;
+                SyncEngine.GetChangesResult serverGetChangesResult = null;
+                (string serverGetChangesErrMsg, JObject jObjectServerGetChangesResult) = await ExecuteOnServer(serverGetChangesParameter.GetCompressed(), syncResult);
+                if (jObjectServerGetChangesResult != null)
                 {
+                    serverGetChangesResult = SyncEngine.GetChangesResult.FromPayload(jObjectServerGetChangesResult);
+                    syncResult.ServerLog.SentChanges.AddRange(serverGetChangesResult.LogChanges);
+                }
+                if (!string.IsNullOrEmpty(serverGetChangesErrMsg)) throw new Exception(serverGetChangesErrMsg);
 
-                }
-                else
+                syncResult.Log.Add("=== Client Apply Changes ===");
+                SyncEngine.ApplyChangesParameter clientApplyChangesParameter = new SyncEngine.ApplyChangesParameter(
+                    SyncEngine.PayloadAction.Synchronize,
+                    synchronizationId,
+                    customInfo);
+                clientApplyChangesParameter.Log = syncResult.Log;
+                clientApplyChangesParameter.Changes = serverGetChangesResult.Changes;
+                SyncEngine.ApplyChangesResult clientApplyChangesResult = null;
+                try
                 {
-                    throw new NotImplementedException(syncEngine.SyncConfiguration.TimeStampStrategy.ToString());
+                    syncEngine.ApplyChanges(clientApplyChangesParameter, ref clientApplyChangesResult);
                 }
+                catch (Exception)
+                {
+                    throw;
+                }
+                finally
+                {
+                    if (clientApplyChangesResult != null)
+                    {
+                        syncResult.ClientLog.AppliedChanges.Inserts.AddRange(clientApplyChangesResult.Inserts);
+                        syncResult.ClientLog.AppliedChanges.Updates.AddRange(clientApplyChangesResult.Updates);
+                        syncResult.ClientLog.AppliedChanges.Deletes.AddRange(clientApplyChangesResult.Deletes);
+                        syncResult.ClientLog.AppliedChanges.Conflicts.AddRange(clientApplyChangesResult.Conflicts);
+                    }
+                }
+
+                syncResult.Log.Add($"===LastSync from Client Get Changes Parameter: {clientGetChangesParameter.LastSync} ===");
+                syncResult.Log.Add($"===MaxTimeStamp from Client Get Changes Result: {clientGetChangesResult.MaxTimeStamp} ===");
+                syncResult.Log.Add($"===MaxTimeStamp from Server Get Changes Result: {serverGetChangesResult.MaxTimeStamp} ===");
+                long maxLastSync = clientGetChangesParameter.LastSync;
+                if (clientGetChangesResult.MaxTimeStamp > maxLastSync) maxLastSync = clientGetChangesResult.MaxTimeStamp;
+                if (serverGetChangesResult.MaxTimeStamp > maxLastSync) maxLastSync = serverGetChangesResult.MaxTimeStamp;
+                syncResult.Log.Add($"=== LastSync Updated To: {maxLastSync} ===");
+                syncEngine.SetClientLastSync(maxLastSync);
+                syncResult.Log.Add($"=== Synchronize Finished ===");
             }
             catch (Exception e)
             {
                 syncResult.ErrorMessage = e.Message;
-                syncResult.Log.Add($"Error: {e.Message}");
+                syncResult.Log.Add($"=== Error: {e.Message} ===");
             }
             return syncResult;
         }
 
-        private async Task<JObject> SendToServer(byte[] compressed, SyncResult syncResult)
+        private async Task<(string errorMessage, JObject payload)> ExecuteOnServer(byte[] compressed, SyncResult syncResult)
         {
+            JObject payload = null;
+
             using (var httpClient = new HttpClient())
             {
                 using (var multipartFormDataContent = new MultipartFormDataContent())
@@ -116,57 +151,30 @@ namespace NETCoreSync
                         }
                         catch (Exception eInner)
                         {
-                            throw new Exception($"Unable to parse Response as JObject: {eInner.Message}. Response: {responseContent}");
+                            return ($"Unable to parse Response as JObject: {eInner.Message}. Response: {responseContent}", payload);
+                        }
+                        List<string> serverLog = jObjectResponse["log"].ToObject<List<string>>();
+                        for (int i = 0; i < serverLog.Count; i++)
+                        {
+                            syncResult.Log.Add($"Server -> {serverLog[i]}");
+                        }
+                        if (jObjectResponse.ContainsKey("payload"))
+                        {
+                            byte[] compressedResponse = Convert.FromBase64String(jObjectResponse["payload"].Value<string>());
+                            string jsonResponse = SyncEngine.Decompress(compressedResponse);
+                            payload = JsonConvert.DeserializeObject<JObject>(jsonResponse);
                         }
                         if (jObjectResponse.ContainsKey("errorMessage"))
                         {
-                            AddServerLogIfExist(jObjectResponse, syncResult);
-                            throw new Exception($"ServerMessage: {jObjectResponse["errorMessage"].Value<string>()}");
+                            return ($"ServerMessage: {jObjectResponse["errorMessage"].Value<string>()}", payload);
                         }
-                        return jObjectResponse;
+                        return (null, payload);
                     }
                     else
                     {
-                        throw new Exception($"Response StatusCode: {response.StatusCode}, ReasonPhrase: {response.ReasonPhrase}");
+                        return ($"Response StatusCode: {response.StatusCode}, ReasonPhrase: {response.ReasonPhrase}", payload);
                     }
                 }
-            }
-        }
-
-        private void AddServerLogIfExist(JObject jObjectResponse, SyncResult result)
-        {
-            if (jObjectResponse.ContainsKey("log"))
-            {
-                List<string> serverLog = jObjectResponse["log"].ToObject<List<string>>();
-                for (int i = 0; i < serverLog.Count; i++)
-                {
-                    result.Log.Add($"Server -> {serverLog[i]}");
-                }
-            }
-            if (jObjectResponse.ContainsKey("sentChanges"))
-            {
-                List<SyncLog.SyncLogData> serverSentChanges = jObjectResponse["sentChanges"].ToObject<List<SyncLog.SyncLogData>>();
-                result.ServerLog.SentChanges.AddRange(serverSentChanges);
-            }
-            if (jObjectResponse.ContainsKey("serverInserts"))
-            {
-                List<SyncLog.SyncLogData> serverInserts = jObjectResponse["serverInserts"].ToObject<List<SyncLog.SyncLogData>>();
-                result.ServerLog.AppliedChanges.Inserts.AddRange(serverInserts);
-            }
-            if (jObjectResponse.ContainsKey("serverUpdates"))
-            {
-                List<SyncLog.SyncLogData> serverUpdates = jObjectResponse["serverUpdates"].ToObject<List<SyncLog.SyncLogData>>();
-                result.ServerLog.AppliedChanges.Updates.AddRange(serverUpdates);
-            }
-            if (jObjectResponse.ContainsKey("serverDeletes"))
-            {
-                List<SyncLog.SyncLogData> serverDeletes = jObjectResponse["serverDeletes"].ToObject<List<SyncLog.SyncLogData>>();
-                result.ServerLog.AppliedChanges.Deletes.AddRange(serverDeletes);
-            }
-            if (jObjectResponse.ContainsKey("serverConflicts"))
-            {
-                List<SyncLog.SyncLogConflict> serverConflicts = jObjectResponse["serverConflicts"].ToObject<List<SyncLog.SyncLogConflict>>();
-                result.ServerLog.AppliedChanges.Conflicts.AddRange(serverConflicts);
             }
         }
     }

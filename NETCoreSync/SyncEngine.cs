@@ -154,53 +154,32 @@ namespace NETCoreSync
         internal enum PayloadAction
         {
             Synchronize,
+            SynhronizeReverse,
             Metadata
         }
 
-        internal PreparePayloadResult PreparePayload(PreparePayloadParameter preparePayloadParameter)
+        internal void GetChanges(GetChangesParameter parameter, ref GetChangesResult result)
         {
-            if (preparePayloadParameter == null) throw new NullReferenceException(nameof(preparePayloadParameter));
-            if (string.IsNullOrEmpty(preparePayloadParameter.SynchronizationId)) throw new NullReferenceException(nameof(preparePayloadParameter.SynchronizationId));
-            if (preparePayloadParameter.CustomInfo == null) preparePayloadParameter.CustomInfo = new Dictionary<string, object>();
+            if (parameter == null) throw new NullReferenceException(nameof(parameter));
+            result = new GetChangesResult(parameter.PayloadAction, parameter.SynchronizationId, parameter.CustomInfo);
+            result.MaxTimeStamp = GetMinValueTicks();
+            if (parameter.LastSync == 0) parameter.LastSync = GetMinValueTicks();
 
-            if (SyncConfiguration.TimeStampStrategy == SyncConfiguration.TimeStampStrategyEnum.GlobalTimeStamp)
+            parameter.Log.Add($"Preparing Data Since LastSync: {parameter.LastSync}");
+            parameter.Log.Add($"SyncTypes Count: {SyncConfiguration.SyncTypes.Count}");
+            for (int i = 0; i < SyncConfiguration.SyncTypes.Count; i++)
             {
-                if (preparePayloadParameter.PayloadAction != PayloadAction.Synchronize) throw new NotImplementedException(preparePayloadParameter.PayloadAction.ToString());
-
-                PreparePayloadGlobalTimeStampParameter parameter = (PreparePayloadGlobalTimeStampParameter)preparePayloadParameter;
-                if (parameter.LastSync == null) parameter.LastSync = GetMinValueTicks();
-
-                PreparePayloadGlobalTimeStampResult result = new PreparePayloadGlobalTimeStampResult(parameter);
-                result.MaxTimeStamp = GetMinValueTicks();
-
-                parameter.Log.Add($"Preparing Data Since LastSync: {parameter.LastSync}");
-                
-                JArray changes = new JArray();
-                parameter.Log.Add($"SyncTypes Count: {SyncConfiguration.SyncTypes.Count}");
-                for (int i = 0; i < SyncConfiguration.SyncTypes.Count; i++)
-                {
-                    Type syncType = SyncConfiguration.SyncTypes[i];
-                    parameter.Log.Add($"Processing Type: {syncType.Name} ({i + 1} of {SyncConfiguration.SyncTypes.Count})");
-                    parameter.Log.Add($"Getting Type Changes...");
-                    List<object> appliedIds = null;
-                    if (parameter.AppliedIds != null && parameter.AppliedIds.ContainsKey(syncType)) appliedIds = parameter.AppliedIds[syncType];
-                    (JObject typeChanges, int typeChangesCount, long typeMaxTimeStamp, List<SyncLog.SyncLogData> typeLogChanges) = GetTypeChanges(parameter.LastSync, syncType, parameter.SynchronizationId, parameter.CustomInfo, appliedIds);
-                    parameter.Log.Add($"Type Changes Count: {typeChangesCount}");
-                    if (typeChangesCount != 0 && typeChanges != null) changes.Add(typeChanges);
-                    if (typeMaxTimeStamp > result.MaxTimeStamp) result.MaxTimeStamp = typeMaxTimeStamp;
-                    result.LogChanges.AddRange(typeLogChanges);
-                    parameter.Log.Add($"Type: {syncType.Name} Processed");
-                }
-                result.SetCustomPayload(nameof(changes), changes);
-                return result;
-            }
-            else if (SyncConfiguration.TimeStampStrategy == SyncConfiguration.TimeStampStrategyEnum.DatabaseTimeStamp)
-            {
-                throw new NotImplementedException();
-            }
-            else
-            {
-                throw new NotImplementedException(SyncConfiguration.TimeStampStrategy.ToString());
+                Type syncType = SyncConfiguration.SyncTypes[i];
+                parameter.Log.Add($"Processing Type: {syncType.Name} ({i + 1} of {SyncConfiguration.SyncTypes.Count})");
+                parameter.Log.Add($"Getting Type Changes...");
+                List<object> appliedIds = null;
+                if (parameter.AppliedIds != null && parameter.AppliedIds.ContainsKey(syncType)) appliedIds = parameter.AppliedIds[syncType];
+                (JObject typeChanges, int typeChangesCount, long typeMaxTimeStamp, List<SyncLog.SyncLogData> typeLogChanges) = GetTypeChanges(parameter.LastSync, syncType, parameter.SynchronizationId, parameter.CustomInfo, appliedIds);
+                parameter.Log.Add($"Type Changes Count: {typeChangesCount}");
+                if (typeChangesCount != 0 && typeChanges != null) result.Changes.Add(typeChanges);
+                if (typeMaxTimeStamp > result.MaxTimeStamp) result.MaxTimeStamp = typeMaxTimeStamp;
+                result.LogChanges.AddRange(typeLogChanges);
+                parameter.Log.Add($"Type: {syncType.Name} Processed");
             }
         }
 
@@ -264,63 +243,44 @@ namespace NETCoreSync
             return (typeChanges, datas.Count, maxTimeStamp, logChanges);
         }
 
-        internal ProcessPayloadResult ProcessPayload(ProcessPayloadParameter processPayloadParameter)
+        internal void ApplyChanges(ApplyChangesParameter parameter, ref ApplyChangesResult result)
         {
-            if (processPayloadParameter == null) throw new NullReferenceException(nameof(processPayloadParameter));
-            if (string.IsNullOrEmpty(processPayloadParameter.SynchronizationId)) throw new NullReferenceException(nameof(processPayloadParameter.SynchronizationId));
-
-            if (SyncConfiguration.TimeStampStrategy == SyncConfiguration.TimeStampStrategyEnum.GlobalTimeStamp)
+            if (parameter == null) throw new NullReferenceException(nameof(parameter));
+            result = new ApplyChangesResult(parameter.PayloadAction, parameter.SynchronizationId, parameter.CustomInfo);
+            
+            parameter.Log.Add("Applying Data Type Changes...");
+            parameter.Log.Add($"SyncTypes Count: {parameter.Changes.Count}");
+            List<Type> postEventTypes = new List<Type>();
+            Dictionary<Type, List<object>> dictDeletedIds = new Dictionary<Type, List<object>>();
+            for (int i = 0; i < parameter.Changes.Count; i++)
             {
-                if (processPayloadParameter.PayloadAction != PayloadAction.Synchronize) throw new NotImplementedException(processPayloadParameter.PayloadAction.ToString());
-
-                ProcessPayloadGlobalTimeStampParameter parameter = (ProcessPayloadGlobalTimeStampParameter)processPayloadParameter;
-
-                ProcessPayloadGlobalTimeStampResult result = new ProcessPayloadGlobalTimeStampResult();
-
-                parameter.Log.Add("Applying Data Type Changes...");
-                JArray changes = parameter.GetCustomPayload(nameof(changes)).Value<JArray>();
-                parameter.Log.Add($"SyncTypes Count: {changes.Count}");
-                List<Type> postEventTypes = new List<Type>();
-                Dictionary<Type, List<object>> dictDeletedIds = new Dictionary<Type, List<object>>();
-                for (int i = 0; i < changes.Count; i++)
+                JObject typeChanges = parameter.Changes[i].Value<JObject>();
+                parameter.Log.Add($"Applying Type: {typeChanges["syncType"].Value<string>()}...");
+                (Type localSyncType, List<object> appliedIds, List<object> deletedIds) = ApplyTypeChanges(parameter.Log, result.Inserts, result.Updates, result.Deletes, result.Conflicts, typeChanges, parameter.SynchronizationId, parameter.CustomInfo);
+                parameter.Log.Add($"Type: {typeChanges["syncType"].Value<string>()} Applied, Count: {appliedIds.Count}");
+                result.AppliedIds[localSyncType] = appliedIds;
+                if (deletedIds.Count > 0)
                 {
-                    JObject typeChanges = changes[i].Value<JObject>();
-                    parameter.Log.Add($"Applying Type: {typeChanges["syncType"].Value<string>()}...");
-                    (Type localSyncType, List<object> appliedIds, List<object> deletedIds) = ApplyTypeChanges(parameter.Log, parameter.Inserts, parameter.Updates, parameter.Deletes, parameter.Conflicts, typeChanges, parameter.SynchronizationId, parameter.CustomInfo);
-                    parameter.Log.Add($"Type: {typeChanges["syncType"].Value<string>()} Applied, Count: {appliedIds.Count}");
-                    result.AppliedIds[localSyncType] = appliedIds;
-                    if (deletedIds.Count > 0)
-                    {
-                        if (!postEventTypes.Contains(localSyncType)) postEventTypes.Add(localSyncType);
-                        dictDeletedIds[localSyncType] = deletedIds;
-                    }
+                    if (!postEventTypes.Contains(localSyncType)) postEventTypes.Add(localSyncType);
+                    dictDeletedIds[localSyncType] = deletedIds;
                 }
-                if (postEventTypes.Count > 0)
+            }
+            if (postEventTypes.Count > 0)
+            {
+                parameter.Log.Add("Processing Post Events...");
+                parameter.Log.Add($"Post Event Types Count: {postEventTypes.Count}");
+                for (int i = 0; i < postEventTypes.Count; i++)
                 {
-                    parameter.Log.Add("Processing Post Events...");
-                    parameter.Log.Add($"Post Event Types Count: {postEventTypes.Count}");
-                    for (int i = 0; i < postEventTypes.Count; i++)
+                    Type postEventType = postEventTypes[i];
+                    if (dictDeletedIds.ContainsKey(postEventType))
                     {
-                        Type postEventType = postEventTypes[i];
-                        if (dictDeletedIds.ContainsKey(postEventType))
+                        parameter.Log.Add($"Processing Post Event Delete for Type: {postEventType.Name}, Count: {dictDeletedIds[postEventType].Count}");
+                        for (int j = 0; j < dictDeletedIds[postEventType].Count; j++)
                         {
-                            parameter.Log.Add($"Processing Post Event Delete for Type: {postEventType.Name}, Count: {dictDeletedIds[postEventType].Count}");
-                            for (int j = 0; j < dictDeletedIds[postEventType].Count; j++)
-                            {
-                                PostEventDelete(postEventType, dictDeletedIds[postEventType][j], parameter.SynchronizationId, parameter.CustomInfo);
-                            }
+                            PostEventDelete(postEventType, dictDeletedIds[postEventType][j], parameter.SynchronizationId, parameter.CustomInfo);
                         }
                     }
                 }
-                return result;
-            }
-            else if (SyncConfiguration.TimeStampStrategy == SyncConfiguration.TimeStampStrategyEnum.DatabaseTimeStamp)
-            {
-                throw new NotImplementedException();
-            }
-            else
-            {
-                throw new NotImplementedException(SyncConfiguration.TimeStampStrategy.ToString());
             }
         }
 
@@ -473,7 +433,7 @@ namespace NETCoreSync
             return syncConfiguration.SyncSchemaInfos[type];
         }
 
-        private static byte[] Compress(string text)
+        internal static byte[] Compress(string text)
         {
             var bytes = Encoding.Unicode.GetBytes(text);
             using (var mso = new MemoryStream())
@@ -486,7 +446,7 @@ namespace NETCoreSync
             }
         }
 
-        private static string Decompress(byte[] data)
+        internal static string Decompress(byte[] data)
         {
             // Read the last 4 bytes to get the length
             byte[] lengthBuffer = new byte[4];

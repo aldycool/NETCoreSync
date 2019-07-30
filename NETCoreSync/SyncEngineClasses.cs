@@ -1,7 +1,9 @@
 ﻿using System;
+using System.Linq;
 using System.Collections.Generic;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using NETCoreSync.Exceptions;
 
 namespace NETCoreSync
 {
@@ -14,127 +16,214 @@ namespace NETCoreSync
             public long LastSyncTimeStamp { get; set; }
         }
 
-        internal abstract class PreparePayloadParameter
+        internal abstract class BaseInfo
         {
             public PayloadAction PayloadAction { get; set; }
             public string SynchronizationId { get; set; }
-            public Dictionary<string, object> CustomInfo { get; set; }
-            public List<string> Log { get; set; } = new List<string>();
-        }
+            public Dictionary<string, object> CustomInfo { get; set; } = new Dictionary<string, object>();
 
-        internal class PreparePayloadGlobalTimeStampParameter : PreparePayloadParameter
-        {
-            public long? LastSync { get; set; }
-            public Dictionary<Type, List<object>> AppliedIds { get; set; }
-        }
-
-        internal class PreparePayloadDatabaseTimeStampParameter : PreparePayloadParameter
-        {
-        }
-
-        internal abstract class PreparePayloadResult
-        {
-            private readonly JObject Payload;
-
-            public PreparePayloadResult(PreparePayloadParameter parameter)
+            public BaseInfo(PayloadAction payloadAction, string synchronizationId, Dictionary<string, object> customInfo)
             {
-                Payload = new JObject();
-                Payload[nameof(parameter.SynchronizationId)] = parameter.SynchronizationId;
-                Payload[nameof(parameter.CustomInfo)] = JObject.FromObject(parameter.CustomInfo);
-                Payload[nameof(parameter.PayloadAction)] = parameter.PayloadAction.ToString();
-
-                if (parameter is PreparePayloadGlobalTimeStampParameter)
-                {
-                    Payload[nameof(PreparePayloadGlobalTimeStampParameter.LastSync)] = ((PreparePayloadGlobalTimeStampParameter)parameter).LastSync;
-                }
+                PayloadAction = payloadAction;
+                SynchronizationId = synchronizationId;
+                if (customInfo != null) CustomInfo = customInfo;
             }
+        }
 
-            public void SetCustomPayload(string key, JToken value)
+        internal class GetChangesParameter : BaseInfo
+        {
+            public List<string> Log { get; set; } = new List<string>();
+            public long LastSync { get; set; }
+            public Dictionary<Type, List<object>> AppliedIds { get; set; } = new Dictionary<Type, List<object>>();
+            public Dictionary<string, List<object>> PayloadAppliedIds { get; set; } = new Dictionary<string, List<object>>();
+
+            public GetChangesParameter(PayloadAction payloadAction, string synchronizationId, Dictionary<string, object> customInfo) : base(payloadAction, synchronizationId, customInfo)
             {
-                Payload[key] = value;
             }
 
             public byte[] GetCompressed()
             {
-                string json = JsonConvert.SerializeObject(Payload);
+                JObject payload = new JObject();
+                payload[nameof(PayloadAction)] = PayloadAction.ToString();
+                payload[nameof(SynchronizationId)] = SynchronizationId;
+                payload[nameof(CustomInfo)] = JObject.FromObject(CustomInfo);
+                payload[nameof(LastSync)] = LastSync;
+                payload[nameof(PayloadAppliedIds)] = JObject.FromObject(PayloadAppliedIds);
+                string json = JsonConvert.SerializeObject(payload);
                 byte[] compressed = Compress(json);
                 return compressed;
             }
+
+            public static GetChangesParameter FromPayload(JObject payload, SyncEngine syncEngine)
+            {
+                string synchronizationId = payload[nameof(SynchronizationId)].Value<string>();
+                Dictionary<string, object> customInfo = payload[nameof(CustomInfo)].ToObject<Dictionary<string, object>>();
+                PayloadAction payloadAction = (PayloadAction)Enum.Parse(typeof(PayloadAction), payload[nameof(PayloadAction)].Value<string>());
+                GetChangesParameter parameter = new GetChangesParameter(payloadAction, synchronizationId, customInfo);
+                parameter.LastSync = payload[nameof(LastSync)].Value<long>();
+                parameter.AppliedIds = PayloadHelper.GetAppliedIdsFromPayload(payload[nameof(PayloadAppliedIds)].ToObject<Dictionary<string, List<object>>>(), syncEngine, synchronizationId, customInfo);
+                return parameter;
+            }
         }
 
-        internal class PreparePayloadGlobalTimeStampResult : PreparePayloadResult
+        internal class GetChangesResult : BaseInfo
         {
+            public JArray Changes { get; set; } = new JArray();
             public long MaxTimeStamp { get; set; }
             public List<SyncLog.SyncLogData> LogChanges { get; set; } = new List<SyncLog.SyncLogData>();
 
-            public PreparePayloadGlobalTimeStampResult(PreparePayloadParameter parameter) : base(parameter)
+            public GetChangesResult(PayloadAction payloadAction, string synchronizationId, Dictionary<string, object> customInfo) : base(payloadAction, synchronizationId, customInfo)
             {
+            }
+
+            public byte[] GetCompressed()
+            {
+                JObject payload = new JObject();
+                payload[nameof(PayloadAction)] = PayloadAction.ToString();
+                payload[nameof(SynchronizationId)] = SynchronizationId;
+                payload[nameof(CustomInfo)] = JObject.FromObject(CustomInfo);
+                payload[nameof(Changes)] = Changes;
+                payload[nameof(MaxTimeStamp)] = MaxTimeStamp;
+                payload[nameof(LogChanges)] = JArray.FromObject(LogChanges);
+                string json = JsonConvert.SerializeObject(payload);
+                byte[] compressed = Compress(json);
+                return compressed;
+            }
+
+            public static GetChangesResult FromPayload(JObject payload)
+            {
+                string synchronizationId = payload[nameof(SynchronizationId)].Value<string>();
+                Dictionary<string, object> customInfo = payload[nameof(CustomInfo)].ToObject<Dictionary<string, object>>();
+                PayloadAction payloadAction = (PayloadAction)Enum.Parse(typeof(PayloadAction), payload[nameof(PayloadAction)].Value<string>());
+                GetChangesResult result = new GetChangesResult(payloadAction, synchronizationId, customInfo);
+                result.Changes = payload[nameof(Changes)].ToObject<JArray>();
+                result.MaxTimeStamp = payload[nameof(MaxTimeStamp)].Value<long>();
+                result.LogChanges = payload[nameof(LogChanges)].ToObject<List<SyncLog.SyncLogData>>();
+                return result;
             }
         }
 
-        internal class PreparePayloadDatabaseTimeStampResult : PreparePayloadResult
+        internal class ApplyChangesParameter : BaseInfo
         {
-            public PreparePayloadDatabaseTimeStampResult(PreparePayloadParameter parameter) : base(parameter)
-            {
-            }
-        }
-
-        internal abstract class ProcessPayloadParameter
-        {
-            public readonly JObject Payload;
-            public readonly PayloadAction PayloadAction;
-            public readonly string SynchronizationId;
-            public readonly Dictionary<string, object> CustomInfo;
             public List<string> Log { get; set; } = new List<string>();
-            public List<SyncLog.SyncLogData> Inserts = new List<SyncLog.SyncLogData>();
-            public List<SyncLog.SyncLogData> Updates = new List<SyncLog.SyncLogData>();
-            public List<SyncLog.SyncLogData> Deletes = new List<SyncLog.SyncLogData>();
-            public List<SyncLog.SyncLogConflict> Conflicts = new List<SyncLog.SyncLogConflict>();
+            public JArray Changes { get; set; } = new JArray();
 
-            public ProcessPayloadParameter(byte[] syncDataBytes)
+            public ApplyChangesParameter(PayloadAction payloadAction, string synchronizationId, Dictionary<string, object> customInfo) : base(payloadAction, synchronizationId, customInfo)
             {
-                string json = Decompress(syncDataBytes);
-                Payload = JsonConvert.DeserializeObject<JObject>(json);
-                SynchronizationId = Payload[nameof(SynchronizationId)].Value<string>();
-                CustomInfo = Payload[nameof(CustomInfo)].ToObject<Dictionary<string, object>>();
-                PayloadAction = (PayloadAction)Enum.Parse(typeof(PayloadAction), Payload[nameof(PayloadAction)].Value<string>());
             }
 
-            public JToken GetCustomPayload(string key)
+            public byte[] GetCompressed()
             {
-                JToken token = Payload[key];
-                return token;
+                JObject payload = new JObject();
+                payload[nameof(PayloadAction)] = PayloadAction.ToString();
+                payload[nameof(SynchronizationId)] = SynchronizationId;
+                payload[nameof(CustomInfo)] = JObject.FromObject(CustomInfo);
+                payload[nameof(Changes)] = Changes;
+                string json = JsonConvert.SerializeObject(payload);
+                byte[] compressed = Compress(json);
+                return compressed;
             }
-        }
 
-        internal class ProcessPayloadGlobalTimeStampParameter : ProcessPayloadParameter
-        {
-            public readonly long LastSync;
-
-            public ProcessPayloadGlobalTimeStampParameter(byte[] syncDataBytes) : base(syncDataBytes)
+            public static ApplyChangesParameter FromPayload(JObject payload)
             {
-                LastSync = Payload[nameof(LastSync)].Value<long>();
+                string synchronizationId = payload[nameof(SynchronizationId)].Value<string>();
+                Dictionary<string, object> customInfo = payload[nameof(CustomInfo)].ToObject<Dictionary<string, object>>();
+                PayloadAction payloadAction = (PayloadAction)Enum.Parse(typeof(PayloadAction), payload[nameof(PayloadAction)].Value<string>());
+                ApplyChangesParameter parameter = new ApplyChangesParameter(payloadAction, synchronizationId, customInfo);
+                parameter.Changes = payload[nameof(Changes)].Value<JArray>();
+                return parameter;
             }
         }
 
-        internal class ProcessPayloadDatabaseTimeStampParameter : ProcessPayloadParameter
+        internal class ApplyChangesResult : BaseInfo
         {
-            public ProcessPayloadDatabaseTimeStampParameter(byte[] syncDataBytes) : base(syncDataBytes)
+            public List<SyncLog.SyncLogData> Inserts { get; set; } = new List<SyncLog.SyncLogData>();
+            public List<SyncLog.SyncLogData> Updates { get; set; } = new List<SyncLog.SyncLogData>();
+            public List<SyncLog.SyncLogData> Deletes { get; set; } = new List<SyncLog.SyncLogData>();
+            public List<SyncLog.SyncLogConflict> Conflicts { get; set; } = new List<SyncLog.SyncLogConflict>();
+            public Dictionary<Type, List<object>> AppliedIds { get; set; } = new Dictionary<Type, List<object>>();
+            public Dictionary<string, List<object>> PayloadAppliedIds { get; set; } = new Dictionary<string, List<object>>();
+
+            public ApplyChangesResult(PayloadAction payloadAction, string synchronizationId, Dictionary<string, object> customInfo) : base(payloadAction, synchronizationId, customInfo)
             {
+            }
+
+            public byte[] GetCompressed()
+            {
+                JObject payload = new JObject();
+                payload[nameof(PayloadAction)] = PayloadAction.ToString();
+                payload[nameof(SynchronizationId)] = SynchronizationId;
+                payload[nameof(CustomInfo)] = JObject.FromObject(CustomInfo);
+                payload[nameof(Inserts)] = JArray.FromObject(Inserts);
+                payload[nameof(Updates)] = JArray.FromObject(Updates);
+                payload[nameof(Deletes)] = JArray.FromObject(Deletes);
+                payload[nameof(Conflicts)] = JArray.FromObject(Conflicts);
+                payload[nameof(PayloadAppliedIds)] = JObject.FromObject(PayloadHelper.GetAppliedIdsForPayload(AppliedIds));
+                string json = JsonConvert.SerializeObject(payload);
+                byte[] compressed = Compress(json);
+                return compressed;
+            }
+
+            public static ApplyChangesResult FromPayload(JObject payload)
+            {
+                string synchronizationId = payload[nameof(SynchronizationId)].Value<string>();
+                Dictionary<string, object> customInfo = payload[nameof(CustomInfo)].ToObject<Dictionary<string, object>>();
+                PayloadAction payloadAction = (PayloadAction)Enum.Parse(typeof(PayloadAction), payload[nameof(PayloadAction)].Value<string>());
+                ApplyChangesResult result = new ApplyChangesResult(payloadAction, synchronizationId, customInfo);
+                result.Inserts = payload[nameof(Inserts)].ToObject<List<SyncLog.SyncLogData>>();
+                result.Updates = payload[nameof(Updates)].ToObject<List<SyncLog.SyncLogData>>();
+                result.Deletes = payload[nameof(Deletes)].ToObject<List<SyncLog.SyncLogData>>();
+                result.Conflicts = payload[nameof(Conflicts)].ToObject<List<SyncLog.SyncLogConflict>>();
+                result.PayloadAppliedIds = payload[nameof(PayloadAppliedIds)].ToObject<Dictionary<string, List<object>>>();
+                return result;
             }
         }
 
-        internal class ProcessPayloadResult
+        internal class PayloadHelper
         {
-        }
+            public static Dictionary<Type, List<object>> GetAppliedIdsFromPayload(Dictionary<string, List<object>> safeAppliedIds, SyncEngine syncEngine, string synchronizationId, Dictionary<string, object> customInfo)
+            {
+                Dictionary<Type, List<object>> result = new Dictionary<Type, List<object>>();
+                foreach (var item in safeAppliedIds)
+                {
+                    string fullName = UnsafeFullName(item.Key);
+                    Type localType = syncEngine.SyncConfiguration.SyncTypes.Where(w => w.FullName == fullName).FirstOrDefault();
+                    if (localType == null) throw new SyncEngineConstraintException($"Missing localType: {fullName} from AppliedIds");
+                    if (!result.ContainsKey(localType)) result[localType] = new List<object>();
+                    for (int i = 0; i < item.Value.Count; i++)
+                    {
+                        JValue value = new JValue(item.Value[i]);
+                        object localId = syncEngine.TransformIdType(localType, value, null, OperationType.GetChanges, synchronizationId, customInfo);
+                        result[localType].Add(localId);
+                    }
+                }
+                return result;
+            }
 
-        internal class ProcessPayloadGlobalTimeStampResult : ProcessPayloadResult
-        {
-            public readonly Dictionary<Type, List<object>> AppliedIds = new Dictionary<Type, List<object>>();
-        }
+            public static Dictionary<string, List<object>> GetAppliedIdsForPayload(Dictionary<Type, List<object>> appliedIds)
+            {
+                Dictionary<string, List<object>> result = new Dictionary<string, List<object>>();
+                foreach (var item in appliedIds)
+                {
+                    string fullName = SafeFullName(item.Key.FullName);
+                    if (!result.ContainsKey(fullName)) result[fullName] = new List<object>();
+                    for (int i = 0; i < item.Value.Count; i++)
+                    {
+                        result[fullName].Add(item.Value[i]);
+                    }
+                }
+                return result;
+            }
 
-        internal class ProcessPayloadDtabaseTimeStampResult : ProcessPayloadResult
-        {
+            private static string SafeFullName(string fullName)
+            {
+                return fullName.Replace(".", "_");
+            }
+
+            private static string UnsafeFullName(string safeFullName)
+            {
+                return safeFullName.Replace("_", ".");
+            }
         }
     }
 }

@@ -63,5 +63,11 @@ namespace MobileSample.ViewModels
             await Application.Current.MainPage.DisplayAlert("Success", "Synchronization ID is successfully set", "OK");
             Application.Current.MainPage = new Views.MainPage();
         });
+
+        public ICommand DateTimeCommand => new Command(async () =>
+        {
+            string text = DateTime.Now.ToString("dd-MMM-yyyy HH:mm:ss");
+            await Application.Current.MainPage.DisplayAlert("Date Time", text, "OK");
+        });
     }
 }
