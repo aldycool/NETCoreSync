@@ -53,13 +53,13 @@ namespace NETCoreSync
             throw new NotImplementedException();
         }
 
-        public virtual List<DatabaseInstanceInfo> GetAllDatabaseInstanceInfos(string synchronizationId, Dictionary<string, object> customInfo)
+        public virtual List<KnowledgeInfo> GetAllKnowledgeInfos(string synchronizationId, Dictionary<string, object> customInfo)
         {
             //must implement if SyncConfiguration.TimeStampStrategy = UseEachDatabaseInstanceTimeStamp
             throw new NotImplementedException();
         }
 
-        public virtual void CreateOrUpdateDatabaseInstanceInfo(DatabaseInstanceInfo databaseInstanceInfo, string synchronizationId, Dictionary<string, object> customInfo)
+        public virtual void CreateOrUpdateKnowledgeInfo(KnowledgeInfo knowledgeInfo, string synchronizationId, Dictionary<string, object> customInfo)
         {
             //must implement if SyncConfiguration.TimeStampStrategy = UseEachDatabaseInstanceTimeStamp
             throw new NotImplementedException();
@@ -368,33 +368,34 @@ namespace NETCoreSync
             return (localSyncType, appliedIds, deletedIds);
         }
 
-        internal List<DatabaseInstanceInfo> GetKnowledge(List<string> log, string synchronizationId, Dictionary<string, object> customInfo)
+        internal List<KnowledgeInfo> GetKnowledge(List<string> log, string synchronizationId, Dictionary<string, object> customInfo)
         {
-            List<DatabaseInstanceInfo> databaseInstanceInfos = GetAllDatabaseInstanceInfos(synchronizationId, customInfo);
-            if (databaseInstanceInfos == null) databaseInstanceInfos = new List<DatabaseInstanceInfo>();
-            log.Add($"All DatabaseInstanceInfos Count: {databaseInstanceInfos.Count}");
-            if (databaseInstanceInfos.Where(w => w.IsLocal).Count() > 1) throw new SyncEngineConstraintException("Found multiple DatabaseInstanceInfo with IsLocal equals to true. IsLocal should be 1 (one) data only");
-            if (databaseInstanceInfos.Where(w => w.IsLocal).Count() == 1) return databaseInstanceInfos;
-            log.Add("Local DatabaseInstanceInfo is not found. Creating a new Local DatabaseInstanceInfo...");
-            DatabaseInstanceInfo localDatabaseInstanceInfo = new DatabaseInstanceInfo()
+            List<KnowledgeInfo> knowledgeInfos = GetAllKnowledgeInfos(synchronizationId, customInfo);
+            if (knowledgeInfos == null) knowledgeInfos = new List<KnowledgeInfo>();
+            log.Add($"All KnowledgeInfos Count: {knowledgeInfos.Count}");
+            if (knowledgeInfos.Where(w => w.IsLocal).Count() > 1) throw new SyncEngineConstraintException("Found multiple KnowledgeInfo with IsLocal equals to true. IsLocal should be 1 (one) data only");
+            if (knowledgeInfos.Where(w => w.IsLocal).Count() == 1) return knowledgeInfos;
+
+            log.Add("Local KnowledgeInfo is not found. Creating a new Local KnowledgeInfo and Provisioning existing data...");
+            OperationType operationType = OperationType.ProvisionKnowledge;
+            object transaction = StartTransaction(null, operationType, synchronizationId, customInfo);
+            try
             {
-                DatabaseInstanceId = Guid.NewGuid().ToString(),
-                IsLocal = true
-            };
-            log.Add("Getting Next TimeStamp...");
-            long nextTimeStamp = InvokeGetNextTimeStamp();
-            log.Add("Provisioning All Existing Data with the acquired TimeStamp and DatabaseInstanceId...");
-            log.Add($"SyncTypes Count: {SyncConfiguration.SyncTypes.Count}");
-            for (int i = 0; i < SyncConfiguration.SyncTypes.Count; i++)
-            {
-                Type syncType = SyncConfiguration.SyncTypes[i];
-                log.Add($"Processing Type: {syncType.Name} ({i + 1} of {SyncConfiguration.SyncTypes.Count})");
-                int dataCount = 0;
-                SyncConfiguration.SchemaInfo schemaInfo = GetSchemaInfo(SyncConfiguration, syncType);
-                OperationType operationType = OperationType.ProvisionKnowledge;
-                object transaction = StartTransaction(syncType, operationType, synchronizationId, customInfo);
-                try
+                KnowledgeInfo localKnowledgeInfo = new KnowledgeInfo()
                 {
+                    DatabaseInstanceId = Guid.NewGuid().ToString(),
+                    IsLocal = true
+                };
+                log.Add("Getting Next TimeStamp...");
+                long nextTimeStamp = InvokeGetNextTimeStamp();
+                log.Add("Provisioning All Existing Data with the acquired TimeStamp and DatabaseInstanceId...");
+                log.Add($"SyncTypes Count: {SyncConfiguration.SyncTypes.Count}");
+                for (int i = 0; i < SyncConfiguration.SyncTypes.Count; i++)
+                {
+                    Type syncType = SyncConfiguration.SyncTypes[i];
+                    log.Add($"Processing Type: {syncType.Name} ({i + 1} of {SyncConfiguration.SyncTypes.Count})");
+                    int dataCount = 0;
+                    SyncConfiguration.SchemaInfo schemaInfo = GetSchemaInfo(SyncConfiguration, syncType);
                     IQueryable queryable = InvokeGetQueryable(syncType, transaction, operationType, synchronizationId, customInfo);
                     System.Collections.IEnumerator enumerator = queryable.GetEnumerator();
                     while (enumerator.MoveNext())
@@ -405,24 +406,25 @@ namespace NETCoreSync
                         data.GetType().GetProperty(schemaInfo.PropertyInfoLastUpdated.Name).SetValue(data, nextTimeStamp);
                         PersistData(syncType, data, false, transaction, operationType, synchronizationId, customInfo);
                     }
-                    CommitTransaction(syncType, transaction, operationType, synchronizationId, customInfo);
+                    log.Add($"Type: {syncType.Name} Processed. Provisioned Data Count: {dataCount}");
                 }
-                catch (Exception)
-                {
-                    RollbackTransaction(syncType, transaction, operationType, synchronizationId, customInfo);
-                    throw;
-                }
-                finally
-                {
-                    EndTransaction(syncType, transaction, operationType, synchronizationId, customInfo);
-                }
-                log.Add($"Type: {syncType.Name} Processed. Provisioned Data Count: {dataCount}");
+                localKnowledgeInfo.LastSyncTimeStamp = nextTimeStamp;
+                log.Add("Saving Local KnowledgeInfo...");
+                CreateOrUpdateKnowledgeInfo(localKnowledgeInfo, synchronizationId, customInfo);
+                CommitTransaction(null, transaction, operationType, synchronizationId, customInfo);
             }
-            localDatabaseInstanceInfo.LastSyncTimeStamp = nextTimeStamp;
-            log.Add("Saving Local DatabaseInstanceInfo...");
-            CreateOrUpdateDatabaseInstanceInfo(localDatabaseInstanceInfo, synchronizationId, customInfo);
-            databaseInstanceInfos = GetAllDatabaseInstanceInfos(synchronizationId, customInfo);
-            return databaseInstanceInfos;
+            catch (Exception)
+            {
+                RollbackTransaction(null, transaction, operationType, synchronizationId, customInfo);
+                throw;
+            }
+            finally
+            {
+                EndTransaction(null, transaction, operationType, synchronizationId, customInfo);
+            }
+            knowledgeInfos = GetAllKnowledgeInfos(synchronizationId, customInfo);
+            if (knowledgeInfos.Where(w => w.IsLocal).Count() != 1) throw new SyncEngineConstraintException($"KnowledgeInfo with IsLocal equals to true is still not 1 (one) data. Check your {nameof(CreateOrUpdateKnowledgeInfo)} implementation.");
+            return knowledgeInfos;
         }
 
         private IQueryable InvokeGetQueryable(Type classType, object transaction, OperationType operationType, string synchronizationId, Dictionary<string, object> customInfo)

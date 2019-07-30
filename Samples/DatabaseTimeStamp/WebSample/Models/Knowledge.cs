@@ -8,7 +8,7 @@ using NETCoreSync;
 
 namespace WebSample.Models
 {
-    public class DatabaseInstanceInfo
+    public class Knowledge
     {
         [Key]
         [DatabaseGenerated(DatabaseGeneratedOption.None)]

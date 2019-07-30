@@ -50,7 +50,7 @@ namespace MobileSample.ViewModels
                 if (!isAccept) return;
             }
 
-            databaseService.ResetAllData();
+            databaseService.ResetInstance();
             databaseService.SetSynchronizationId(SynchronizationId);
 
             await Application.Current.MainPage.DisplayAlert("Success", "Synchronization ID is successfully set", "OK");

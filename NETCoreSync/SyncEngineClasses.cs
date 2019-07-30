@@ -9,7 +9,7 @@ namespace NETCoreSync
 {
     public abstract partial class SyncEngine
     {
-        public class DatabaseInstanceInfo
+        public class KnowledgeInfo
         {
             public string DatabaseInstanceId { get; set; }
             public bool IsLocal { get; set; }

@@ -26,7 +26,7 @@ namespace WebSample.Controllers
         {
             databaseContext.Employees.RemoveRange(databaseContext.Employees);
             databaseContext.Departments.RemoveRange(databaseContext.Departments);
-            databaseContext.DatabaseInstanceInfos.RemoveRange(databaseContext.DatabaseInstanceInfos);
+            databaseContext.Knowledges.RemoveRange(databaseContext.Knowledges);
             databaseContext.SaveChanges();
 
             return RedirectToAction("Index", "Home");

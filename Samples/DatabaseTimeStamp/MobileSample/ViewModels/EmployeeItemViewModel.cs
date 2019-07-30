@@ -54,7 +54,7 @@ namespace MobileSample.ViewModels
             IsActiveItems = new List<bool>() { true, false };
             DepartmentItems = new List<ReferenceItem>();
             DepartmentItems.Add(new ReferenceItem() { Id = Guid.Empty.ToString(), Name = "[None]" });
-            List<Department> departments = databaseService.GetDepartments(customSyncEngine.Realm).ToList();
+            List<Department> departments = databaseService.GetDepartments().ToList();
             for (int i = 0; i < departments.Count; i++)
             {
                 DepartmentItems.Add(new ReferenceItem() { Id = departments[i].Id, Name = departments[i].Name });

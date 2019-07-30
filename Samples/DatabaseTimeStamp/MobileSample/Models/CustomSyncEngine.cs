@@ -14,12 +14,13 @@ namespace MobileSample.Models
 {
     public class CustomSyncEngine : SyncEngine
     {
-        public readonly Realm Realm;
+        private readonly DatabaseService databaseService;
         private readonly Dictionary<Type, CustomContractResolver> customContractResolvers;
+        public Realm Realm { get { return databaseService.Realm; } }
 
         public CustomSyncEngine(DatabaseService databaseService, SyncConfiguration syncConfiguration) : base(syncConfiguration)
         {
-            Realm = databaseService.GetInstance();
+            this.databaseService = databaseService;
             customContractResolvers = new Dictionary<Type, CustomContractResolver>();
         }
 
@@ -36,36 +37,36 @@ namespace MobileSample.Models
             return timeStamp.Counter;
         }
 
-        public override List<DatabaseInstanceInfo> GetAllDatabaseInstanceInfos(string synchronizationId, Dictionary<string, object> customInfo)
+        public override List<KnowledgeInfo> GetAllKnowledgeInfos(string synchronizationId, Dictionary<string, object> customInfo)
         {
-            List<Models.DatabaseInstanceInfo> infos = Realm.All<Models.DatabaseInstanceInfo>().ToList();
-            List<DatabaseInstanceInfo> result = new List<DatabaseInstanceInfo>();
-            for (int i = 0; i < infos.Count; i++)
+            List<Knowledge> knowledges = Realm.All<Knowledge>().ToList();
+            List<KnowledgeInfo> result = new List<KnowledgeInfo>();
+            for (int i = 0; i < knowledges.Count; i++)
             {
-                result.Add(new DatabaseInstanceInfo()
+                result.Add(new KnowledgeInfo()
                 {
-                    DatabaseInstanceId = infos[i].DatabaseInstanceId,
-                    IsLocal = infos[i].IsLocal,
-                    LastSyncTimeStamp = infos[i].LastSyncTimeStamp
+                    DatabaseInstanceId = knowledges[i].DatabaseInstanceId,
+                    IsLocal = knowledges[i].IsLocal,
+                    LastSyncTimeStamp = knowledges[i].LastSyncTimeStamp
                 });
             }
             return result;
         }
 
-        public override void CreateOrUpdateDatabaseInstanceInfo(DatabaseInstanceInfo databaseInstanceInfo, string synchronizationId, Dictionary<string, object> customInfo)
+        public override void CreateOrUpdateKnowledgeInfo(KnowledgeInfo knowledgeInfo, string synchronizationId, Dictionary<string, object> customInfo)
         {
             Realm.Write(() =>
             {
-                Models.DatabaseInstanceInfo info = Realm.All<Models.DatabaseInstanceInfo>().Where(w => w.DatabaseInstanceId == databaseInstanceInfo.DatabaseInstanceId).FirstOrDefault();
-                if (info == null)
+                Knowledge knowledge = Realm.All<Knowledge>().Where(w => w.DatabaseInstanceId == knowledgeInfo.DatabaseInstanceId).FirstOrDefault();
+                if (knowledge == null)
                 {
-                    info = new Models.DatabaseInstanceInfo();
-                    info.DatabaseInstanceId = databaseInstanceInfo.DatabaseInstanceId;
-                    Realm.Add(info);
-                    info = Realm.All<Models.DatabaseInstanceInfo>().Where(w => w.DatabaseInstanceId == databaseInstanceInfo.DatabaseInstanceId).First();
+                    knowledge = new Knowledge();
+                    knowledge.DatabaseInstanceId = knowledgeInfo.DatabaseInstanceId;
+                    Realm.Add(knowledge);
+                    knowledge = Realm.All<Knowledge>().Where(w => w.DatabaseInstanceId == knowledgeInfo.DatabaseInstanceId).First();
                 }
-                info.IsLocal = databaseInstanceInfo.IsLocal;
-                info.LastSyncTimeStamp = databaseInstanceInfo.LastSyncTimeStamp;
+                knowledge.IsLocal = knowledgeInfo.IsLocal;
+                knowledge.LastSyncTimeStamp = knowledgeInfo.LastSyncTimeStamp;
             });
         }
 

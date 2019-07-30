@@ -47,7 +47,7 @@ namespace MobileSample.ViewModels
         {
             base.ViewAppearing(sender, e);
             Title = MainMenuItem.GetMenus().Where(w => w.Id == MenuItemType.EmployeeList).First().Title;
-            Items = databaseService.GetEmployees(databaseService.GetInstance());
+            Items = databaseService.GetEmployees();
         }
 
         public ICommand AddCommand => new Command(async () =>

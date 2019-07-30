@@ -10,10 +10,33 @@ using Realms;
 
 namespace MobileSample.Services
 {
-    public class DatabaseService
+    public class DatabaseService : IDisposable
     {
         private const string SYNCHRONIZATIONID_KEY = "SynchronizationId";
         private const string SERVERURL_KEY = "ServerUrl";
+
+        public Realm Realm { get; private set; } = null;
+
+        public DatabaseService()
+        {
+            CreateInstance();
+        }
+
+        private void CreateInstance()
+        {
+            RealmConfiguration realmConfiguration = GetRealmConfiguration();
+            Realm = Realm.GetInstance(realmConfiguration);
+        }
+
+        private RealmConfiguration GetRealmConfiguration(string databaseFilePath = null)
+        {
+            if (string.IsNullOrEmpty(databaseFilePath)) databaseFilePath = GetDatabaseFilePath();
+            RealmConfiguration realmConfiguration = new RealmConfiguration(databaseFilePath);
+#if DEBUG
+            realmConfiguration.ShouldDeleteIfMigrationNeeded = true;
+#endif
+            return realmConfiguration;
+        }
 
         private string GetDatabaseFilePath()
         {
@@ -32,67 +55,38 @@ namespace MobileSample.Services
             return databaseFilePath;
         }
 
-        private RealmConfiguration GetRealmConfiguration(string databaseFilePath = null)
-        {
-            if (string.IsNullOrEmpty(databaseFilePath)) databaseFilePath = GetDatabaseFilePath();
-            RealmConfiguration realmConfiguration = new RealmConfiguration(databaseFilePath);
-#if DEBUG
-            realmConfiguration.ShouldDeleteIfMigrationNeeded = true;
-#endif
-            return realmConfiguration;
-        }
-
         public void ResetInstance()
         {
+            DisposeManagedObjects();
+
             string databaseFilePath = GetDatabaseFilePath();
             RealmConfiguration realmConfiguration = GetRealmConfiguration(databaseFilePath);
-
             if (File.Exists(databaseFilePath))
             {
                 Realm.DeleteRealm(realmConfiguration);
             }
-        }
 
-        public Realm GetInstance()
-        {
-            RealmConfiguration realmConfiguration = GetRealmConfiguration();
-            Realm realm = Realm.GetInstance(realmConfiguration);
-            return realm;
+            CreateInstance();
         }
 
         public bool IsDatabaseReady()
         {
-            Realm realm = GetInstance();
-            Configuration configurationSynchronizationId = realm.All<Configuration>().Where(w => w.Key == SYNCHRONIZATIONID_KEY).FirstOrDefault();
+            Configuration configurationSynchronizationId = Realm.All<Configuration>().Where(w => w.Key == SYNCHRONIZATIONID_KEY).FirstOrDefault();
             return configurationSynchronizationId == null ? false : true;
-        }
-
-        public void ResetAllData()
-        {
-            Realm realm = GetInstance();
-            realm.Write(() => 
-            {
-                realm.RemoveAll<Employee>();
-                realm.RemoveAll<Department>();
-                realm.RemoveAll<DatabaseInstanceInfo>();
-                realm.RemoveAll<TimeStamp>();
-            });
         }
 
         public string GetSynchronizationId()
         {
-            Realm realm = GetInstance();
-            Configuration configurationSynchronizationId = realm.All<Configuration>().Where(w => w.Key == SYNCHRONIZATIONID_KEY).FirstOrDefault();
+            Configuration configurationSynchronizationId = Realm.All<Configuration>().Where(w => w.Key == SYNCHRONIZATIONID_KEY).FirstOrDefault();
             return configurationSynchronizationId == null ? null : configurationSynchronizationId.Value;
         }
 
         public void SetSynchronizationId(string synchronizationId)
         {
-            Realm realm = GetInstance();
-            realm.Write(() => 
+            Realm.Write(() => 
             {
                 bool isNew = false;
-                Configuration configurationSynchronizationId = realm.All<Configuration>().Where(w => w.Key == SYNCHRONIZATIONID_KEY).FirstOrDefault();
+                Configuration configurationSynchronizationId = Realm.All<Configuration>().Where(w => w.Key == SYNCHRONIZATIONID_KEY).FirstOrDefault();
                 if (configurationSynchronizationId == null)
                 {
                     isNew = true;
@@ -100,14 +94,13 @@ namespace MobileSample.Services
                     configurationSynchronizationId.Key = SYNCHRONIZATIONID_KEY;
                 }
                 configurationSynchronizationId.Value = synchronizationId;
-                if (isNew) realm.Add(configurationSynchronizationId);
+                if (isNew) Realm.Add(configurationSynchronizationId);
             });
         }
 
         public string GetServerUrl()
         {
-            Realm realm = GetInstance();
-            Configuration configurationServerUrl = realm.All<Configuration>().Where(w => w.Key == SERVERURL_KEY).FirstOrDefault();
+            Configuration configurationServerUrl = Realm.All<Configuration>().Where(w => w.Key == SERVERURL_KEY).FirstOrDefault();
             if (configurationServerUrl == null)
             {
                 string defaultServerUrl = null;
@@ -124,18 +117,17 @@ namespace MobileSample.Services
                     throw new NotImplementedException();
                 }
                 SetServerUrl(defaultServerUrl);
-                configurationServerUrl = realm.All<Configuration>().Where(w => w.Key == SERVERURL_KEY).First();
+                configurationServerUrl = Realm.All<Configuration>().Where(w => w.Key == SERVERURL_KEY).First();
             }
             return configurationServerUrl.Value;
         }
 
         public void SetServerUrl(string serverUrl)
         {
-            Realm realm = GetInstance();
-            realm.Write(() =>
+            Realm.Write(() =>
             {
                 bool isNew = false;
-                Configuration configurationServerUrl = realm.All<Configuration>().Where(w => w.Key == SERVERURL_KEY).FirstOrDefault();
+                Configuration configurationServerUrl = Realm.All<Configuration>().Where(w => w.Key == SERVERURL_KEY).FirstOrDefault();
                 if (configurationServerUrl == null)
                 {
                     isNew = true;
@@ -143,18 +135,60 @@ namespace MobileSample.Services
                     configurationServerUrl.Key = SERVERURL_KEY;
                 }
                 configurationServerUrl.Value = serverUrl;
-                if (isNew) realm.Add(configurationServerUrl);
+                if (isNew) Realm.Add(configurationServerUrl);
             });
         }
 
-        public IQueryable<Department> GetDepartments(Realm realm)
+        public IQueryable<Department> GetDepartments()
         {
-            return realm.All<Department>().Where(w => !w.Deleted);
+            return Realm.All<Department>().Where(w => !w.Deleted);
         }
 
-        public IQueryable<Employee> GetEmployees(Realm realm)
+        public IQueryable<Employee> GetEmployees()
         {
-            return realm.All<Employee>().Where(w => !w.Deleted);
+            return Realm.All<Employee>().Where(w => !w.Deleted);
         }
+
+        #region IDisposable Pattern
+
+        private bool disposed = false;
+
+        public void Dispose()
+        {
+            Dispose(true);
+            GC.SuppressFinalize(this);
+        }
+
+        protected virtual void Dispose(bool disposing)
+        {
+            if (disposed) return;
+
+            if (disposing)
+            {
+                DisposeManagedObjects();
+            }
+            DisposeUnmanagedObjects();
+            disposed = true;
+        }
+
+        private void DisposeManagedObjects()
+        {
+            if (Realm != null)
+            {
+                Realm.Dispose();
+                Realm = null;
+            }
+        }
+
+        private void DisposeUnmanagedObjects()
+        {
+        }
+
+        ~DatabaseService()
+        {
+            Dispose(false);
+        }
+
+        #endregion
     }
 }

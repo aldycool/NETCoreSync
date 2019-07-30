@@ -29,9 +29,9 @@ namespace WebSample.Models
             return result.TimeStamp;
         }
 
-        public override List<DatabaseInstanceInfo> GetAllDatabaseInstanceInfos(string synchronizationId, Dictionary<string, object> customInfo)
+        public override List<KnowledgeInfo> GetAllKnowledgeInfos(string synchronizationId, Dictionary<string, object> customInfo)
         {
-            return databaseContext.DatabaseInstanceInfos.Where(w => w.SynchronizationID == synchronizationId).Select(s => new DatabaseInstanceInfo()
+            return databaseContext.Knowledges.Where(w => w.SynchronizationID == synchronizationId).Select(s => new KnowledgeInfo()
             {
                 DatabaseInstanceId = s.DatabaseInstanceId.ToString(),
                 IsLocal = s.IsLocal,
@@ -39,22 +39,22 @@ namespace WebSample.Models
             }).ToList();
         }
 
-        public override void CreateOrUpdateDatabaseInstanceInfo(DatabaseInstanceInfo databaseInstanceInfo, string synchronizationId, Dictionary<string, object> customInfo)
+        public override void CreateOrUpdateKnowledgeInfo(KnowledgeInfo knowledgeInfo, string synchronizationId, Dictionary<string, object> customInfo)
         {
-            Guid id = new Guid(databaseInstanceInfo.DatabaseInstanceId);
-            Models.DatabaseInstanceInfo info = databaseContext.DatabaseInstanceInfos.Where(w => w.SynchronizationID == synchronizationId && w.DatabaseInstanceId == id).FirstOrDefault();
-            if (info == null)
+            Guid id = new Guid(knowledgeInfo.DatabaseInstanceId);
+            Knowledge knowledge = databaseContext.Knowledges.Where(w => w.SynchronizationID == synchronizationId && w.DatabaseInstanceId == id).FirstOrDefault();
+            if (knowledge == null)
             {
-                info = new Models.DatabaseInstanceInfo();
-                info.DatabaseInstanceId = id;
-                info.SynchronizationID = synchronizationId;
-                databaseContext.Add(info);
+                knowledge = new Knowledge();
+                knowledge.DatabaseInstanceId = id;
+                knowledge.SynchronizationID = synchronizationId;
+                databaseContext.Add(knowledge);
                 databaseContext.SaveChanges();
-                info = databaseContext.DatabaseInstanceInfos.Where(w => w.SynchronizationID == synchronizationId && w.DatabaseInstanceId == id).First();
+                knowledge = databaseContext.Knowledges.Where(w => w.SynchronizationID == synchronizationId && w.DatabaseInstanceId == id).First();
             }
-            info.IsLocal = databaseInstanceInfo.IsLocal;
-            info.LastSyncTimeStamp = databaseInstanceInfo.LastSyncTimeStamp;
-            databaseContext.Update(info);
+            knowledge.IsLocal = knowledgeInfo.IsLocal;
+            knowledge.LastSyncTimeStamp = knowledgeInfo.LastSyncTimeStamp;
+            databaseContext.Update(knowledge);
             databaseContext.SaveChanges();
         }
 

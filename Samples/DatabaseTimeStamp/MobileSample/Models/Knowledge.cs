@@ -4,7 +4,7 @@ using System.Text;
 
 namespace MobileSample.Models
 {
-    public class DatabaseInstanceInfo : Realms.RealmObject
+    public class Knowledge : Realms.RealmObject
     {
         [Realms.PrimaryKey()]
         public string DatabaseInstanceId { get; set; }
