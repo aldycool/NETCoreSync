@@ -22,137 +22,6 @@ namespace NETCoreSync
             SyncConfiguration = syncConfiguration ?? throw new NullReferenceException(nameof(syncConfiguration));
         }
 
-        public enum OperationType
-        {
-            GetChanges = 1,
-            ApplyChanges = 2,
-            ProvisionKnowledge = 3
-        }
-
-        public virtual bool IsServerEngine()
-        {
-            //must implement if SyncConfiguration.TimeStampStrategy = UseGlobalTimeStamp
-            throw new NotImplementedException();
-        }
-
-        public virtual long GetClientLastSync()
-        {
-            //must implement if SyncConfiguration.TimeStampStrategy = UseGlobalTimeStamp
-            throw new NotImplementedException();
-        }
-
-        public virtual void SetClientLastSync(long lastSync)
-        {
-            //must implement if SyncConfiguration.TimeStampStrategy = UseGlobalTimeStamp
-            throw new NotImplementedException();
-        }
-
-        public virtual long GetNextTimeStamp()
-        {
-            //must implement if SyncConfiguration.TimeStampStrategy = UseEachDatabaseInstanceTimeStamp
-            throw new NotImplementedException();
-        }
-
-        public virtual List<KnowledgeInfo> GetAllKnowledgeInfos(string synchronizationId, Dictionary<string, object> customInfo)
-        {
-            //must implement if SyncConfiguration.TimeStampStrategy = UseEachDatabaseInstanceTimeStamp
-            throw new NotImplementedException();
-        }
-
-        public virtual void CreateOrUpdateKnowledgeInfo(KnowledgeInfo knowledgeInfo, string synchronizationId, Dictionary<string, object> customInfo)
-        {
-            //must implement if SyncConfiguration.TimeStampStrategy = UseEachDatabaseInstanceTimeStamp
-            throw new NotImplementedException();
-        }
-
-        public virtual object StartTransaction(Type classType, OperationType operationType, string synchronizationId, Dictionary<string, object> customInfo)
-        {
-            return null;
-        }
-
-        public virtual void CommitTransaction(Type classType, object transaction, OperationType operationType, string synchronizationId, Dictionary<string, object> customInfo)
-        {
-        }
-
-        public virtual void RollbackTransaction(Type classType, object transaction, OperationType operationType, string synchronizationId, Dictionary<string, object> customInfo)
-        {
-        }
-
-        public virtual void EndTransaction(Type classType, object transaction, OperationType operationType, string synchronizationId, Dictionary<string, object> customInfo)
-        {
-        }
-
-        public abstract IQueryable GetQueryable(Type classType, object transaction, OperationType operationType, string synchronizationId, Dictionary<string, object> customInfo);
-
-        public abstract string SerializeDataToJson(Type classType, object data, object transaction, OperationType operationType, string synchronizationId, Dictionary<string, object> customInfo);
-
-        public abstract object DeserializeJsonToNewData(Type classType, JObject jObject, object transaction, OperationType operationType, string synchronizationId, Dictionary<string, object> customInfo);
-
-        public abstract object DeserializeJsonToExistingData(Type classType, JObject jObject, object data, object transaction, OperationType operationType, string synchronizationId, Dictionary<string, object> customInfo);
-
-        public abstract void PersistData(Type classType, object data, bool isNew, object transaction, OperationType operationType, string synchronizationId, Dictionary<string, object> customInfo);
-
-        public virtual object TransformIdType(Type classType, JValue id, object transaction, OperationType operationType, string synchronizationId, Dictionary<string, object> customInfo)
-        {
-            return id;
-        }
-
-        public virtual void PostEventDelete(Type classType, object id, string synchronizationId, Dictionary<string, object> customInfo)
-        {
-        }
-
-        public void HookPreInsertOrUpdate(object data)
-        {
-            if (data == null) throw new NullReferenceException(nameof(data));
-            SyncConfiguration.SchemaInfo schemaInfo = GetSchemaInfo(SyncConfiguration, data.GetType());
-            if (SyncConfiguration.TimeStampStrategy == SyncConfiguration.TimeStampStrategyEnum.GlobalTimeStamp)
-            {
-                long nowTicks = GetNowTicks();
-                if (!IsServerEngine())
-                {
-                    long lastSync = GetClientLastSync();
-                    if (nowTicks <= lastSync) throw new SyncEngineConstraintException("System Date and Time is older than the lastSync value");
-                }
-                data.GetType().GetProperty(schemaInfo.PropertyInfoLastUpdated.Name).SetValue(data, nowTicks);
-            }
-            if (SyncConfiguration.TimeStampStrategy == SyncConfiguration.TimeStampStrategyEnum.DatabaseTimeStamp)
-            {
-                long timeStamp = GetNextTimeStamp();
-                data.GetType().GetProperty(schemaInfo.PropertyInfoDatabaseInstanceId.Name).SetValue(data, null);
-                data.GetType().GetProperty(schemaInfo.PropertyInfoLastUpdated.Name).SetValue(data, timeStamp);
-            }
-        }
-
-        public void HookPreDelete(object data)
-        {
-            if (data == null) throw new NullReferenceException(nameof(data));
-            SyncConfiguration.SchemaInfo schemaInfo = GetSchemaInfo(SyncConfiguration, data.GetType());
-            if (SyncConfiguration.TimeStampStrategy == SyncConfiguration.TimeStampStrategyEnum.GlobalTimeStamp)
-            {
-                long nowTicks = GetNowTicks();
-                if (!IsServerEngine())
-                {
-                    long lastSync = GetClientLastSync();
-                    if (nowTicks <= lastSync) throw new SyncEngineConstraintException("System Date and Time is older than the lastSync value");
-                }
-                data.GetType().GetProperty(schemaInfo.PropertyInfoDeleted.Name).SetValue(data, nowTicks);
-            }
-            if (SyncConfiguration.TimeStampStrategy == SyncConfiguration.TimeStampStrategyEnum.DatabaseTimeStamp)
-            {
-                long timeStamp = GetNextTimeStamp();
-                data.GetType().GetProperty(schemaInfo.PropertyInfoDatabaseInstanceId.Name).SetValue(data, null);
-                data.GetType().GetProperty(schemaInfo.PropertyInfoLastUpdated.Name).SetValue(data, timeStamp);
-                data.GetType().GetProperty(schemaInfo.PropertyInfoDeleted.Name).SetValue(data, true);
-            }
-        }
-
-        internal enum PayloadAction
-        {
-            Synchronize,
-            SynhronizeReverse,
-            Metadata
-        }
-
         internal void GetChanges(GetChangesParameter parameter, ref GetChangesResult result)
         {
             if (parameter == null) throw new NullReferenceException(nameof(parameter));
@@ -368,17 +237,20 @@ namespace NETCoreSync
             return (localSyncType, appliedIds, deletedIds);
         }
 
-        internal List<KnowledgeInfo> GetKnowledge(List<string> log, string synchronizationId, Dictionary<string, object> customInfo)
+        internal void GetKnowledge(GetKnowledgeParameter parameter, ref GetKnowledgeResult result)
         {
-            List<KnowledgeInfo> knowledgeInfos = GetAllKnowledgeInfos(synchronizationId, customInfo);
-            if (knowledgeInfos == null) knowledgeInfos = new List<KnowledgeInfo>();
-            log.Add($"All KnowledgeInfos Count: {knowledgeInfos.Count}");
-            if (knowledgeInfos.Where(w => w.IsLocal).Count() > 1) throw new SyncEngineConstraintException("Found multiple KnowledgeInfo with IsLocal equals to true. IsLocal should be 1 (one) data only");
-            if (knowledgeInfos.Where(w => w.IsLocal).Count() == 1) return knowledgeInfos;
+            if (parameter == null) throw new NullReferenceException(nameof(parameter));
+            result = new GetKnowledgeResult(parameter.PayloadAction, parameter.SynchronizationId, parameter.CustomInfo);
 
-            log.Add("Local KnowledgeInfo is not found. Creating a new Local KnowledgeInfo and Provisioning existing data...");
+            result.KnowledgeInfos = GetAllKnowledgeInfos(parameter.SynchronizationId, parameter.CustomInfo);
+            if (result.KnowledgeInfos == null) result.KnowledgeInfos = new List<KnowledgeInfo>();
+            parameter.Log.Add($"All KnowledgeInfos Count: {result.KnowledgeInfos.Count}");
+            if (result.KnowledgeInfos.Where(w => w.IsLocal).Count() > 1) throw new SyncEngineConstraintException("Found multiple KnowledgeInfo with IsLocal equals to true. IsLocal should be 1 (one) data only");
+            if (result.KnowledgeInfos.Where(w => w.IsLocal).Count() == 1) return;
+
+            parameter.Log.Add("Local KnowledgeInfo is not found. Creating a new Local KnowledgeInfo and Provisioning existing data...");
             OperationType operationType = OperationType.ProvisionKnowledge;
-            object transaction = StartTransaction(null, operationType, synchronizationId, customInfo);
+            object transaction = StartTransaction(null, operationType, parameter.SynchronizationId, parameter.CustomInfo);
             try
             {
                 KnowledgeInfo localKnowledgeInfo = new KnowledgeInfo()
@@ -386,17 +258,17 @@ namespace NETCoreSync
                     DatabaseInstanceId = Guid.NewGuid().ToString(),
                     IsLocal = true
                 };
-                log.Add("Getting Next TimeStamp...");
+                parameter.Log.Add("Getting Next TimeStamp...");
                 long nextTimeStamp = InvokeGetNextTimeStamp();
-                log.Add("Provisioning All Existing Data with the acquired TimeStamp and DatabaseInstanceId...");
-                log.Add($"SyncTypes Count: {SyncConfiguration.SyncTypes.Count}");
+                parameter.Log.Add("Provisioning All Existing Data with the acquired TimeStamp and DatabaseInstanceId...");
+                parameter.Log.Add($"SyncTypes Count: {SyncConfiguration.SyncTypes.Count}");
                 for (int i = 0; i < SyncConfiguration.SyncTypes.Count; i++)
                 {
                     Type syncType = SyncConfiguration.SyncTypes[i];
-                    log.Add($"Processing Type: {syncType.Name} ({i + 1} of {SyncConfiguration.SyncTypes.Count})");
+                    parameter.Log.Add($"Processing Type: {syncType.Name} ({i + 1} of {SyncConfiguration.SyncTypes.Count})");
                     int dataCount = 0;
                     SyncConfiguration.SchemaInfo schemaInfo = GetSchemaInfo(SyncConfiguration, syncType);
-                    IQueryable queryable = InvokeGetQueryable(syncType, transaction, operationType, synchronizationId, customInfo);
+                    IQueryable queryable = InvokeGetQueryable(syncType, transaction, operationType, parameter.SynchronizationId, parameter.CustomInfo);
                     System.Collections.IEnumerator enumerator = queryable.GetEnumerator();
                     while (enumerator.MoveNext())
                     {
@@ -404,27 +276,125 @@ namespace NETCoreSync
                         object data = enumerator.Current;
                         data.GetType().GetProperty(schemaInfo.PropertyInfoDatabaseInstanceId.Name).SetValue(data, null);
                         data.GetType().GetProperty(schemaInfo.PropertyInfoLastUpdated.Name).SetValue(data, nextTimeStamp);
-                        PersistData(syncType, data, false, transaction, operationType, synchronizationId, customInfo);
+                        PersistData(syncType, data, false, transaction, operationType, parameter.SynchronizationId, parameter.CustomInfo);
                     }
-                    log.Add($"Type: {syncType.Name} Processed. Provisioned Data Count: {dataCount}");
+                    parameter.Log.Add($"Type: {syncType.Name} Processed. Provisioned Data Count: {dataCount}");
                 }
                 localKnowledgeInfo.LastSyncTimeStamp = nextTimeStamp;
-                log.Add("Saving Local KnowledgeInfo...");
-                CreateOrUpdateKnowledgeInfo(localKnowledgeInfo, synchronizationId, customInfo);
-                CommitTransaction(null, transaction, operationType, synchronizationId, customInfo);
+                parameter.Log.Add("Saving Local KnowledgeInfo...");
+                CreateOrUpdateKnowledgeInfo(localKnowledgeInfo, parameter.SynchronizationId, parameter.CustomInfo);
+                CommitTransaction(null, transaction, operationType, parameter.SynchronizationId, parameter.CustomInfo);
             }
             catch (Exception)
             {
-                RollbackTransaction(null, transaction, operationType, synchronizationId, customInfo);
+                RollbackTransaction(null, transaction, operationType, parameter.SynchronizationId, parameter.CustomInfo);
                 throw;
             }
             finally
             {
-                EndTransaction(null, transaction, operationType, synchronizationId, customInfo);
+                EndTransaction(null, transaction, operationType, parameter.SynchronizationId, parameter.CustomInfo);
             }
-            knowledgeInfos = GetAllKnowledgeInfos(synchronizationId, customInfo);
-            if (knowledgeInfos.Where(w => w.IsLocal).Count() != 1) throw new SyncEngineConstraintException($"KnowledgeInfo with IsLocal equals to true is still not 1 (one) data. Check your {nameof(CreateOrUpdateKnowledgeInfo)} implementation.");
-            return knowledgeInfos;
+            result.KnowledgeInfos = GetAllKnowledgeInfos(parameter.SynchronizationId, parameter.CustomInfo);
+            if (result.KnowledgeInfos.Where(w => w.IsLocal).Count() != 1) throw new SyncEngineConstraintException($"KnowledgeInfo with IsLocal equals to true is still not 1 (one) data. Check your {nameof(CreateOrUpdateKnowledgeInfo)} implementation.");
+        }
+
+        internal void GetChangesByKnowledge(GetChangesByKnowledgeParameter parameter, ref GetChangesByKnowledgeResult result)
+        {
+            if (parameter == null) throw new NullReferenceException(nameof(parameter));
+            result = new GetChangesByKnowledgeResult(parameter.PayloadAction, parameter.SynchronizationId, parameter.CustomInfo);
+
+            parameter.Log.Add($"Get Changes By Knowledge");
+            parameter.Log.Add($"Local Knowledge Count: {parameter.LocalKnowledgeInfos.Count}");
+            for (int i = 0; i < parameter.LocalKnowledgeInfos.Count; i++)
+            {
+                parameter.Log.Add($"{i + 1}. {parameter.LocalKnowledgeInfos[i].ToString()}");
+            }
+            parameter.Log.Add($"Remote Knowledge Count: {parameter.RemoteKnowledgeInfos.Count}");
+            for (int i = 0; i < parameter.RemoteKnowledgeInfos.Count; i++)
+            {
+                parameter.Log.Add($"{i + 1}. {parameter.RemoteKnowledgeInfos[i].ToString()}");
+            }
+            if (parameter.LocalKnowledgeInfos.Where(w => w.IsLocal).Count() != 1) throw new SyncEngineConstraintException($"{nameof(parameter.LocalKnowledgeInfos)} must have 1 IsLocal property equals to true");
+            if (parameter.RemoteKnowledgeInfos.Where(w => w.IsLocal).Count() != 1) throw new SyncEngineConstraintException($"{nameof(parameter.RemoteKnowledgeInfos)} must have 1 IsLocal property equals to true");
+            KnowledgeInfo localInfo = parameter.LocalKnowledgeInfos.Where(w => w.IsLocal).First();
+            long localMaxTimeStamp = 0;
+            parameter.Log.Add($"SyncTypes Count: {SyncConfiguration.SyncTypes.Count}");
+            for (int i = 0; i < SyncConfiguration.SyncTypes.Count; i++)
+            {
+                Type syncType = SyncConfiguration.SyncTypes[i];
+                parameter.Log.Add($"Processing Type: {syncType.Name} ({i + 1} of {SyncConfiguration.SyncTypes.Count})");
+                (JObject typeChanges, int typeChangesCount, List<SyncLog.SyncLogData> typeLogChanges, long currentLocalMaxTimeStamp) = GetTypeChangesByKnowledge(syncType, localInfo.DatabaseInstanceId, parameter.RemoteKnowledgeInfos, parameter.SynchronizationId, parameter.CustomInfo);
+                parameter.Log.Add($"Type Changes Count: {typeChangesCount}");
+                if (typeChangesCount != 0 && typeChanges != null) result.Changes.Add(typeChanges);
+                result.LogChanges.AddRange(typeLogChanges);
+                parameter.Log.Add($"Type: {syncType.Name} Processed");
+                if (currentLocalMaxTimeStamp > localMaxTimeStamp) localMaxTimeStamp = currentLocalMaxTimeStamp;
+            }
+            if (localMaxTimeStamp > localInfo.LastSyncTimeStamp)
+            {
+                CreateOrUpdateKnowledgeInfo(localInfo, parameter.SynchronizationId, parameter.CustomInfo);
+            }
+        }
+
+        internal (JObject typeChanges, int typeChangesCount, List<SyncLog.SyncLogData> logChanges, long localMaxTimeStamp) GetTypeChangesByKnowledge(Type syncType, string localDatabaseInstanceId, List<KnowledgeInfo> remoteKnowledgeInfos, string synchronizationId, Dictionary<string, object> customInfo)
+        {
+            if (string.IsNullOrEmpty(synchronizationId)) throw new NullReferenceException(nameof(synchronizationId));
+            if (customInfo == null) customInfo = new Dictionary<string, object>();
+
+            List<SyncLog.SyncLogData> logChanges = new List<SyncLog.SyncLogData>();
+            long localMaxTimeStamp = 0;
+            SyncConfiguration.SchemaInfo schemaInfo = GetSchemaInfo(SyncConfiguration, syncType);
+            JObject typeChanges = null;
+            JArray datas = new JArray();
+
+            OperationType operationType = OperationType.GetChanges;
+            object transaction = StartTransaction(syncType, operationType, synchronizationId, customInfo);
+            try
+            {
+                IQueryable queryable = InvokeGetQueryable(syncType, transaction, operationType, synchronizationId, customInfo);
+
+                string predicate = "";
+                for (int i = 0; i < remoteKnowledgeInfos.Count; i++)
+                {
+                    KnowledgeInfo info = remoteKnowledgeInfos[i];
+                    if (!string.IsNullOrEmpty(predicate)) predicate += " || ";
+                    predicate += "(";
+                    predicate += $"{schemaInfo.PropertyInfoDatabaseInstanceId.Name} = {(info.DatabaseInstanceId == localDatabaseInstanceId ? "null" : ("'" + info.DatabaseInstanceId + "'"))} ";
+                    predicate += $" && {schemaInfo.PropertyInfoLastUpdated} > {info.LastSyncTimeStamp}";
+                    predicate += ")";
+                }
+                List<string> remoteKnownDatabaseInstanceIds = remoteKnowledgeInfos.Select(s => s.DatabaseInstanceId).ToList();
+                queryable = queryable.Where($"{predicate} || !(@0.Contains({schemaInfo.PropertyInfoDatabaseInstanceId.Name}))", remoteKnownDatabaseInstanceIds);
+                queryable = queryable.OrderBy($"{schemaInfo.PropertyInfoDeleted.Name}, {schemaInfo.PropertyInfoLastUpdated.Name}");
+                List<dynamic> dynamicDatas = queryable.ToDynamicList();
+                if (dynamicDatas.Count > 0)
+                {
+                    typeChanges = new JObject();
+                    typeChanges[nameof(syncType)] = syncType.Name;
+                    typeChanges[nameof(schemaInfo)] = schemaInfo.ToJObject();
+                    foreach (dynamic dynamicData in dynamicDatas)
+                    {
+                        JObject jObjectData = InvokeSerializeDataToJson(syncType, dynamicData, schemaInfo, transaction, operationType, synchronizationId, customInfo);
+                        datas.Add(jObjectData);
+                        string databaseInstanceId = jObjectData[schemaInfo.PropertyInfoDatabaseInstanceId.Name].Value<string>();
+                        long lastUpdated = jObjectData[schemaInfo.PropertyInfoLastUpdated.Name].Value<long>();
+                        if (string.IsNullOrEmpty(databaseInstanceId) && lastUpdated > localMaxTimeStamp) localMaxTimeStamp = lastUpdated;
+                        logChanges.Add(SyncLog.SyncLogData.FromJObject(jObjectData, syncType, schemaInfo));
+                    }
+                    typeChanges[nameof(datas)] = datas;
+                }
+                CommitTransaction(syncType, transaction, operationType, synchronizationId, customInfo);
+            }
+            catch (Exception)
+            {
+                RollbackTransaction(syncType, transaction, operationType, synchronizationId, customInfo);
+                throw;
+            }
+            finally
+            {
+                EndTransaction(syncType, transaction, operationType, synchronizationId, customInfo);
+            }
+            return (typeChanges, datas.Count, logChanges, localMaxTimeStamp);
         }
 
         private IQueryable InvokeGetQueryable(Type classType, object transaction, OperationType operationType, string synchronizationId, Dictionary<string, object> customInfo)
@@ -485,54 +455,6 @@ namespace NETCoreSync
             long nextTimeStamp = GetNextTimeStamp();
             if (nextTimeStamp == 0) throw new SyncEngineConstraintException("GetNextTimeStamp should return value greater than zero");
             return nextTimeStamp;
-        }
-
-        private static SyncConfiguration.SchemaInfo GetSchemaInfo(SyncConfiguration syncConfiguration, Type type)
-        {
-            if (syncConfiguration == null) throw new NullReferenceException(nameof(syncConfiguration));
-            if (!syncConfiguration.SyncSchemaInfos.ContainsKey(type)) throw new SyncEngineMissingTypeInSyncConfigurationException(type);
-            return syncConfiguration.SyncSchemaInfos[type];
-        }
-
-        internal static byte[] Compress(string text)
-        {
-            var bytes = Encoding.Unicode.GetBytes(text);
-            using (var mso = new MemoryStream())
-            {
-                using (var gs = new GZipStream(mso, CompressionMode.Compress))
-                {
-                    gs.Write(bytes, 0, bytes.Length);
-                }
-                return mso.ToArray();
-            }
-        }
-
-        internal static string Decompress(byte[] data)
-        {
-            // Read the last 4 bytes to get the length
-            byte[] lengthBuffer = new byte[4];
-            Array.Copy(data, data.Length - 4, lengthBuffer, 0, 4);
-            int uncompressedSize = BitConverter.ToInt32(lengthBuffer, 0);
-
-            var buffer = new byte[uncompressedSize];
-            using (var ms = new MemoryStream(data))
-            {
-                using (var gzip = new GZipStream(ms, CompressionMode.Decompress))
-                {
-                    gzip.Read(buffer, 0, uncompressedSize);
-                }
-            }
-            return Encoding.Unicode.GetString(buffer);
-        }
-
-        internal protected static long GetNowTicks()
-        {
-            return DateTime.Now.Ticks;
-        }
-
-        internal protected static long GetMinValueTicks()
-        {
-            return DateTime.MinValue.Ticks;
         }
     }
 }

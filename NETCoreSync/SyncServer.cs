@@ -45,10 +45,13 @@ namespace NETCoreSync
             SyncServerLockObject syncServerLockObject = null;
             bool lockTaken = false;
 
+            List<string> log = new List<string>();
             SyncEngine.PayloadAction payloadAction = SyncEngine.PayloadAction.Synchronize;
+
             SyncEngine.ApplyChangesResult applyChangesResult = null;
             SyncEngine.GetChangesResult getChangesResult = null;
-            List<string> log = new List<string>();
+
+            SyncEngine.GetKnowledgeResult getKnowledgeResult = null;
 
             try
             {
@@ -70,17 +73,41 @@ namespace NETCoreSync
                 Monitor.TryEnter(syncServerLockObject, 0, ref lockTaken);
                 if (!lockTaken) throw new Exception($"{nameof(SyncServerLockObject.SynchronizationId)}: {syncServerLockObject.SynchronizationId}, Synchronization process is already in progress");
 
-                if (payloadAction == SyncEngine.PayloadAction.Synchronize)
+                if (syncEngine.SyncConfiguration.TimeStampStrategy == SyncConfiguration.TimeStampStrategyEnum.GlobalTimeStamp)
                 {
-                    SyncEngine.ApplyChangesParameter applyChangesParameter = SyncEngine.ApplyChangesParameter.FromPayload(payload);
-                    applyChangesParameter.Log = log;
-                    syncEngine.ApplyChanges(applyChangesParameter, ref applyChangesResult);
+                    if (payloadAction == SyncEngine.PayloadAction.Synchronize)
+                    {
+                        SyncEngine.ApplyChangesParameter applyChangesParameter = SyncEngine.ApplyChangesParameter.FromPayload(payload);
+                        applyChangesParameter.Log = log;
+                        syncEngine.ApplyChanges(applyChangesParameter, ref applyChangesResult);
+                    }
+                    else if (payloadAction == SyncEngine.PayloadAction.SynhronizeReverse)
+                    {
+                        SyncEngine.GetChangesParameter getChangesParameter = SyncEngine.GetChangesParameter.FromPayload(payload, syncEngine);
+                        getChangesParameter.Log = log;
+                        syncEngine.GetChanges(getChangesParameter, ref getChangesResult);
+                    }
+                    else
+                    {
+                        throw new NotImplementedException(payloadAction.ToString());
+                    }
                 }
-                else if (payloadAction == SyncEngine.PayloadAction.SynhronizeReverse)
+                else if (syncEngine.SyncConfiguration.TimeStampStrategy == SyncConfiguration.TimeStampStrategyEnum.DatabaseTimeStamp)
                 {
-                    SyncEngine.GetChangesParameter getChangesParameter = SyncEngine.GetChangesParameter.FromPayload(payload, syncEngine);
-                    getChangesParameter.Log = log;
-                    syncEngine.GetChanges(getChangesParameter, ref getChangesResult);
+                    if (payloadAction == SyncEngine.PayloadAction.Knowledge)
+                    {
+                        SyncEngine.GetKnowledgeParameter getKnowledgeParameter = SyncEngine.GetKnowledgeParameter.FromPayload(payload);
+                        getKnowledgeParameter.Log = log;
+                        syncEngine.GetKnowledge(getKnowledgeParameter, ref getKnowledgeResult);
+                    }
+                    else
+                    {
+                        throw new NotImplementedException(payloadAction.ToString());
+                    }
+                }
+                else
+                {
+                    throw new NotImplementedException(syncEngine.SyncConfiguration.TimeStampStrategy.ToString());
                 }
             }
             catch (Exception e)
@@ -91,40 +118,77 @@ namespace NETCoreSync
             }
             finally
             {
-                if (payloadAction == SyncEngine.PayloadAction.Synchronize)
+                if (syncEngine.SyncConfiguration.TimeStampStrategy == SyncConfiguration.TimeStampStrategyEnum.GlobalTimeStamp)
                 {
-                    if (applyChangesResult != null)
+                    if (payloadAction == SyncEngine.PayloadAction.Synchronize)
                     {
-                        try
+                        if (applyChangesResult != null)
                         {
-                            jsonResult["payload"] = Convert.ToBase64String(applyChangesResult.GetCompressed());
+                            try
+                            {
+                                jsonResult["payload"] = Convert.ToBase64String(applyChangesResult.GetCompressed());
+                            }
+                            catch (Exception e)
+                            {
+                                string errMsg = $"jsonResult payload in applyChangesResult Error: {e.Message}";
+                                jsonResult["isOK"] = false;
+                                jsonResult["errorMessage"] = errMsg;
+                                log.Add(errMsg);
+                            }
                         }
-                        catch (Exception e)
+                    }
+                    else if (payloadAction == SyncEngine.PayloadAction.SynhronizeReverse)
+                    {
+                        if (getChangesResult != null)
                         {
-                            string errMsg = $"jsonResult payload in applyChangesResult Error: {e.Message}";
-                            jsonResult["isOK"] = false;
-                            jsonResult["errorMessage"] = errMsg;
-                            log.Add(errMsg);
+                            try
+                            {
+                                jsonResult["payload"] = Convert.ToBase64String(getChangesResult.GetCompressed());
+                            }
+                            catch (Exception e)
+                            {
+                                string errMsg = $"jsonResult payload in getChangesResult Error: {e.Message}";
+                                jsonResult["isOK"] = false;
+                                jsonResult["errorMessage"] = errMsg;
+                                log.Add(errMsg);
+                            }
                         }
-                        
+                    }
+                    else
+                    {
+                        throw new NotImplementedException(payloadAction.ToString());
                     }
                 }
-                else if (payloadAction == SyncEngine.PayloadAction.SynhronizeReverse)
+                else if (syncEngine.SyncConfiguration.TimeStampStrategy == SyncConfiguration.TimeStampStrategyEnum.DatabaseTimeStamp)
                 {
-                    if (getChangesResult != null)
+                    if (payloadAction == SyncEngine.PayloadAction.Knowledge)
                     {
-                        try
+                        if (getKnowledgeResult != null)
                         {
-                            jsonResult["payload"] = Convert.ToBase64String(getChangesResult.GetCompressed());
-                        }
-                        catch (Exception e)
-                        {
-                            string errMsg = $"jsonResult payload in getChangesResult Error: {e.Message}";
-                            jsonResult["isOK"] = false;
-                            jsonResult["errorMessage"] = errMsg;
-                            log.Add(errMsg);
+                            try
+                            {
+                                jsonResult["payload"] = Convert.ToBase64String(getKnowledgeResult.GetCompressed());
+                            }
+                            catch (Exception e)
+                            {
+                                string errMsg = $"jsonResult payload in getKnowledgeResult Error: {e.Message}";
+                                jsonResult["isOK"] = false;
+                                jsonResult["errorMessage"] = errMsg;
+                                log.Add(errMsg);
+                            }
                         }
                     }
+                    else
+                    {
+                        throw new NotImplementedException(payloadAction.ToString());
+                    }
+                }
+                else
+                {
+                    string errMsg = $"Process finally block Not Implemented Error: {syncEngine.SyncConfiguration.TimeStampStrategy.ToString()}";
+                    jsonResult["isOK"] = false;
+                    jsonResult["errorMessage"] = errMsg;
+                    log.Add(errMsg);
                 }
 
                 jsonResult["log"] = JArray.FromObject(log);

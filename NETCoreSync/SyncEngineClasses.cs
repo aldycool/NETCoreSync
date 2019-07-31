@@ -9,11 +9,30 @@ namespace NETCoreSync
 {
     public abstract partial class SyncEngine
     {
+        internal enum PayloadAction
+        {
+            Synchronize,
+            SynhronizeReverse,
+            Knowledge
+        }
+
+        public enum OperationType
+        {
+            GetChanges = 1,
+            ApplyChanges = 2,
+            ProvisionKnowledge = 3
+        }
+
         public class KnowledgeInfo
         {
             public string DatabaseInstanceId { get; set; }
             public bool IsLocal { get; set; }
             public long LastSyncTimeStamp { get; set; }
+
+            public override string ToString()
+            {
+                return $"{nameof(DatabaseInstanceId)}: {DatabaseInstanceId}, {nameof(IsLocal)}: {IsLocal}, {nameof(LastSyncTimeStamp)}: {LastSyncTimeStamp}";
+            }
         }
 
         internal abstract class BaseInfo
@@ -175,6 +194,135 @@ namespace NETCoreSync
                 result.Deletes = payload[nameof(Deletes)].ToObject<List<SyncLog.SyncLogData>>();
                 result.Conflicts = payload[nameof(Conflicts)].ToObject<List<SyncLog.SyncLogConflict>>();
                 result.PayloadAppliedIds = payload[nameof(PayloadAppliedIds)].ToObject<Dictionary<string, List<object>>>();
+                return result;
+            }
+        }
+
+        internal class GetKnowledgeParameter : BaseInfo
+        {
+            public List<string> Log { get; set; } = new List<string>();
+
+            public GetKnowledgeParameter(PayloadAction payloadAction, string synchronizationId, Dictionary<string, object> customInfo) : base(payloadAction, synchronizationId, customInfo)
+            {
+            }
+
+            public byte[] GetCompressed()
+            {
+                JObject payload = new JObject();
+                payload[nameof(PayloadAction)] = PayloadAction.ToString();
+                payload[nameof(SynchronizationId)] = SynchronizationId;
+                payload[nameof(CustomInfo)] = JObject.FromObject(CustomInfo);
+                string json = JsonConvert.SerializeObject(payload);
+                byte[] compressed = Compress(json);
+                return compressed;
+            }
+
+            public static GetKnowledgeParameter FromPayload(JObject payload)
+            {
+                string synchronizationId = payload[nameof(SynchronizationId)].Value<string>();
+                Dictionary<string, object> customInfo = payload[nameof(CustomInfo)].ToObject<Dictionary<string, object>>();
+                PayloadAction payloadAction = (PayloadAction)Enum.Parse(typeof(PayloadAction), payload[nameof(PayloadAction)].Value<string>());
+                GetKnowledgeParameter result = new GetKnowledgeParameter(payloadAction, synchronizationId, customInfo);
+                return result;
+            }
+        }
+
+        internal class GetKnowledgeResult : BaseInfo
+        {
+            public List<KnowledgeInfo> KnowledgeInfos { get; set; } = new List<KnowledgeInfo>();
+
+            public GetKnowledgeResult(PayloadAction payloadAction, string synchronizationId, Dictionary<string, object> customInfo) : base(payloadAction, synchronizationId, customInfo)
+            {
+            }
+
+            public byte[] GetCompressed()
+            {
+                JObject payload = new JObject();
+                payload[nameof(PayloadAction)] = PayloadAction.ToString();
+                payload[nameof(SynchronizationId)] = SynchronizationId;
+                payload[nameof(CustomInfo)] = JObject.FromObject(CustomInfo);
+                payload[nameof(KnowledgeInfos)] = JArray.FromObject(KnowledgeInfos);
+                string json = JsonConvert.SerializeObject(payload);
+                byte[] compressed = Compress(json);
+                return compressed;
+            }
+
+            public static GetKnowledgeResult FromPayload(JObject payload)
+            {
+                string synchronizationId = payload[nameof(SynchronizationId)].Value<string>();
+                Dictionary<string, object> customInfo = payload[nameof(CustomInfo)].ToObject<Dictionary<string, object>>();
+                PayloadAction payloadAction = (PayloadAction)Enum.Parse(typeof(PayloadAction), payload[nameof(PayloadAction)].Value<string>());
+                GetKnowledgeResult result = new GetKnowledgeResult(payloadAction, synchronizationId, customInfo);
+                result.KnowledgeInfos = payload[nameof(KnowledgeInfos)].ToObject<List<KnowledgeInfo>>();
+                return result;
+            }
+        }
+
+        internal class GetChangesByKnowledgeParameter : BaseInfo
+        {
+            public List<string> Log { get; set; } = new List<string>();
+            public List<KnowledgeInfo> LocalKnowledgeInfos { get; set; } = new List<KnowledgeInfo>();
+            public List<KnowledgeInfo> RemoteKnowledgeInfos { get; set; } = new List<KnowledgeInfo>();
+
+            public GetChangesByKnowledgeParameter(PayloadAction payloadAction, string synchronizationId, Dictionary<string, object> customInfo) : base(payloadAction, synchronizationId, customInfo)
+            {
+            }
+
+            public byte[] GetCompressed()
+            {
+                JObject payload = new JObject();
+                payload[nameof(PayloadAction)] = PayloadAction.ToString();
+                payload[nameof(SynchronizationId)] = SynchronizationId;
+                payload[nameof(CustomInfo)] = JObject.FromObject(CustomInfo);
+                payload[nameof(LocalKnowledgeInfos)] = JArray.FromObject(LocalKnowledgeInfos);
+                payload[nameof(RemoteKnowledgeInfos)] = JArray.FromObject(RemoteKnowledgeInfos);
+                string json = JsonConvert.SerializeObject(payload);
+                byte[] compressed = Compress(json);
+                return compressed;
+            }
+
+            public static GetChangesByKnowledgeParameter FromPayload(JObject payload, SyncEngine syncEngine)
+            {
+                string synchronizationId = payload[nameof(SynchronizationId)].Value<string>();
+                Dictionary<string, object> customInfo = payload[nameof(CustomInfo)].ToObject<Dictionary<string, object>>();
+                PayloadAction payloadAction = (PayloadAction)Enum.Parse(typeof(PayloadAction), payload[nameof(PayloadAction)].Value<string>());
+                GetChangesByKnowledgeParameter parameter = new GetChangesByKnowledgeParameter(payloadAction, synchronizationId, customInfo);
+                parameter.LocalKnowledgeInfos = payload[nameof(LocalKnowledgeInfos)].ToObject<List<KnowledgeInfo>>();
+                parameter.RemoteKnowledgeInfos = payload[nameof(RemoteKnowledgeInfos)].ToObject<List<KnowledgeInfo>>();
+                return parameter;
+            }
+        }
+
+        internal class GetChangesByKnowledgeResult : BaseInfo
+        {
+            public JArray Changes { get; set; } = new JArray();
+            public List<SyncLog.SyncLogData> LogChanges { get; set; } = new List<SyncLog.SyncLogData>();
+
+            public GetChangesByKnowledgeResult(PayloadAction payloadAction, string synchronizationId, Dictionary<string, object> customInfo) : base(payloadAction, synchronizationId, customInfo)
+            {
+            }
+
+            public byte[] GetCompressed()
+            {
+                JObject payload = new JObject();
+                payload[nameof(PayloadAction)] = PayloadAction.ToString();
+                payload[nameof(SynchronizationId)] = SynchronizationId;
+                payload[nameof(CustomInfo)] = JObject.FromObject(CustomInfo);
+                payload[nameof(Changes)] = Changes;
+                payload[nameof(LogChanges)] = JArray.FromObject(LogChanges);
+                string json = JsonConvert.SerializeObject(payload);
+                byte[] compressed = Compress(json);
+                return compressed;
+            }
+
+            public static GetChangesByKnowledgeResult FromPayload(JObject payload)
+            {
+                string synchronizationId = payload[nameof(SynchronizationId)].Value<string>();
+                Dictionary<string, object> customInfo = payload[nameof(CustomInfo)].ToObject<Dictionary<string, object>>();
+                PayloadAction payloadAction = (PayloadAction)Enum.Parse(typeof(PayloadAction), payload[nameof(PayloadAction)].Value<string>());
+                GetChangesByKnowledgeResult result = new GetChangesByKnowledgeResult(payloadAction, synchronizationId, customInfo);
+                result.Changes = payload[nameof(Changes)].ToObject<JArray>();
+                result.LogChanges = payload[nameof(LogChanges)].ToObject<List<SyncLog.SyncLogData>>();
                 return result;
             }
         }
