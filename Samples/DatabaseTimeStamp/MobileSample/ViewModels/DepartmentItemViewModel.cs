@@ -16,12 +16,14 @@ namespace MobileSample.ViewModels
         private readonly INavigation navigation;
         private readonly CustomSyncEngine customSyncEngine;
         private readonly Transaction transaction;
+        private readonly string synchronizationId;
 
         public DepartmentItemViewModel(INavigation navigation, DatabaseService databaseService, SyncConfiguration syncConfiguration)
         {
             this.navigation = navigation;
             customSyncEngine = new CustomSyncEngine(databaseService, syncConfiguration);
             transaction = customSyncEngine.Realm.BeginWrite();
+            synchronizationId = databaseService.GetSynchronizationId();
         }
 
         private bool isNewData;
@@ -60,7 +62,7 @@ namespace MobileSample.ViewModels
 
         public ICommand SaveCommand => new Command(async () =>
         {
-            customSyncEngine.HookPreInsertOrUpdate(Data);
+            customSyncEngine.HookPreInsertOrUpdateDatabaseTimeStamp(Data, transaction, synchronizationId, null);
 
             if (IsNewData)
             {
@@ -83,7 +85,7 @@ namespace MobileSample.ViewModels
                 return;
             }
 
-            customSyncEngine.HookPreDelete(Data);
+            customSyncEngine.HookPreDeleteDatabaseTimeStamp(Data, transaction, synchronizationId, null);
 
             transaction.Commit();
 

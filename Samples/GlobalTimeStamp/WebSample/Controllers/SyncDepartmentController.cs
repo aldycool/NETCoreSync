@@ -63,7 +63,7 @@ namespace WebSample.Controllers
                 syncDepartment.ID = Guid.NewGuid();
 
                 CustomSyncEngine customSyncEngine = new CustomSyncEngine(_context, syncConfiguration);
-                customSyncEngine.HookPreInsertOrUpdate(syncDepartment);
+                customSyncEngine.HookPreInsertOrUpdateGlobalTimeStamp(syncDepartment);
 
                 _context.Add(syncDepartment);
                 await _context.SaveChangesAsync();
@@ -105,7 +105,7 @@ namespace WebSample.Controllers
                 try
                 {
                     CustomSyncEngine customSyncEngine = new CustomSyncEngine(_context, syncConfiguration);
-                    customSyncEngine.HookPreInsertOrUpdate(syncDepartment);
+                    customSyncEngine.HookPreInsertOrUpdateGlobalTimeStamp(syncDepartment);
 
                     _context.Update(syncDepartment);
                     await _context.SaveChangesAsync();
@@ -156,7 +156,7 @@ namespace WebSample.Controllers
             var syncDepartment = await GetDatas().FirstAsync(m => m.ID == id);
 
             CustomSyncEngine customSyncEngine = new CustomSyncEngine(_context, syncConfiguration);
-            customSyncEngine.HookPreDelete(syncDepartment);
+            customSyncEngine.HookPreDeleteGlobalTimeStamp(syncDepartment);
 
             _context.Update(syncDepartment);
             //_context.Departments.Remove(syncDepartment);

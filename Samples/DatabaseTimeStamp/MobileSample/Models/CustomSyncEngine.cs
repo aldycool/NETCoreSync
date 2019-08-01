@@ -55,19 +55,16 @@ namespace MobileSample.Models
 
         public override void CreateOrUpdateKnowledgeInfo(KnowledgeInfo knowledgeInfo, string synchronizationId, Dictionary<string, object> customInfo)
         {
-            Realm.Write(() =>
+            Knowledge knowledge = Realm.All<Knowledge>().Where(w => w.DatabaseInstanceId == knowledgeInfo.DatabaseInstanceId).FirstOrDefault();
+            if (knowledge == null)
             {
-                Knowledge knowledge = Realm.All<Knowledge>().Where(w => w.DatabaseInstanceId == knowledgeInfo.DatabaseInstanceId).FirstOrDefault();
-                if (knowledge == null)
-                {
-                    knowledge = new Knowledge();
-                    knowledge.DatabaseInstanceId = knowledgeInfo.DatabaseInstanceId;
-                    Realm.Add(knowledge);
-                    knowledge = Realm.All<Knowledge>().Where(w => w.DatabaseInstanceId == knowledgeInfo.DatabaseInstanceId).First();
-                }
-                knowledge.IsLocal = knowledgeInfo.IsLocal;
-                knowledge.LastSyncTimeStamp = knowledgeInfo.LastSyncTimeStamp;
-            });
+                knowledge = new Knowledge();
+                knowledge.DatabaseInstanceId = knowledgeInfo.DatabaseInstanceId;
+                Realm.Add(knowledge);
+                knowledge = Realm.All<Knowledge>().Where(w => w.DatabaseInstanceId == knowledgeInfo.DatabaseInstanceId).First();
+            }
+            knowledge.IsLocal = knowledgeInfo.IsLocal;
+            knowledge.LastSyncTimeStamp = knowledgeInfo.LastSyncTimeStamp;
         }
 
         public override object StartTransaction(Type classType, OperationType operationType, string synchronizationId, Dictionary<string, object> customInfo)

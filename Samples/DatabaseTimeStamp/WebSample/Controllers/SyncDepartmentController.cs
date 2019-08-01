@@ -58,12 +58,14 @@ namespace WebSample.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create([Bind("SynchronizationID,Name")] SyncDepartment syncDepartment)
         {
+            if (string.IsNullOrEmpty(syncDepartment.SynchronizationID)) ModelState.AddModelError("SynchronizationID", "SynchronizationID cannot be empty");
+
             if (ModelState.IsValid)
             {
                 syncDepartment.ID = Guid.NewGuid();
 
                 CustomSyncEngine customSyncEngine = new CustomSyncEngine(_context, syncConfiguration);
-                customSyncEngine.HookPreInsertOrUpdate(syncDepartment);
+                customSyncEngine.HookPreInsertOrUpdateDatabaseTimeStamp(syncDepartment, null, syncDepartment.SynchronizationID, null);
 
                 _context.Add(syncDepartment);
                 await _context.SaveChangesAsync();
@@ -100,12 +102,14 @@ namespace WebSample.Controllers
                 return NotFound();
             }
 
+            if (string.IsNullOrEmpty(syncDepartment.SynchronizationID)) ModelState.AddModelError("SynchronizationID", "SynchronizationID cannot be empty");
+
             if (ModelState.IsValid)
             {
                 try
                 {
                     CustomSyncEngine customSyncEngine = new CustomSyncEngine(_context, syncConfiguration);
-                    customSyncEngine.HookPreInsertOrUpdate(syncDepartment);
+                    customSyncEngine.HookPreInsertOrUpdateDatabaseTimeStamp(syncDepartment, null, syncDepartment.SynchronizationID, null);
 
                     _context.Update(syncDepartment);
                     await _context.SaveChangesAsync();
@@ -155,8 +159,10 @@ namespace WebSample.Controllers
 
             var syncDepartment = await GetDatas().FirstAsync(m => m.ID == id);
 
+            if (string.IsNullOrEmpty(syncDepartment.SynchronizationID)) throw new Exception("SynchronizationID cannot be empty");
+
             CustomSyncEngine customSyncEngine = new CustomSyncEngine(_context, syncConfiguration);
-            customSyncEngine.HookPreDelete(syncDepartment);
+            customSyncEngine.HookPreDeleteDatabaseTimeStamp(syncDepartment, null, syncDepartment.SynchronizationID, null);
 
             _context.Update(syncDepartment);
             //_context.Departments.Remove(syncDepartment);

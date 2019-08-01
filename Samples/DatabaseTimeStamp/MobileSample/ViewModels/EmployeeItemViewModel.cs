@@ -16,6 +16,7 @@ namespace MobileSample.ViewModels
         private readonly INavigation navigation;
         private readonly CustomSyncEngine customSyncEngine;
         private readonly Transaction transaction;
+        private readonly string synchronizationId;
 
         private List<bool> isActiveItems;
         public List<bool> IsActiveItems
@@ -50,6 +51,7 @@ namespace MobileSample.ViewModels
             this.navigation = navigation;
             customSyncEngine = new CustomSyncEngine(databaseService, syncConfiguration);
             transaction = customSyncEngine.Realm.BeginWrite();
+            synchronizationId = databaseService.GetSynchronizationId();
 
             IsActiveItems = new List<bool>() { true, false };
             DepartmentItems = new List<ReferenceItem>();
@@ -127,7 +129,7 @@ namespace MobileSample.ViewModels
             }
             Data.Birthday = DateTimeBirthday;
 
-            customSyncEngine.HookPreInsertOrUpdate(Data);
+            customSyncEngine.HookPreInsertOrUpdateDatabaseTimeStamp(Data, transaction, synchronizationId, null);
 
             if (IsNewData)
             {
@@ -143,7 +145,7 @@ namespace MobileSample.ViewModels
         {
             if (IsNewData) return;
 
-            customSyncEngine.HookPreDelete(Data);
+            customSyncEngine.HookPreDeleteDatabaseTimeStamp(Data, transaction, synchronizationId, null);
 
             transaction.Commit();
 

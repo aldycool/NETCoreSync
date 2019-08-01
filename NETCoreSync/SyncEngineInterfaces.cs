@@ -87,7 +87,7 @@ namespace NETCoreSync
         {
         }
 
-        public void HookPreInsertOrUpdate(object data)
+        public void HookPreInsertOrUpdateGlobalTimeStamp(object data)
         {
             if (data == null) throw new NullReferenceException(nameof(data));
             SyncConfiguration.SchemaInfo schemaInfo = GetSchemaInfo(SyncConfiguration, data.GetType());
@@ -101,15 +101,13 @@ namespace NETCoreSync
                 }
                 data.GetType().GetProperty(schemaInfo.PropertyInfoLastUpdated.Name).SetValue(data, nowTicks);
             }
-            if (SyncConfiguration.TimeStampStrategy == SyncConfiguration.TimeStampStrategyEnum.DatabaseTimeStamp)
+            else
             {
-                long timeStamp = GetNextTimeStamp();
-                data.GetType().GetProperty(schemaInfo.PropertyInfoDatabaseInstanceId.Name).SetValue(data, null);
-                data.GetType().GetProperty(schemaInfo.PropertyInfoLastUpdated.Name).SetValue(data, timeStamp);
+                throw new SyncEngineConstraintException($"Mismatch Hook Method for {SyncConfiguration.TimeStampStrategy}");
             }
         }
 
-        public void HookPreDelete(object data)
+        public void HookPreDeleteGlobalTimeStamp(object data)
         {
             if (data == null) throw new NullReferenceException(nameof(data));
             SyncConfiguration.SchemaInfo schemaInfo = GetSchemaInfo(SyncConfiguration, data.GetType());
@@ -123,12 +121,44 @@ namespace NETCoreSync
                 }
                 data.GetType().GetProperty(schemaInfo.PropertyInfoDeleted.Name).SetValue(data, nowTicks);
             }
+            else
+            {
+                throw new SyncEngineConstraintException($"Mismatch Hook Method for {SyncConfiguration.TimeStampStrategy}");
+            }
+        }
+
+        public void HookPreInsertOrUpdateDatabaseTimeStamp(object data, object transaction, string synchronizationId, Dictionary<string, object> customInfo)
+        {
+            if (data == null) throw new NullReferenceException(nameof(data));
+            SyncConfiguration.SchemaInfo schemaInfo = GetSchemaInfo(SyncConfiguration, data.GetType());
             if (SyncConfiguration.TimeStampStrategy == SyncConfiguration.TimeStampStrategyEnum.DatabaseTimeStamp)
             {
-                long timeStamp = GetNextTimeStamp();
+                long timeStamp = InvokeGetNextTimeStamp();
+                UpdateLocalKnowledgeTimeStamp(timeStamp, synchronizationId, customInfo, null, transaction);
+                data.GetType().GetProperty(schemaInfo.PropertyInfoDatabaseInstanceId.Name).SetValue(data, null);
+                data.GetType().GetProperty(schemaInfo.PropertyInfoLastUpdated.Name).SetValue(data, timeStamp);
+            }
+            else
+            {
+                throw new SyncEngineConstraintException($"Mismatch Hook Method for {SyncConfiguration.TimeStampStrategy}");
+            }
+        }
+
+        public void HookPreDeleteDatabaseTimeStamp(object data, object transaction, string synchronizationId, Dictionary<string, object> customInfo)
+        {
+            if (data == null) throw new NullReferenceException(nameof(data));
+            SyncConfiguration.SchemaInfo schemaInfo = GetSchemaInfo(SyncConfiguration, data.GetType());
+            if (SyncConfiguration.TimeStampStrategy == SyncConfiguration.TimeStampStrategyEnum.DatabaseTimeStamp)
+            {
+                long timeStamp = InvokeGetNextTimeStamp();
+                UpdateLocalKnowledgeTimeStamp(timeStamp, synchronizationId, customInfo, null, transaction);
                 data.GetType().GetProperty(schemaInfo.PropertyInfoDatabaseInstanceId.Name).SetValue(data, null);
                 data.GetType().GetProperty(schemaInfo.PropertyInfoLastUpdated.Name).SetValue(data, timeStamp);
                 data.GetType().GetProperty(schemaInfo.PropertyInfoDeleted.Name).SetValue(data, true);
+            }
+            else
+            {
+                throw new SyncEngineConstraintException($"Mismatch Hook Method for {SyncConfiguration.TimeStampStrategy}");
             }
         }
     }

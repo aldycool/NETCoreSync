@@ -61,13 +61,15 @@ namespace WebSample.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create([Bind("SynchronizationID,Name,Birthday,NumberOfComputers,SavingAmount,IsActive,DepartmentID")] SyncEmployee syncEmployee)
         {
+            if (string.IsNullOrEmpty(syncEmployee.SynchronizationID)) ModelState.AddModelError("SynchronizationID", "SynchronizationID cannot be empty");
+
             if (ModelState.IsValid)
             {
                 syncEmployee.ID = Guid.NewGuid();
                 if (syncEmployee.DepartmentID == Guid.Empty) syncEmployee.DepartmentID = null;
 
                 CustomSyncEngine customSyncEngine = new CustomSyncEngine(_context, syncConfiguration);
-                customSyncEngine.HookPreInsertOrUpdate(syncEmployee);
+                customSyncEngine.HookPreInsertOrUpdateDatabaseTimeStamp(syncEmployee, null, syncEmployee.SynchronizationID, null);
 
                 _context.Add(syncEmployee);
                 await _context.SaveChangesAsync();
@@ -106,6 +108,8 @@ namespace WebSample.Controllers
                 return NotFound();
             }
 
+            if (string.IsNullOrEmpty(syncEmployee.SynchronizationID)) ModelState.AddModelError("SynchronizationID", "SynchronizationID cannot be empty");
+
             if (ModelState.IsValid)
             {
                 try
@@ -113,7 +117,7 @@ namespace WebSample.Controllers
                     if (syncEmployee.DepartmentID == Guid.Empty) syncEmployee.DepartmentID = null;
 
                     CustomSyncEngine customSyncEngine = new CustomSyncEngine(_context, syncConfiguration);
-                    customSyncEngine.HookPreInsertOrUpdate(syncEmployee);
+                    customSyncEngine.HookPreInsertOrUpdateDatabaseTimeStamp(syncEmployee, null, syncEmployee.SynchronizationID, null);
 
                     _context.Update(syncEmployee);
                     await _context.SaveChangesAsync();
@@ -161,8 +165,10 @@ namespace WebSample.Controllers
         {
             var syncEmployee = await GetDatas().FirstAsync(m => m.ID == id);
 
+            if (string.IsNullOrEmpty(syncEmployee.SynchronizationID)) throw new Exception("SynchronizationID cannot be empty");
+
             CustomSyncEngine customSyncEngine = new CustomSyncEngine(_context, syncConfiguration);
-            customSyncEngine.HookPreDelete(syncEmployee);
+            customSyncEngine.HookPreDeleteDatabaseTimeStamp(syncEmployee, null, syncEmployee.SynchronizationID, null);
 
             _context.Update(syncEmployee);
             //_context.SyncEmployee.Remove(syncEmployee);

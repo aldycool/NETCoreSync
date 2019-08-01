@@ -100,7 +100,7 @@ namespace MobileSample.ViewModels
             NormalizeForeignKeyBindings();
 
             CustomSyncEngine customSyncEngine = new CustomSyncEngine(databaseService, syncConfiguration);
-            customSyncEngine.HookPreInsertOrUpdate(Data);
+            customSyncEngine.HookPreInsertOrUpdateGlobalTimeStamp(Data);
 
             using (var databaseContext = databaseService.GetDatabaseContext())
             {
@@ -125,7 +125,7 @@ namespace MobileSample.ViewModels
             NormalizeForeignKeyBindings();
 
             CustomSyncEngine customSyncEngine = new CustomSyncEngine(databaseService, syncConfiguration);
-            customSyncEngine.HookPreDelete(Data);
+            customSyncEngine.HookPreDeleteGlobalTimeStamp(Data);
 
             using (var databaseContext = databaseService.GetDatabaseContext())
             {

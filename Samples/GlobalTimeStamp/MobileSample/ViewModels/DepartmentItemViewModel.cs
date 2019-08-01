@@ -57,7 +57,7 @@ namespace MobileSample.ViewModels
         public ICommand SaveCommand => new Command(async () =>
         {
             CustomSyncEngine customSyncEngine = new CustomSyncEngine(databaseService, syncConfiguration);
-            customSyncEngine.HookPreInsertOrUpdate(Data);
+            customSyncEngine.HookPreInsertOrUpdateGlobalTimeStamp(Data);
 
             using (var databaseContext = databaseService.GetDatabaseContext())
             {
@@ -89,7 +89,7 @@ namespace MobileSample.ViewModels
                 }
 
                 CustomSyncEngine customSyncEngine = new CustomSyncEngine(databaseService, syncConfiguration);
-                customSyncEngine.HookPreDelete(Data);
+                customSyncEngine.HookPreDeleteGlobalTimeStamp(Data);
 
                 databaseContext.Update(Data);
                 //databaseContext.Remove(Data);

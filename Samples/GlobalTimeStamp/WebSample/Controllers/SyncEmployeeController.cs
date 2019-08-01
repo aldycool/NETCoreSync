@@ -67,7 +67,7 @@ namespace WebSample.Controllers
                 if (syncEmployee.DepartmentID == Guid.Empty) syncEmployee.DepartmentID = null;
 
                 CustomSyncEngine customSyncEngine = new CustomSyncEngine(_context, syncConfiguration);
-                customSyncEngine.HookPreInsertOrUpdate(syncEmployee);
+                customSyncEngine.HookPreInsertOrUpdateGlobalTimeStamp(syncEmployee);
 
                 _context.Add(syncEmployee);
                 await _context.SaveChangesAsync();
@@ -113,7 +113,7 @@ namespace WebSample.Controllers
                     if (syncEmployee.DepartmentID == Guid.Empty) syncEmployee.DepartmentID = null;
 
                     CustomSyncEngine customSyncEngine = new CustomSyncEngine(_context, syncConfiguration);
-                    customSyncEngine.HookPreInsertOrUpdate(syncEmployee);
+                    customSyncEngine.HookPreInsertOrUpdateGlobalTimeStamp(syncEmployee);
 
                     _context.Update(syncEmployee);
                     await _context.SaveChangesAsync();
@@ -162,7 +162,7 @@ namespace WebSample.Controllers
             var syncEmployee = await GetDatas().FirstAsync(m => m.ID == id);
 
             CustomSyncEngine customSyncEngine = new CustomSyncEngine(_context, syncConfiguration);
-            customSyncEngine.HookPreDelete(syncEmployee);
+            customSyncEngine.HookPreDeleteGlobalTimeStamp(syncEmployee);
 
             _context.Update(syncEmployee);
             //_context.SyncEmployee.Remove(syncEmployee);

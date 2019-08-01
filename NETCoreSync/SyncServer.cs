@@ -52,6 +52,8 @@ namespace NETCoreSync
             SyncEngine.GetChangesResult getChangesResult = null;
 
             SyncEngine.GetKnowledgeResult getKnowledgeResult = null;
+            SyncEngine.ApplyChangesByKnowledgeResult applyChangesByKnowledgeResult = null;
+            SyncEngine.GetChangesByKnowledgeResult getChangesByKnowledgeResult = null;
 
             try
             {
@@ -99,6 +101,18 @@ namespace NETCoreSync
                         SyncEngine.GetKnowledgeParameter getKnowledgeParameter = SyncEngine.GetKnowledgeParameter.FromPayload(payload);
                         getKnowledgeParameter.Log = log;
                         syncEngine.GetKnowledge(getKnowledgeParameter, ref getKnowledgeResult);
+                    }
+                    else if (payloadAction == SyncEngine.PayloadAction.Synchronize)
+                    {
+                        SyncEngine.ApplyChangesByKnowledgeParameter applyChangesByKnowledgeParameter = SyncEngine.ApplyChangesByKnowledgeParameter.FromPayload(payload);
+                        applyChangesByKnowledgeParameter.Log = log;
+                        syncEngine.ApplyChangesByKnowledge(applyChangesByKnowledgeParameter, ref applyChangesByKnowledgeResult);
+                    }
+                    else if (payloadAction == SyncEngine.PayloadAction.SynhronizeReverse)
+                    {
+                        SyncEngine.GetChangesByKnowledgeParameter getChangesByKnowledgeParameter = SyncEngine.GetChangesByKnowledgeParameter.FromPayload(payload);
+                        getChangesByKnowledgeParameter.Log = log;
+                        syncEngine.GetChangesByKnowledge(getChangesByKnowledgeParameter, ref getChangesByKnowledgeResult);
                     }
                     else
                     {
@@ -172,6 +186,40 @@ namespace NETCoreSync
                             catch (Exception e)
                             {
                                 string errMsg = $"jsonResult payload in getKnowledgeResult Error: {e.Message}";
+                                jsonResult["isOK"] = false;
+                                jsonResult["errorMessage"] = errMsg;
+                                log.Add(errMsg);
+                            }
+                        }
+                    }
+                    else if (payloadAction == SyncEngine.PayloadAction.Synchronize)
+                    {
+                        if (applyChangesByKnowledgeResult != null)
+                        {
+                            try
+                            {
+                                jsonResult["payload"] = Convert.ToBase64String(applyChangesByKnowledgeResult.GetCompressed());
+                            }
+                            catch (Exception e)
+                            {
+                                string errMsg = $"jsonResult payload in applyChangesByKnowledgeResult Error: {e.Message}";
+                                jsonResult["isOK"] = false;
+                                jsonResult["errorMessage"] = errMsg;
+                                log.Add(errMsg);
+                            }
+                        }
+                    }
+                    else if (payloadAction == SyncEngine.PayloadAction.SynhronizeReverse)
+                    {
+                        if (getChangesByKnowledgeResult != null)
+                        {
+                            try
+                            {
+                                jsonResult["payload"] = Convert.ToBase64String(getChangesByKnowledgeResult.GetCompressed());
+                            }
+                            catch (Exception e)
+                            {
+                                string errMsg = $"jsonResult payload in getChangesByKnowledgeResult Error: {e.Message}";
                                 jsonResult["isOK"] = false;
                                 jsonResult["errorMessage"] = errMsg;
                                 log.Add(errMsg);
