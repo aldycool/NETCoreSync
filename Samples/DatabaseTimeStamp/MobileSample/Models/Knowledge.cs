@@ -9,6 +9,11 @@ namespace MobileSample.Models
         [Realms.PrimaryKey()]
         public string DatabaseInstanceId { get; set; }
         public bool IsLocal { get; set; }
-        public long LastSyncTimeStamp { get; set; }
+        public long MaxTimeStamp { get; set; }
+
+        public override string ToString()
+        {
+            return $"{nameof(DatabaseInstanceId)}: {DatabaseInstanceId}, {nameof(IsLocal)}: {IsLocal}, {nameof(MaxTimeStamp)}: {MaxTimeStamp}";
+        }
     }
 }

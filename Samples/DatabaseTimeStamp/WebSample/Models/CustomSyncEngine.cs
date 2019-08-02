@@ -9,6 +9,7 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using Newtonsoft.Json.Serialization;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Storage;
 
 namespace WebSample.Models
 {
@@ -25,8 +26,8 @@ namespace WebSample.Models
 
         public override long GetNextTimeStamp()
         {
-            DbQueryTimeStampResult result = databaseContext.DbQueryTimeStampResults.FromSql("SELECT CAST((EXTRACT(EPOCH FROM NOW() AT TIME ZONE 'UTC') * 1000) AS bigint) AS TimeStamp").First();
-            return result.TimeStamp;
+            DbQueryTimeStampResult result = databaseContext.DbQueryTimeStampResults.FromSql("SELECT CAST((EXTRACT(EPOCH FROM NOW() AT TIME ZONE 'UTC') * 1000) AS bigint) AS timestamp").First();
+            return result.timestamp;
         }
 
         public override List<KnowledgeInfo> GetAllKnowledgeInfos(string synchronizationId, Dictionary<string, object> customInfo)
@@ -35,7 +36,7 @@ namespace WebSample.Models
             {
                 DatabaseInstanceId = s.DatabaseInstanceId.ToString(),
                 IsLocal = s.IsLocal,
-                LastSyncTimeStamp = s.LastSyncTimeStamp
+                MaxTimeStamp = s.MaxTimeStamp
             }).ToList();
         }
 
@@ -53,9 +54,40 @@ namespace WebSample.Models
                 knowledge = databaseContext.Knowledges.Where(w => w.SynchronizationID == synchronizationId && w.DatabaseInstanceId == id).First();
             }
             knowledge.IsLocal = knowledgeInfo.IsLocal;
-            knowledge.LastSyncTimeStamp = knowledgeInfo.LastSyncTimeStamp;
+            knowledge.MaxTimeStamp = knowledgeInfo.MaxTimeStamp;
             databaseContext.Update(knowledge);
             databaseContext.SaveChanges();
+        }
+
+        public override object StartTransaction(Type classType, OperationType operationType, string synchronizationId, Dictionary<string, object> customInfo)
+        {
+            IDbContextTransaction transaction = null;
+            if (operationType == OperationType.ApplyChanges || operationType == OperationType.ProvisionKnowledge) transaction = databaseContext.Database.BeginTransaction();
+            return transaction;
+        }
+
+        public override void CommitTransaction(Type classType, object transaction, OperationType operationType, string synchronizationId, Dictionary<string, object> customInfo)
+        {
+            if (transaction != null)
+            {
+                ((IDbContextTransaction)transaction).Commit();
+            }
+        }
+
+        public override void RollbackTransaction(Type classType, object transaction, OperationType operationType, string synchronizationId, Dictionary<string, object> customInfo)
+        {
+            if (transaction != null)
+            {
+                ((IDbContextTransaction)transaction).Rollback();
+            }
+        }
+
+        public override void EndTransaction(Type classType, object transaction, OperationType operationType, string synchronizationId, Dictionary<string, object> customInfo)
+        {
+            if (transaction != null)
+            {
+                ((IDbContextTransaction)transaction).Dispose();
+            }
         }
 
         public override IQueryable GetQueryable(Type classType, object transaction, OperationType operationType, string synchronizationId, Dictionary<string, object> customInfo)
@@ -170,7 +202,7 @@ namespace WebSample.Models
 
         public class DbQueryTimeStampResult
         {
-            public long TimeStamp { get; set; }
+            public long timestamp { get; set; }
         }
     }
 }

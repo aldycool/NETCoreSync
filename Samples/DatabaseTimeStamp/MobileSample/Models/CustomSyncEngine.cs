@@ -47,7 +47,7 @@ namespace MobileSample.Models
                 {
                     DatabaseInstanceId = knowledges[i].DatabaseInstanceId,
                     IsLocal = knowledges[i].IsLocal,
-                    LastSyncTimeStamp = knowledges[i].LastSyncTimeStamp
+                    MaxTimeStamp = knowledges[i].MaxTimeStamp
                 });
             }
             return result;
@@ -64,7 +64,7 @@ namespace MobileSample.Models
                 knowledge = Realm.All<Knowledge>().Where(w => w.DatabaseInstanceId == knowledgeInfo.DatabaseInstanceId).First();
             }
             knowledge.IsLocal = knowledgeInfo.IsLocal;
-            knowledge.LastSyncTimeStamp = knowledgeInfo.LastSyncTimeStamp;
+            knowledge.MaxTimeStamp = knowledgeInfo.MaxTimeStamp;
         }
 
         public override object StartTransaction(Type classType, OperationType operationType, string synchronizationId, Dictionary<string, object> customInfo)

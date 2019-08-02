@@ -65,14 +65,24 @@ namespace WebSample.Controllers
 
             if (ModelState.IsValid)
             {
-                syncEmployee.ID = Guid.NewGuid();
-                if (syncEmployee.DepartmentID == Guid.Empty) syncEmployee.DepartmentID = null;
-
-                CustomSyncEngine customSyncEngine = new CustomSyncEngine(_context, syncConfiguration);
-                customSyncEngine.HookPreInsertOrUpdateDatabaseTimeStamp(syncEmployee, null, syncEmployee.SynchronizationID, null);
-
-                _context.Add(syncEmployee);
-                await _context.SaveChangesAsync();
+                using (var transaction = _context.Database.BeginTransaction())
+                {
+                    try
+                    {
+                        syncEmployee.ID = Guid.NewGuid();
+                        if (syncEmployee.DepartmentID == Guid.Empty) syncEmployee.DepartmentID = null;
+                        CustomSyncEngine customSyncEngine = new CustomSyncEngine(_context, syncConfiguration);
+                        customSyncEngine.HookPreInsertOrUpdateDatabaseTimeStamp(syncEmployee, transaction, syncEmployee.SynchronizationID, null);
+                        _context.Add(syncEmployee);
+                        await _context.SaveChangesAsync();
+                        transaction.Commit();
+                    }
+                    catch (Exception)
+                    {
+                        transaction.Rollback();
+                        throw;
+                    }
+                }
                 return RedirectToAction(nameof(Index));
             }
             ViewData["DepartmentID"] = GetSelectListDepartment(syncEmployee.DepartmentID);
@@ -112,24 +122,20 @@ namespace WebSample.Controllers
 
             if (ModelState.IsValid)
             {
-                try
+                using (var transaction = _context.Database.BeginTransaction())
                 {
-                    if (syncEmployee.DepartmentID == Guid.Empty) syncEmployee.DepartmentID = null;
-
-                    CustomSyncEngine customSyncEngine = new CustomSyncEngine(_context, syncConfiguration);
-                    customSyncEngine.HookPreInsertOrUpdateDatabaseTimeStamp(syncEmployee, null, syncEmployee.SynchronizationID, null);
-
-                    _context.Update(syncEmployee);
-                    await _context.SaveChangesAsync();
-                }
-                catch (DbUpdateConcurrencyException)
-                {
-                    if (!SyncEmployeeExists(syncEmployee.ID))
+                    try
                     {
-                        return NotFound();
+                        if (syncEmployee.DepartmentID == Guid.Empty) syncEmployee.DepartmentID = null;
+                        CustomSyncEngine customSyncEngine = new CustomSyncEngine(_context, syncConfiguration);
+                        customSyncEngine.HookPreInsertOrUpdateDatabaseTimeStamp(syncEmployee, transaction, syncEmployee.SynchronizationID, null);
+                        _context.Update(syncEmployee);
+                        await _context.SaveChangesAsync();
+                        transaction.Commit();
                     }
-                    else
+                    catch (Exception)
                     {
+                        transaction.Rollback();
                         throw;
                     }
                 }
@@ -167,18 +173,24 @@ namespace WebSample.Controllers
 
             if (string.IsNullOrEmpty(syncEmployee.SynchronizationID)) throw new Exception("SynchronizationID cannot be empty");
 
-            CustomSyncEngine customSyncEngine = new CustomSyncEngine(_context, syncConfiguration);
-            customSyncEngine.HookPreDeleteDatabaseTimeStamp(syncEmployee, null, syncEmployee.SynchronizationID, null);
-
-            _context.Update(syncEmployee);
-            //_context.SyncEmployee.Remove(syncEmployee);
-            await _context.SaveChangesAsync();
+            using (var transaction = _context.Database.BeginTransaction())
+            {
+                try
+                {
+                    CustomSyncEngine customSyncEngine = new CustomSyncEngine(_context, syncConfiguration);
+                    customSyncEngine.HookPreDeleteDatabaseTimeStamp(syncEmployee, transaction, syncEmployee.SynchronizationID, null);
+                    _context.Update(syncEmployee);
+                    //_context.SyncEmployee.Remove(syncEmployee);
+                    await _context.SaveChangesAsync();
+                    transaction.Commit();
+                }
+                catch (Exception)
+                {
+                    transaction.Rollback();
+                    throw;
+                }
+            }
             return RedirectToAction(nameof(Index));
-        }
-
-        private bool SyncEmployeeExists(Guid id)
-        {
-            return GetDatas().Any(e => e.ID == id);
         }
 
         public IQueryable<SyncEmployee> GetDatas()

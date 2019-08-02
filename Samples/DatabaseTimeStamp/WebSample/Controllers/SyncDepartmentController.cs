@@ -62,13 +62,23 @@ namespace WebSample.Controllers
 
             if (ModelState.IsValid)
             {
-                syncDepartment.ID = Guid.NewGuid();
-
-                CustomSyncEngine customSyncEngine = new CustomSyncEngine(_context, syncConfiguration);
-                customSyncEngine.HookPreInsertOrUpdateDatabaseTimeStamp(syncDepartment, null, syncDepartment.SynchronizationID, null);
-
-                _context.Add(syncDepartment);
-                await _context.SaveChangesAsync();
+                using (var transaction = _context.Database.BeginTransaction())
+                {
+                    try
+                    {
+                        syncDepartment.ID = Guid.NewGuid();
+                        CustomSyncEngine customSyncEngine = new CustomSyncEngine(_context, syncConfiguration);
+                        customSyncEngine.HookPreInsertOrUpdateDatabaseTimeStamp(syncDepartment, transaction, syncDepartment.SynchronizationID, null);
+                        _context.Add(syncDepartment);
+                        await _context.SaveChangesAsync();
+                        transaction.Commit();
+                    }
+                    catch (Exception)
+                    {
+                        transaction.Rollback();
+                        throw;
+                    }                    
+                }
                 return RedirectToAction(nameof(Index));
             }
             return View(syncDepartment);
@@ -106,22 +116,19 @@ namespace WebSample.Controllers
 
             if (ModelState.IsValid)
             {
-                try
+                using (var transaction = _context.Database.BeginTransaction())
                 {
-                    CustomSyncEngine customSyncEngine = new CustomSyncEngine(_context, syncConfiguration);
-                    customSyncEngine.HookPreInsertOrUpdateDatabaseTimeStamp(syncDepartment, null, syncDepartment.SynchronizationID, null);
-
-                    _context.Update(syncDepartment);
-                    await _context.SaveChangesAsync();
-                }
-                catch (DbUpdateConcurrencyException)
-                {
-                    if (!SyncDepartmentExists(syncDepartment.ID))
+                    try
                     {
-                        return NotFound();
+                        CustomSyncEngine customSyncEngine = new CustomSyncEngine(_context, syncConfiguration);
+                        customSyncEngine.HookPreInsertOrUpdateDatabaseTimeStamp(syncDepartment, transaction, syncDepartment.SynchronizationID, null);
+                        _context.Update(syncDepartment);
+                        await _context.SaveChangesAsync();
+                        transaction.Commit();
                     }
-                    else
+                    catch (Exception)
                     {
+                        transaction.Rollback();
                         throw;
                     }
                 }
@@ -161,18 +168,24 @@ namespace WebSample.Controllers
 
             if (string.IsNullOrEmpty(syncDepartment.SynchronizationID)) throw new Exception("SynchronizationID cannot be empty");
 
-            CustomSyncEngine customSyncEngine = new CustomSyncEngine(_context, syncConfiguration);
-            customSyncEngine.HookPreDeleteDatabaseTimeStamp(syncDepartment, null, syncDepartment.SynchronizationID, null);
-
-            _context.Update(syncDepartment);
-            //_context.Departments.Remove(syncDepartment);
-            await _context.SaveChangesAsync();
+            using (var transaction = _context.Database.BeginTransaction())
+            {
+                try
+                {
+                    CustomSyncEngine customSyncEngine = new CustomSyncEngine(_context, syncConfiguration);
+                    customSyncEngine.HookPreDeleteDatabaseTimeStamp(syncDepartment, transaction, syncDepartment.SynchronizationID, null);
+                    _context.Update(syncDepartment);
+                    //_context.Departments.Remove(syncDepartment);
+                    await _context.SaveChangesAsync();
+                    transaction.Commit();
+                }
+                catch (Exception)
+                {
+                    transaction.Rollback();
+                    throw;
+                }
+            }
             return RedirectToAction(nameof(Index));
-        }
-
-        private bool SyncDepartmentExists(Guid id)
-        {
-            return GetDatas().Any(e => e.ID == id);
         }
 
         public IQueryable<SyncDepartment> GetDatas()

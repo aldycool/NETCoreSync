@@ -10,7 +10,7 @@ using Realms;
 
 namespace MobileSample.Services
 {
-    public class DatabaseService : IDisposable
+    public class DatabaseService
     {
         private const string SYNCHRONIZATIONID_KEY = "SynchronizationId";
         private const string SERVERURL_KEY = "ServerUrl";
@@ -57,16 +57,14 @@ namespace MobileSample.Services
 
         public void ResetInstance()
         {
-            DisposeManagedObjects();
-
-            string databaseFilePath = GetDatabaseFilePath();
-            RealmConfiguration realmConfiguration = GetRealmConfiguration(databaseFilePath);
-            if (File.Exists(databaseFilePath))
+            Realm.Write(() => 
             {
-                Realm.DeleteRealm(realmConfiguration);
-            }
-
-            CreateInstance();
+                Realm.RemoveAll<Configuration>();
+                Realm.RemoveAll<Employee>();
+                Realm.RemoveAll<Department>();
+                Realm.RemoveAll<Knowledge>();
+                Realm.RemoveAll<TimeStamp>();
+            });
         }
 
         public bool IsDatabaseReady()
@@ -149,46 +147,28 @@ namespace MobileSample.Services
             return Realm.All<Employee>().Where(w => !w.Deleted);
         }
 
-        #region IDisposable Pattern
-
-        private bool disposed = false;
-
-        public void Dispose()
+        public void DumpLog()
         {
-            Dispose(true);
-            GC.SuppressFinalize(this);
+            Log($"{nameof(Configuration)}:");
+            Realm.All<Configuration>().ToList().ForEach(data => Log(data.ToString()));
+            Log("");
+            Log($"{nameof(Department)}:");
+            Realm.All<Department>().ToList().ForEach(data => Log(data.ToString()));
+            Log("");
+            Log($"{nameof(Employee)}:");
+            Realm.All<Employee>().ToList().ForEach(data => Log(data.ToString()));
+            Log("");
+            Log($"{nameof(Knowledge)}:");
+            Realm.All<Knowledge>().ToList().ForEach(data => Log(data.ToString()));
+            Log("");
+            Log($"{nameof(TimeStamp)}:");
+            Realm.All<TimeStamp>().ToList().ForEach(data => Log(data.ToString()));
+            Log("");
         }
 
-        protected virtual void Dispose(bool disposing)
+        private void Log(string message)
         {
-            if (disposed) return;
-
-            if (disposing)
-            {
-                DisposeManagedObjects();
-            }
-            DisposeUnmanagedObjects();
-            disposed = true;
+            System.Diagnostics.Debug.WriteLine(message);
         }
-
-        private void DisposeManagedObjects()
-        {
-            if (Realm != null)
-            {
-                Realm.Dispose();
-                Realm = null;
-            }
-        }
-
-        private void DisposeUnmanagedObjects()
-        {
-        }
-
-        ~DatabaseService()
-        {
-            Dispose(false);
-        }
-
-        #endregion
     }
 }

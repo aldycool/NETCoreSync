@@ -18,6 +18,6 @@ namespace WebSample.Models
 
         public bool IsLocal { get; set; }
 
-        public long LastSyncTimeStamp { get; set; }
+        public long MaxTimeStamp { get; set; }
     }
 }

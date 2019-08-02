@@ -27,5 +27,10 @@ namespace MobileSample.Models
 
         [SyncProperty(PropertyIndicator = SyncPropertyAttribute.PropertyIndicatorEnum.DatabaseInstanceId)]
         public string DatabaseInstanceId { get; set; }
+
+        public override string ToString()
+        {
+            return $"{nameof(Id)}: {Id}, {nameof(Name)}: {Name}, {nameof(LastUpdated)}: {LastUpdated}, {nameof(Deleted)}: {Deleted}, {nameof(DatabaseInstanceId)}: {DatabaseInstanceId}";
+        }
     }
 }

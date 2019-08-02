@@ -9,5 +9,10 @@ namespace MobileSample.Models
         [Realms.PrimaryKey()]
         public string Id { get; set; } = Guid.NewGuid().ToString();
         public Realms.RealmInteger<long> Counter { get; set; }
+
+        public override string ToString()
+        {
+            return $"{nameof(Id)}: {Id}, {nameof(Counter)}: {Counter}";
+        }
     }
 }

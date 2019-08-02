@@ -56,5 +56,12 @@ namespace MobileSample.ViewModels
             await Application.Current.MainPage.DisplayAlert("Success", "Synchronization ID is successfully set", "OK");
             Application.Current.MainPage = new Views.MainPage();
         });
+
+        public ICommand DumpLogCommand => new Command(async () =>
+        {
+            databaseService.DumpLog();
+
+            await Application.Current.MainPage.DisplayAlert("Success", "Data is dumped to Log", "OK");
+        });
     }
 }

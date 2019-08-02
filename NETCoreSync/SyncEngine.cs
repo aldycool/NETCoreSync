@@ -120,7 +120,7 @@ namespace NETCoreSync
             {
                 JObject typeChanges = parameter.Changes[i].Value<JObject>();
                 parameter.Log.Add($"Applying Type: {typeChanges["syncType"].Value<string>()}...");
-                (Type localSyncType, List<object> appliedIds, List<object> deletedIds, _) = ApplyTypeChanges(parameter.Log, result.Inserts, result.Updates, result.Deletes, result.Conflicts, typeChanges, parameter.SynchronizationId, parameter.CustomInfo, null, null);
+                (Type localSyncType, List<object> appliedIds, List<object> deletedIds) = ApplyTypeChanges(parameter.Log, result.Inserts, result.Updates, result.Deletes, result.Conflicts, typeChanges, parameter.SynchronizationId, parameter.CustomInfo, null, null);
                 parameter.Log.Add($"Type: {typeChanges["syncType"].Value<string>()} Applied, Count: {appliedIds.Count}");
                 result.AppliedIds[localSyncType] = appliedIds;
                 if (deletedIds.Count > 0)
@@ -188,7 +188,7 @@ namespace NETCoreSync
             {
                 isNewlyCreated = false;
             }
-            localKnowledgeInfo.LastSyncTimeStamp = timeStamp;
+            localKnowledgeInfo.MaxTimeStamp = timeStamp;
             CreateOrUpdateKnowledgeInfo(localKnowledgeInfo, synchronizationId, customInfo);
 
             if (isNewlyCreated)
@@ -210,7 +210,7 @@ namespace NETCoreSync
                 int dataCount = 0;
                 SyncConfiguration.SchemaInfo schemaInfo = GetSchemaInfo(SyncConfiguration, syncType);
                 IQueryable queryable = InvokeGetQueryable(syncType, transaction, operationType, synchronizationId, customInfo);
-                queryable = queryable.Where($"{schemaInfo.PropertyInfoDatabaseInstanceId.Name} = null || {schemaInfo.PropertyInfoDatabaseInstanceId.Name} = ''");
+                queryable = queryable.Where($"{schemaInfo.PropertyInfoDatabaseInstanceId.Name} = null || {schemaInfo.PropertyInfoDatabaseInstanceId.Name} = \"\"");
                 System.Collections.IEnumerator enumerator = queryable.GetEnumerator();
                 while (enumerator.MoveNext())
                 {
@@ -273,17 +273,31 @@ namespace NETCoreSync
                 IQueryable queryable = InvokeGetQueryable(syncType, transaction, operationType, synchronizationId, customInfo);
 
                 string predicate = "";
+                string predicateUnknown = "";
                 for (int i = 0; i < remoteKnowledgeInfos.Count; i++)
                 {
                     KnowledgeInfo info = remoteKnowledgeInfos[i];
+
+                    string knownDatabaseInstanceId = null;
+                    if (info.DatabaseInstanceId == localDatabaseInstanceId)
+                    {
+                        knownDatabaseInstanceId = "null";
+                    }
+                    else
+                    {
+                        knownDatabaseInstanceId = $"\"{info.DatabaseInstanceId}\"";
+                    }
+
                     if (!string.IsNullOrEmpty(predicate)) predicate += " || ";
                     predicate += "(";
-                    predicate += $"{schemaInfo.PropertyInfoDatabaseInstanceId.Name} = {(info.DatabaseInstanceId == localDatabaseInstanceId ? "null" : ("'" + info.DatabaseInstanceId + "'"))} ";
-                    predicate += $" && {schemaInfo.PropertyInfoLastUpdated} > {info.LastSyncTimeStamp}";
+                    predicate += $"{schemaInfo.PropertyInfoDatabaseInstanceId.Name} = {knownDatabaseInstanceId} ";
+                    predicate += $" && {schemaInfo.PropertyInfoLastUpdated.Name} > {info.MaxTimeStamp}";
                     predicate += ")";
+
+                    if (!string.IsNullOrEmpty(predicateUnknown)) predicateUnknown += " && ";
+                    predicateUnknown += $"{schemaInfo.PropertyInfoDatabaseInstanceId.Name} != {knownDatabaseInstanceId}";
                 }
-                List<string> remoteKnownDatabaseInstanceIds = remoteKnowledgeInfos.Select(s => s.DatabaseInstanceId).ToList();
-                queryable = queryable.Where($"{predicate} || !(@0.Contains({schemaInfo.PropertyInfoDatabaseInstanceId.Name}))", remoteKnownDatabaseInstanceIds);
+                queryable = queryable.Where($"{predicate} || ({predicateUnknown})");
                 queryable = queryable.OrderBy($"{schemaInfo.PropertyInfoDeleted.Name}, {schemaInfo.PropertyInfoLastUpdated.Name}");
                 List<dynamic> dynamicDatas = queryable.ToDynamicList();
                 if (dynamicDatas.Count > 0)
@@ -327,53 +341,22 @@ namespace NETCoreSync
             parameter.Log.Add($"SyncTypes Count: {parameter.Changes.Count}");
             List<Type> postEventTypes = new List<Type>();
             Dictionary<Type, List<object>> dictDeletedIds = new Dictionary<Type, List<object>>();
-            Dictionary<string, long> mergedDatabaseInstanceMaxTimeStamps = new Dictionary<string, long>();
             for (int i = 0; i < parameter.Changes.Count; i++)
             {
                 JObject typeChanges = parameter.Changes[i].Value<JObject>();
                 parameter.Log.Add($"Applying Type: {typeChanges["syncType"].Value<string>()}...");
-                (Type localSyncType, List<object> appliedIds, List<object> deletedIds, Dictionary<string, long> databaseInstanceMaxTimeStamps) = ApplyTypeChanges(parameter.Log, result.Inserts, result.Updates, result.Deletes, result.Conflicts, typeChanges, parameter.SynchronizationId, parameter.CustomInfo, parameter.SourceDatabaseInstanceId, parameter.DestinationDatabaseInstanceId);
+                (Type localSyncType, List<object> appliedIds, List<object> deletedIds) = ApplyTypeChanges(parameter.Log, result.Inserts, result.Updates, result.Deletes, result.Conflicts, typeChanges, parameter.SynchronizationId, parameter.CustomInfo, parameter.SourceDatabaseInstanceId, parameter.DestinationDatabaseInstanceId);
                 parameter.Log.Add($"Type: {typeChanges["syncType"].Value<string>()} Applied, Count: {appliedIds.Count}");
                 if (deletedIds.Count > 0)
                 {
                     if (!postEventTypes.Contains(localSyncType)) postEventTypes.Add(localSyncType);
                     dictDeletedIds[localSyncType] = deletedIds;
                 }
-                if (SyncConfiguration.TimeStampStrategy == SyncConfiguration.TimeStampStrategyEnum.DatabaseTimeStamp)
-                {
-                    foreach (var item in databaseInstanceMaxTimeStamps)
-                    {
-                        if (!mergedDatabaseInstanceMaxTimeStamps.ContainsKey(item.Key)) mergedDatabaseInstanceMaxTimeStamps[item.Key] = 0;
-                        if (item.Value > mergedDatabaseInstanceMaxTimeStamps[item.Key]) mergedDatabaseInstanceMaxTimeStamps[item.Key] = item.Value;
-                    }
-                }
-            }
-            if (SyncConfiguration.TimeStampStrategy == SyncConfiguration.TimeStampStrategyEnum.DatabaseTimeStamp)
-            {
-                foreach (var item in mergedDatabaseInstanceMaxTimeStamps)
-                {
-                    KnowledgeInfo knowledgeInfo = GetAllKnowledgeInfos(parameter.SynchronizationId, parameter.CustomInfo).Where(w => w.DatabaseInstanceId == item.Key).FirstOrDefault();
-                    if (knowledgeInfo != null && knowledgeInfo.LastSyncTimeStamp > item.Value) continue;
-                    if (knowledgeInfo == null && item.Key == parameter.DestinationDatabaseInstanceId)
-                    {
-                        throw new SyncEngineConstraintException("Unexpected Knowledge Info State on Destination. Destination is not provisioned yet.");
-                    }
-                    if (knowledgeInfo == null)
-                    {
-                        knowledgeInfo = new KnowledgeInfo()
-                        {
-                            DatabaseInstanceId = item.Key,
-                            IsLocal = false
-                        };
-                    }
-                    knowledgeInfo.LastSyncTimeStamp = item.Value;
-                    CreateOrUpdateKnowledgeInfo(knowledgeInfo, parameter.SynchronizationId, parameter.CustomInfo);
-                }
             }
             ProcessPostEvents(parameter.Log, postEventTypes, dictDeletedIds, parameter.SynchronizationId, parameter.CustomInfo);
         }
 
-        internal (Type localSyncType, List<object> appliedIds, List<object> deletedIds, Dictionary<string, long> databaseInstanceMaxTimeStamps) ApplyTypeChanges(List<string> log, List<SyncLog.SyncLogData> inserts, List<SyncLog.SyncLogData> updates, List<SyncLog.SyncLogData> deletes, List<SyncLog.SyncLogConflict> conflicts, JObject typeChanges, string synchronizationId, Dictionary<string, object> customInfo, string sourceDatabaseInstanceId, string destinationDatabaseInstanceId)
+        internal (Type localSyncType, List<object> appliedIds, List<object> deletedIds) ApplyTypeChanges(List<string> log, List<SyncLog.SyncLogData> inserts, List<SyncLog.SyncLogData> updates, List<SyncLog.SyncLogData> deletes, List<SyncLog.SyncLogConflict> conflicts, JObject typeChanges, string synchronizationId, Dictionary<string, object> customInfo, string sourceDatabaseInstanceId, string destinationDatabaseInstanceId)
         {
             if (SyncConfiguration.TimeStampStrategy == SyncConfiguration.TimeStampStrategyEnum.GlobalTimeStamp)
             {
@@ -444,7 +427,7 @@ namespace NETCoreSync
                         {
                             newData.GetType().GetProperty(localSchemaInfo.PropertyInfoDeleted.Name).SetValue(newData, deletedGlobalTimeStamp);
                         }
-                        if (SyncConfiguration.TimeStampStrategy == SyncConfiguration.TimeStampStrategyEnum.GlobalTimeStamp)
+                        if (SyncConfiguration.TimeStampStrategy == SyncConfiguration.TimeStampStrategyEnum.DatabaseTimeStamp)
                         {
                             newData.GetType().GetProperty(localSchemaInfo.PropertyInfoDeleted.Name).SetValue(newData, deletedDatabaseTimeStamp);
                             newData.GetType().GetProperty(localSchemaInfo.PropertyInfoDatabaseInstanceId.Name).SetValue(newData, GetCorrectDatabaseInstanceId(databaseInstanceId, sourceDatabaseInstanceId, destinationDatabaseInstanceId, databaseInstanceMaxTimeStamps, lastUpdated));
@@ -469,12 +452,31 @@ namespace NETCoreSync
                         if (!isDeleted)
                         {
                             long localLastUpdated = (long)localData.GetType().GetProperty(localSchemaInfo.PropertyInfoLastUpdated.Name).GetValue(localData);
-                            if (lastUpdated > localLastUpdated)
+                            string localDatabaseInstanceId = null;
+                            bool shouldUpdate = false;
+                            if (SyncConfiguration.TimeStampStrategy == SyncConfiguration.TimeStampStrategyEnum.GlobalTimeStamp)
+                            {
+                                if (lastUpdated > localLastUpdated) shouldUpdate = true;
+                            }
+                            if (SyncConfiguration.TimeStampStrategy == SyncConfiguration.TimeStampStrategyEnum.DatabaseTimeStamp)
+                            {
+                                localDatabaseInstanceId = (string)localData.GetType().GetProperty(localSchemaInfo.PropertyInfoDatabaseInstanceId.Name).GetValue(localData);
+                                string correctDatabaseInstanceId = GetCorrectDatabaseInstanceId(databaseInstanceId, sourceDatabaseInstanceId, destinationDatabaseInstanceId, null, 0);
+                                if (localDatabaseInstanceId == correctDatabaseInstanceId)
+                                {
+                                    if (lastUpdated > localLastUpdated) shouldUpdate = true;
+                                }
+                                else
+                                {
+                                    shouldUpdate = true;
+                                }
+                            }
+                            if (shouldUpdate)
                             {
                                 object existingData = InvokeDeserializeJsonToExistingData(localSyncType, jObjectData, localData, localId, transaction, operationType, synchronizationId, customInfo, localSchemaInfo);
                                 existingData.GetType().GetProperty(localSchemaInfo.PropertyInfoLastUpdated.Name).SetValue(existingData, lastUpdated);
 
-                                if (SyncConfiguration.TimeStampStrategy == SyncConfiguration.TimeStampStrategyEnum.GlobalTimeStamp)
+                                if (SyncConfiguration.TimeStampStrategy == SyncConfiguration.TimeStampStrategyEnum.DatabaseTimeStamp)
                                 {
                                     existingData.GetType().GetProperty(localSchemaInfo.PropertyInfoDatabaseInstanceId.Name).SetValue(existingData, GetCorrectDatabaseInstanceId(databaseInstanceId, sourceDatabaseInstanceId, destinationDatabaseInstanceId, databaseInstanceMaxTimeStamps, lastUpdated));
                                 }
@@ -497,7 +499,7 @@ namespace NETCoreSync
                             {
                                 existingData.GetType().GetProperty(localSchemaInfo.PropertyInfoDeleted.Name).SetValue(existingData, deletedGlobalTimeStamp);
                             }
-                            if (SyncConfiguration.TimeStampStrategy == SyncConfiguration.TimeStampStrategyEnum.GlobalTimeStamp)
+                            if (SyncConfiguration.TimeStampStrategy == SyncConfiguration.TimeStampStrategyEnum.DatabaseTimeStamp)
                             {
                                 existingData.GetType().GetProperty(localSchemaInfo.PropertyInfoDeleted.Name).SetValue(existingData, deletedDatabaseTimeStamp);
                                 existingData.GetType().GetProperty(localSchemaInfo.PropertyInfoDatabaseInstanceId.Name).SetValue(existingData, GetCorrectDatabaseInstanceId(databaseInstanceId, sourceDatabaseInstanceId, destinationDatabaseInstanceId, databaseInstanceMaxTimeStamps, lastUpdated));
@@ -508,6 +510,28 @@ namespace NETCoreSync
                             if (!deletedIds.Contains(localId)) deletedIds.Add(localId);
                             deletes.Add(SyncLog.SyncLogData.FromJObject(InvokeSerializeDataToJson(localSyncType, existingData, localSchemaInfo, transaction, operationType, synchronizationId, customInfo), localSyncType, localSchemaInfo));
                         }
+                    }
+                }
+                if (SyncConfiguration.TimeStampStrategy == SyncConfiguration.TimeStampStrategyEnum.DatabaseTimeStamp)
+                {
+                    foreach (var item in databaseInstanceMaxTimeStamps)
+                    {
+                        KnowledgeInfo knowledgeInfo = GetAllKnowledgeInfos(synchronizationId, customInfo).Where(w => w.DatabaseInstanceId == item.Key).FirstOrDefault();
+                        if (knowledgeInfo != null && knowledgeInfo.MaxTimeStamp > item.Value) continue;
+                        if (knowledgeInfo == null && item.Key == destinationDatabaseInstanceId)
+                        {
+                            throw new SyncEngineConstraintException("Unexpected Knowledge Info State on Destination. Destination is not provisioned yet.");
+                        }
+                        if (knowledgeInfo == null)
+                        {
+                            knowledgeInfo = new KnowledgeInfo()
+                            {
+                                DatabaseInstanceId = item.Key,
+                                IsLocal = false
+                            };
+                        }
+                        knowledgeInfo.MaxTimeStamp = item.Value;
+                        CreateOrUpdateKnowledgeInfo(knowledgeInfo, synchronizationId, customInfo);
                     }
                 }
                 CommitTransaction(localSyncType, transaction, operationType, synchronizationId, customInfo);
@@ -522,7 +546,7 @@ namespace NETCoreSync
                 EndTransaction(localSyncType, transaction, operationType, synchronizationId, customInfo);
             }
 
-            return (localSyncType, appliedIds, deletedIds, databaseInstanceMaxTimeStamps);
+            return (localSyncType, appliedIds, deletedIds);
         }
 
         private string GetCorrectDatabaseInstanceId(string databaseInstanceId, string sourceDatabaseInstanceId, string destinationDatabaseInstanceId, Dictionary<string, long> databaseInstanceMaxTimeStamps, long lastUpdated)
