@@ -64,10 +64,17 @@ namespace MobileSample.ViewModels
             Application.Current.MainPage = new Views.MainPage();
         });
 
+        public ICommand DumpLogCommand => new Command(async () =>
+        {
+            databaseService.DumpLog();
+
+            await Application.Current.MainPage.DisplayAlert("Success", "Database Contents is dumped to Debug Log", "OK");
+        });
+
         public ICommand DateTimeCommand => new Command(async () =>
         {
             string text = DateTime.Now.ToString("dd-MMM-yyyy HH:mm:ss");
-            await Application.Current.MainPage.DisplayAlert("Date Time", text, "OK");
+            await Application.Current.MainPage.DisplayAlert("Date Time", $"The system's Date and Time is: {text}. Make sure this is correct and accurate according to the real world clock time.", "OK");
         });
     }
 }

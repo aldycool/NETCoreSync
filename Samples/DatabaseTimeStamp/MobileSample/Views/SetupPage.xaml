@@ -13,7 +13,7 @@
                 <Entry Text="{Binding SynchronizationId}" />
                 <Button Text="Set" Command="{Binding SetSynchronizationIdCommand}" />
                 <BoxView VerticalOptions="Center" HorizontalOptions="Center" HeightRequest="1" WidthRequest="50" Color="#5b5d68" />
-                <Button Text="Dump Log" Command="{Binding DumpLogCommand}" />
+                <Button Text="Dump Database Contents To Log" Command="{Binding DumpLogCommand}" />
             </StackLayout>
         </ScrollView>
     </ContentPage.Content>

@@ -45,7 +45,7 @@ namespace WebSample
             services.AddMvc().SetCompatibilityVersion(CompatibilityVersion.Version_2_1);
 
             List<Type> syncTypes = new List<Type>() { typeof(SyncDepartment), typeof(SyncEmployee) };
-            SyncConfiguration syncConfiguration = new SyncConfiguration(syncTypes.ToArray());
+            SyncConfiguration syncConfiguration = new SyncConfiguration(syncTypes.ToArray(), SyncConfiguration.TimeStampStrategyEnum.GlobalTimeStamp);
             services.AddSingleton(syncConfiguration);
         }
 

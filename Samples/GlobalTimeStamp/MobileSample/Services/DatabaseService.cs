@@ -175,5 +175,26 @@ namespace MobileSample.Services
                 databaseContext.SaveChanges();
             }
         }
+
+        public void DumpLog()
+        {
+            using (var databaseContext = GetDatabaseContext())
+            {
+                Log($"{nameof(Configuration)}:");
+                databaseContext.Configurations.ToList().ForEach(data => Log(data.ToString()));
+                Log("");
+                Log($"{nameof(Department)}:");
+                databaseContext.Departments.ToList().ForEach(data => Log(data.ToString()));
+                Log("");
+                Log($"{nameof(Employee)}:");
+                databaseContext.Employees.ToList().ForEach(data => Log(data.ToString()));
+                Log("");
+            }
+        }
+
+        private void Log(string message)
+        {
+            System.Diagnostics.Debug.WriteLine(message);
+        }
     }
 }

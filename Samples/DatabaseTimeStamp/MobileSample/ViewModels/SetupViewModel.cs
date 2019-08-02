@@ -61,7 +61,7 @@ namespace MobileSample.ViewModels
         {
             databaseService.DumpLog();
 
-            await Application.Current.MainPage.DisplayAlert("Success", "Data is dumped to Log", "OK");
+            await Application.Current.MainPage.DisplayAlert("Success", "Database Contents is dumped to Debug Log", "OK");
         });
     }
 }

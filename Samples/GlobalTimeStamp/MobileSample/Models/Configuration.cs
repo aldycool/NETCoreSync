@@ -13,5 +13,10 @@ namespace MobileSample.Models
         public string Id { get; set; }
         public string Key { get; set; }
         public string Value { get; set; }
+
+        public override string ToString()
+        {
+            return $"{nameof(Id)}: {Id}, {nameof(Key)}: {Key}, {nameof(Value)}: {Value}";
+        }
     }
 }

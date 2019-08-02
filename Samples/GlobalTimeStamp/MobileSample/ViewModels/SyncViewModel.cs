@@ -68,7 +68,7 @@ namespace MobileSample.ViewModels
                 SyncClient syncClient = new SyncClient(synchronizationId, customSyncEngine, ServerUrl);
                 Log = "";
 
-                SyncResult result = await syncClient.SynchronizeAsync();
+                SyncResult result = await syncClient.SynchronizeAsync(SyncClient.SynchronizationMethodEnum.PushThenPull);
 
                 string tempLog = "";
                 tempLog += $"Client Log: {Environment.NewLine}";

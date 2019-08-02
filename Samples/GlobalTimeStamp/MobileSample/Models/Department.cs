@@ -26,5 +26,10 @@ namespace MobileSample.Models
 
         [SyncProperty(PropertyIndicator = SyncPropertyAttribute.PropertyIndicatorEnum.Deleted)]
         public long? Deleted { get; set; }
+
+        public override string ToString()
+        {
+            return $"{nameof(Id)}: {Id}, {nameof(Name)}: {Name}, {nameof(LastUpdated)}: {LastUpdated}, {nameof(Deleted)}: {(Deleted == null ? "null" : Convert.ToString(Deleted.Value))}";
+        }
     }
 }
