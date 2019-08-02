@@ -28,35 +28,82 @@ namespace MobileSample.Services
             Realm = Realm.GetInstance(realmConfiguration);
         }
 
-        private RealmConfiguration GetRealmConfiguration(string databaseFilePath = null)
+        private RealmConfiguration GetRealmConfiguration()
         {
-            if (string.IsNullOrEmpty(databaseFilePath)) databaseFilePath = GetDatabaseFilePath();
-            RealmConfiguration realmConfiguration = new RealmConfiguration(databaseFilePath);
+            string databaseFileName = Path.Combine(GetDatabaseFilePath(), GetDatabaseFileName());
+            RealmConfiguration realmConfiguration = new RealmConfiguration(databaseFileName);
 #if DEBUG
             realmConfiguration.ShouldDeleteIfMigrationNeeded = true;
 #endif
             return realmConfiguration;
         }
 
+        private string GetDatabaseFileName()
+        {
+            return $"{nameof(MobileSample)}.realm";
+        }
+
         private string GetDatabaseFilePath()
         {
-            string databaseFileName = $"{nameof(MobileSample)}.realm";
             string databaseFilePath = null;
             if (Device.RuntimePlatform == "Android")
             {
-                databaseFilePath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Personal), databaseFileName);
+                databaseFilePath = Environment.GetFolderPath(Environment.SpecialFolder.Personal);
             }
             else if (Device.RuntimePlatform == "iOS")
             {
-                databaseFilePath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "..", "Library", databaseFileName);
+                databaseFilePath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "..", "Library");
             }
-            if (string.IsNullOrEmpty(databaseFilePath)) throw new NotImplementedException();
+            if (string.IsNullOrEmpty(databaseFilePath)) throw new NotImplementedException(Device.RuntimePlatform);
 
             return databaseFilePath;
         }
 
         public void ResetInstance()
         {
+            //NOTE: Realm (currently) has a serious bug, cannot delete the files.
+            //The following listed the attempt to do so, but to no avail.
+
+            //if (Realm != null)
+            //{
+            //    Realm.Dispose();
+            //    Realm = null;
+            //    
+            //}
+
+            //This approach is raising exception: Realms.Exceptions.RealmPermissionDeniedException: Unable to delete Realm because it is still open.
+            //Realm.DeleteRealm(GetRealmConfiguration());
+
+            //This manual approach also not working. The files are successfully deleted, but the instance seems to be retained in memory, so the objects are not cleared after doing these.
+            //string databaseFilePath = GetDatabaseFilePath();
+            //string databaseFileName = Path.Combine(databaseFilePath, GetDatabaseFileName());
+            //try
+            //{
+            //    File.Delete(databaseFileName);
+            //}
+            //catch (Exception)
+            //{
+            //}
+            //string databaseFileLock = Path.Combine(databaseFilePath, GetDatabaseFileName() + ".lock");
+            //try
+            //{
+            //    File.Delete(databaseFileLock);
+            //}
+            //catch (Exception)
+            //{
+            //}
+            //string databaseFileManagementDirectory = Path.Combine(databaseFilePath, GetDatabaseFileName() + ".management");
+            //try
+            //{
+            //    Directory.Delete(databaseFileManagementDirectory, true);
+            //}
+            //catch (Exception)
+            //{
+            //}
+
+            //CreateInstance();
+
+            //NOTE: Until the bug above has resolved, perform the data clearing manually like below.
             Realm.Write(() => 
             {
                 Realm.RemoveAll<Configuration>();
