@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Linq;
+using System.Collections.Generic;
 using System.Windows.Input;
 using Xamarin.Forms;
 using MobileSample.Models;
@@ -15,6 +16,20 @@ namespace MobileSample.ViewModels
         private readonly DatabaseService databaseService;
         private readonly SyncConfiguration syncConfiguration;
 
+        private List<string> synchronizationMethods;
+        public List<string> SynchronizationMethods
+        {
+            get { return synchronizationMethods; }
+            set { SetProperty(ref synchronizationMethods, value); }
+        }
+
+        private string selectedSynchronizationMethod;
+        public string SelectedSynchronizationMethod
+        {
+            get { return selectedSynchronizationMethod; }
+            set { SetProperty(ref selectedSynchronizationMethod, value); }
+        }
+
         public SyncViewModel(INavigation navigation, DatabaseService databaseService, SyncConfiguration syncConfiguration)
         {
             this.navigation = navigation;
@@ -23,6 +38,9 @@ namespace MobileSample.ViewModels
             Title = MainMenuItem.GetMenus().Where(w => w.Id == MenuItemType.Sync).First().Title;
 
             ServerUrl = databaseService.GetServerUrl();
+
+            SynchronizationMethods = new List<string>(Enum.GetNames(typeof(SyncClient.SynchronizationMethodEnum)));
+            SelectedSynchronizationMethod = SyncClient.SynchronizationMethodEnum.PushThenPull.ToString();
         }
 
         private string serverUrl;
@@ -67,8 +85,9 @@ namespace MobileSample.ViewModels
                 CustomSyncEngine customSyncEngine = new CustomSyncEngine(databaseService, syncConfiguration);
                 SyncClient syncClient = new SyncClient(synchronizationId, customSyncEngine, ServerUrl);
                 Log = "";
+                SyncClient.SynchronizationMethodEnum synchronizationMethod = (SyncClient.SynchronizationMethodEnum)Enum.Parse(typeof(SyncClient.SynchronizationMethodEnum), SelectedSynchronizationMethod);
 
-                SyncResult result = await syncClient.SynchronizeAsync();
+                SyncResult result = await syncClient.SynchronizeAsync(synchronizationMethod);
 
                 string tempLog = "";
                 tempLog += $"Client Log: {Environment.NewLine}";

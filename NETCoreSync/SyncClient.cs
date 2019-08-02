@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using System.Text;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using NETCoreSync.Exceptions;
 
 namespace NETCoreSync
 {
@@ -15,6 +16,12 @@ namespace NETCoreSync
         private readonly SyncEngine syncEngine;
         private readonly string serverUrl;
 
+        public enum SynchronizationMethodEnum
+        {
+            PushThenPull,
+            PullThenPush
+        }
+
         public SyncClient(string synchronizationId, SyncEngine syncEngine, string serverUrl)
         {
             this.synchronizationId = synchronizationId ?? throw new NullReferenceException(nameof(synchronizationId));
@@ -22,7 +29,7 @@ namespace NETCoreSync
             this.serverUrl = serverUrl ?? throw new NullReferenceException(nameof(serverUrl));
         }
 
-        public async Task<SyncResult> SynchronizeAsync(Dictionary<string, object> customInfo = null)
+        public async Task<SyncResult> SynchronizeAsync(SynchronizationMethodEnum synchronizationMethod = SynchronizationMethodEnum.PushThenPull, Dictionary<string, object> customInfo = null)
         {
             SyncResult syncResult = new SyncResult();
             
@@ -32,11 +39,11 @@ namespace NETCoreSync
 
                 if (syncEngine.SyncConfiguration.TimeStampStrategy == SyncConfiguration.TimeStampStrategyEnum.GlobalTimeStamp)
                 {
-                    await SynchronizeGlobalTimeStamp(customInfo, syncResult);
+                    await SynchronizeGlobalTimeStamp(synchronizationMethod, customInfo, syncResult);
                 }
                 else if (syncEngine.SyncConfiguration.TimeStampStrategy == SyncConfiguration.TimeStampStrategyEnum.DatabaseTimeStamp)
                 {
-                    await SynchronizeDatabaseTimeStamp(customInfo, syncResult);
+                    await SynchronizeDatabaseTimeStamp(synchronizationMethod, customInfo, syncResult);
                 }
                 else
                 {
@@ -53,160 +60,190 @@ namespace NETCoreSync
             return syncResult;
         }
 
-        private async Task SynchronizeDatabaseTimeStamp(Dictionary<string, object> customInfo, SyncResult syncResult)
+        private async Task SynchronizeDatabaseTimeStamp(SynchronizationMethodEnum synchronizationMethod, Dictionary<string, object> customInfo, SyncResult syncResult)
         {
-            syncResult.Log.Add("=== Server Get Knowledge (As Remote Knowledge) ===");
-            SyncEngine.GetKnowledgeParameter serverGetKnowledgeParameter = new SyncEngine.GetKnowledgeParameter(
+            if (synchronizationMethod == SynchronizationMethodEnum.PushThenPull)
+            {
+                await SynchronizeDatabaseTimeStampOneWay(true, customInfo, syncResult);
+                await SynchronizeDatabaseTimeStampOneWay(false, customInfo, syncResult);
+            }
+            else if (synchronizationMethod == SynchronizationMethodEnum.PullThenPush)
+            {
+                await SynchronizeDatabaseTimeStampOneWay(false, customInfo, syncResult);
+                await SynchronizeDatabaseTimeStampOneWay(true, customInfo, syncResult);
+            }
+            else
+            {
+                throw new NotImplementedException(synchronizationMethod.ToString());
+            }
+        }
+
+        private async Task SynchronizeDatabaseTimeStampOneWay(bool runOnClient, Dictionary<string, object> customInfo, SyncResult syncResult)
+        {
+            string localName = null;
+            string remoteName = null;
+            SyncEngine.PayloadAction payloadAction = SyncEngine.PayloadAction.Synchronize;
+            if (runOnClient)
+            {
+                localName = "Client";
+                remoteName = "Server";
+                payloadAction = SyncEngine.PayloadAction.Synchronize;
+            }
+            else
+            {
+                localName = "Server";
+                remoteName = "Client";
+                payloadAction = SyncEngine.PayloadAction.SynhronizeReverse;
+            }
+
+            syncResult.Log.Add($"=== {localName} Get Knowledge (As Local Knowledge) ===");
+            SyncEngine.GetKnowledgeParameter localGetKnowledgeParameter = new SyncEngine.GetKnowledgeParameter(
                 SyncEngine.PayloadAction.Knowledge,
                 synchronizationId,
                 customInfo);
-            SyncEngine.GetKnowledgeResult serverGetKnowledgeResult = null;
-            (string serverGetKnowledgeErrMsg, JObject jObjectServerGetKnowledgeResult) = await ExecuteOnServer(serverGetKnowledgeParameter.GetCompressed(), syncResult);
-            if (jObjectServerGetKnowledgeResult != null)
+            if (runOnClient) localGetKnowledgeParameter.Log = syncResult.Log;
+            SyncEngine.GetKnowledgeResult localGetKnowledgeResult = null;
+            if (runOnClient)
             {
-                serverGetKnowledgeResult = SyncEngine.GetKnowledgeResult.FromPayload(jObjectServerGetKnowledgeResult);
-            }
-            if (!string.IsNullOrEmpty(serverGetKnowledgeErrMsg)) throw new Exception(serverGetKnowledgeErrMsg);
-
-            syncResult.Log.Add("=== Client Get Knowledge (As Local Knowledge) ===");
-            SyncEngine.GetKnowledgeParameter clientGetKnowledgeParameter = new SyncEngine.GetKnowledgeParameter(
-                SyncEngine.PayloadAction.Knowledge,
-                synchronizationId,
-                customInfo);
-            clientGetKnowledgeParameter.Log = syncResult.Log;
-            SyncEngine.GetKnowledgeResult clientGetKnowledgeResult = null;
-            try
-            {
-                syncEngine.GetKnowledge(clientGetKnowledgeParameter, ref clientGetKnowledgeResult);
-            }
-            catch (Exception)
-            {
-                throw;
-            }
-
-            syncResult.Log.Add("=== Client Get Changes based on Server Knowledge ===");
-            SyncEngine.GetChangesByKnowledgeParameter clientGetChangesByKnowledgeParameter = new SyncEngine.GetChangesByKnowledgeParameter(
-                SyncEngine.PayloadAction.Synchronize,
-                synchronizationId,
-                customInfo);
-            clientGetChangesByKnowledgeParameter.Log = syncResult.Log;
-            clientGetChangesByKnowledgeParameter.LocalKnowledgeInfos = clientGetKnowledgeResult.KnowledgeInfos;
-            clientGetChangesByKnowledgeParameter.RemoteKnowledgeInfos = serverGetKnowledgeResult.KnowledgeInfos;
-            SyncEngine.GetChangesByKnowledgeResult clientGetChangesByKnowledgeResult = null;
-            try
-            {
-                syncEngine.GetChangesByKnowledge(clientGetChangesByKnowledgeParameter, ref clientGetChangesByKnowledgeResult);
-                
-            }
-            catch (Exception)
-            {
-                throw;
-            }
-            finally
-            {
-                if (clientGetChangesByKnowledgeResult != null)
+                try
                 {
-                    syncResult.ClientLog.SentChanges.AddRange(clientGetChangesByKnowledgeResult.LogChanges);
+                    syncEngine.GetKnowledge(localGetKnowledgeParameter, ref localGetKnowledgeResult);
+                }
+                catch (Exception)
+                {
+                    throw;
+                }
+            }
+            else
+            {
+                (string localGetKnowledgeErrMsg, JObject jObjectLocalGetKnowledgeResult) = await ExecuteOnServer(localGetKnowledgeParameter.GetCompressed(), syncResult);
+                if (jObjectLocalGetKnowledgeResult != null)
+                {
+                    localGetKnowledgeResult = SyncEngine.GetKnowledgeResult.FromPayload(jObjectLocalGetKnowledgeResult);
+                }
+                if (!string.IsNullOrEmpty(localGetKnowledgeErrMsg)) throw new Exception(localGetKnowledgeErrMsg);
+            }
+
+            syncResult.Log.Add($"=== {remoteName} Get Knowledge (As Remote Knowledge) ===");
+            SyncEngine.GetKnowledgeParameter remoteGetKnowledgeParameter = new SyncEngine.GetKnowledgeParameter(
+                SyncEngine.PayloadAction.Knowledge,
+                synchronizationId,
+                customInfo);
+            if (!runOnClient) remoteGetKnowledgeParameter.Log = syncResult.Log;
+            SyncEngine.GetKnowledgeResult remoteGetKnowledgeResult = null;
+            if (runOnClient)
+            {
+                (string remoteGetKnowledgeErrMsg, JObject jObjectRemoteGetKnowledgeResult) = await ExecuteOnServer(remoteGetKnowledgeParameter.GetCompressed(), syncResult);
+                if (jObjectRemoteGetKnowledgeResult != null)
+                {
+                    remoteGetKnowledgeResult = SyncEngine.GetKnowledgeResult.FromPayload(jObjectRemoteGetKnowledgeResult);
+                }
+                if (!string.IsNullOrEmpty(remoteGetKnowledgeErrMsg)) throw new Exception(remoteGetKnowledgeErrMsg);
+            }
+            else
+            {
+                try
+                {
+                    syncEngine.GetKnowledge(remoteGetKnowledgeParameter, ref remoteGetKnowledgeResult);
+                }
+                catch (Exception)
+                {
+                    throw;
                 }
             }
 
-            syncResult.Log.Add("=== Server Apply Changes ===");
-            SyncEngine.ApplyChangesByKnowledgeParameter serverApplyChangesByKnowledgeParameter = new SyncEngine.ApplyChangesByKnowledgeParameter(
-                SyncEngine.PayloadAction.Synchronize,
+            syncResult.Log.Add($"=== {localName} Get Changes based on {remoteName} Knowledge ===");
+            SyncEngine.GetChangesByKnowledgeParameter getChangesByKnowledgeParameter = new SyncEngine.GetChangesByKnowledgeParameter(
+                payloadAction,
                 synchronizationId,
                 customInfo);
-            serverApplyChangesByKnowledgeParameter.Changes = clientGetChangesByKnowledgeResult.Changes;
-            serverApplyChangesByKnowledgeParameter.SourceDatabaseInstanceId = clientGetKnowledgeResult.KnowledgeInfos.Where(w => w.IsLocal).First().DatabaseInstanceId;
-            serverApplyChangesByKnowledgeParameter.DestinationDatabaseInstanceId = serverGetKnowledgeResult.KnowledgeInfos.Where(w => w.IsLocal).First().DatabaseInstanceId;
-            SyncEngine.ApplyChangesByKnowledgeResult serverApplyChangesByKnowledgeResult = null;
-            (string serverApplyChangesByKnowledgeErrMsg, JObject jObjectServerApplyChangesByKnowledgeResult) = await ExecuteOnServer(serverApplyChangesByKnowledgeParameter.GetCompressed(), syncResult);
-            if (jObjectServerApplyChangesByKnowledgeResult != null)
+            if (runOnClient) getChangesByKnowledgeParameter.Log = syncResult.Log;
+            getChangesByKnowledgeParameter.LocalKnowledgeInfos = localGetKnowledgeResult.KnowledgeInfos;
+            getChangesByKnowledgeParameter.RemoteKnowledgeInfos = remoteGetKnowledgeResult.KnowledgeInfos;
+            SyncEngine.GetChangesByKnowledgeResult getChangesByKnowledgeResult = null;
+            if (runOnClient)
             {
-                serverApplyChangesByKnowledgeResult = SyncEngine.ApplyChangesByKnowledgeResult.FromPayload(jObjectServerApplyChangesByKnowledgeResult);
-                syncResult.ServerLog.AppliedChanges.Inserts.AddRange(serverApplyChangesByKnowledgeResult.Inserts);
-                syncResult.ServerLog.AppliedChanges.Updates.AddRange(serverApplyChangesByKnowledgeResult.Updates);
-                syncResult.ServerLog.AppliedChanges.Deletes.AddRange(serverApplyChangesByKnowledgeResult.Deletes);
-                syncResult.ServerLog.AppliedChanges.Conflicts.AddRange(serverApplyChangesByKnowledgeResult.Conflicts);
-            }
-            if (!string.IsNullOrEmpty(serverApplyChangesByKnowledgeErrMsg)) throw new Exception(serverApplyChangesByKnowledgeErrMsg);
-
-            syncResult.Log.Add("=== Server Get Knowledge (As Local Knowledge) ===");
-            serverGetKnowledgeParameter = new SyncEngine.GetKnowledgeParameter(
-                SyncEngine.PayloadAction.Knowledge,
-                synchronizationId,
-                customInfo);
-            serverGetKnowledgeResult = null;
-            (serverGetKnowledgeErrMsg, jObjectServerGetKnowledgeResult) = await ExecuteOnServer(serverGetKnowledgeParameter.GetCompressed(), syncResult);
-            if (jObjectServerGetKnowledgeResult != null)
-            {
-                serverGetKnowledgeResult = SyncEngine.GetKnowledgeResult.FromPayload(jObjectServerGetKnowledgeResult);
-            }
-            if (!string.IsNullOrEmpty(serverGetKnowledgeErrMsg)) throw new Exception(serverGetKnowledgeErrMsg);
-
-            syncResult.Log.Add("=== Client Get Knowledge (As Remote Knowledge) ===");
-            clientGetKnowledgeParameter = new SyncEngine.GetKnowledgeParameter(
-                SyncEngine.PayloadAction.Knowledge,
-                synchronizationId,
-                customInfo);
-            clientGetKnowledgeParameter.Log = syncResult.Log;
-            clientGetKnowledgeResult = null;
-            try
-            {
-                syncEngine.GetKnowledge(clientGetKnowledgeParameter, ref clientGetKnowledgeResult);
-            }
-            catch (Exception)
-            {
-                throw;
-            }
-
-            syncResult.Log.Add("=== Server Get Changes based on Client Knowledge ===");
-            SyncEngine.GetChangesByKnowledgeParameter serverGetChangesByKnowledgeParameter = new SyncEngine.GetChangesByKnowledgeParameter(
-                SyncEngine.PayloadAction.SynhronizeReverse,
-                synchronizationId,
-                customInfo);
-            serverGetChangesByKnowledgeParameter.LocalKnowledgeInfos = serverGetKnowledgeResult.KnowledgeInfos;
-            serverGetChangesByKnowledgeParameter.RemoteKnowledgeInfos = clientGetKnowledgeResult.KnowledgeInfos;
-            SyncEngine.GetChangesByKnowledgeResult serverGetChangesByKnowledgeResult = null;
-            (string serverGetChangesByKnowledgeErrMsg, JObject jObjectServerGetChangesByKnowledgeResult) = await ExecuteOnServer(serverGetChangesByKnowledgeParameter.GetCompressed(), syncResult);
-            if (jObjectServerGetChangesByKnowledgeResult != null)
-            {
-                serverGetChangesByKnowledgeResult = SyncEngine.GetChangesByKnowledgeResult.FromPayload(jObjectServerGetChangesByKnowledgeResult);
-                syncResult.ServerLog.SentChanges.AddRange(serverGetChangesByKnowledgeResult.LogChanges);
-            }
-            if (!string.IsNullOrEmpty(serverGetChangesByKnowledgeErrMsg)) throw new Exception(serverGetChangesByKnowledgeErrMsg);
-
-            syncResult.Log.Add("=== Client Apply Changes ===");
-            SyncEngine.ApplyChangesByKnowledgeParameter clientApplyChangesByKnowledgeParameter = new SyncEngine.ApplyChangesByKnowledgeParameter(
-                SyncEngine.PayloadAction.SynhronizeReverse,
-                synchronizationId,
-                customInfo);
-            clientApplyChangesByKnowledgeParameter.Log = syncResult.Log;
-            clientApplyChangesByKnowledgeParameter.Changes = serverGetChangesByKnowledgeResult.Changes;
-            clientApplyChangesByKnowledgeParameter.SourceDatabaseInstanceId = serverGetKnowledgeResult.KnowledgeInfos.Where(w => w.IsLocal).First().DatabaseInstanceId;
-            clientApplyChangesByKnowledgeParameter.DestinationDatabaseInstanceId = clientGetKnowledgeResult.KnowledgeInfos.Where(w => w.IsLocal).First().DatabaseInstanceId;
-            SyncEngine.ApplyChangesByKnowledgeResult clientApplyChangesByKnowledgeResult = null;
-            try
-            {
-                syncEngine.ApplyChangesByKnowledge(clientApplyChangesByKnowledgeParameter, ref clientApplyChangesByKnowledgeResult);
-            }
-            catch (Exception)
-            {
-                throw;
-            }
-            finally
-            {
-                if (clientApplyChangesByKnowledgeResult != null)
+                try
                 {
-                    syncResult.ClientLog.AppliedChanges.Inserts.AddRange(clientApplyChangesByKnowledgeResult.Inserts);
-                    syncResult.ClientLog.AppliedChanges.Updates.AddRange(clientApplyChangesByKnowledgeResult.Updates);
-                    syncResult.ClientLog.AppliedChanges.Deletes.AddRange(clientApplyChangesByKnowledgeResult.Deletes);
-                    syncResult.ClientLog.AppliedChanges.Conflicts.AddRange(clientApplyChangesByKnowledgeResult.Conflicts);
+                    syncEngine.GetChangesByKnowledge(getChangesByKnowledgeParameter, ref getChangesByKnowledgeResult);
+
+                }
+                catch (Exception)
+                {
+                    throw;
+                }
+                finally
+                {
+                    if (getChangesByKnowledgeResult != null)
+                    {
+                        syncResult.ClientLog.SentChanges.AddRange(getChangesByKnowledgeResult.LogChanges);
+                    }
+                }
+            }
+            else
+            {
+                (string getChangesByKnowledgeErrMsg, JObject jObjectGetChangesByKnowledgeResult) = await ExecuteOnServer(getChangesByKnowledgeParameter.GetCompressed(), syncResult);
+                if (jObjectGetChangesByKnowledgeResult != null)
+                {
+                    getChangesByKnowledgeResult = SyncEngine.GetChangesByKnowledgeResult.FromPayload(jObjectGetChangesByKnowledgeResult);
+                    syncResult.ServerLog.SentChanges.AddRange(getChangesByKnowledgeResult.LogChanges);
+                }
+                if (!string.IsNullOrEmpty(getChangesByKnowledgeErrMsg)) throw new Exception(getChangesByKnowledgeErrMsg);
+            }
+
+            syncResult.Log.Add($"=== {remoteName} Apply Changes ===");
+            SyncEngine.ApplyChangesByKnowledgeParameter applyChangesByKnowledgeParameter = new SyncEngine.ApplyChangesByKnowledgeParameter(
+                payloadAction,
+                synchronizationId,
+                customInfo);
+            if (!runOnClient) applyChangesByKnowledgeParameter.Log = syncResult.Log;
+            applyChangesByKnowledgeParameter.Changes = getChangesByKnowledgeResult.Changes;
+            applyChangesByKnowledgeParameter.SourceDatabaseInstanceId = localGetKnowledgeResult.KnowledgeInfos.Where(w => w.IsLocal).First().DatabaseInstanceId;
+            applyChangesByKnowledgeParameter.DestinationDatabaseInstanceId = remoteGetKnowledgeResult.KnowledgeInfos.Where(w => w.IsLocal).First().DatabaseInstanceId;
+            SyncEngine.ApplyChangesByKnowledgeResult applyChangesByKnowledgeResult = null;
+            if (runOnClient)
+            {
+                (string applyChangesByKnowledgeErrMsg, JObject jObjectApplyChangesByKnowledgeResult) = await ExecuteOnServer(applyChangesByKnowledgeParameter.GetCompressed(), syncResult);
+                if (jObjectApplyChangesByKnowledgeResult != null)
+                {
+                    applyChangesByKnowledgeResult = SyncEngine.ApplyChangesByKnowledgeResult.FromPayload(jObjectApplyChangesByKnowledgeResult);
+                    syncResult.ServerLog.AppliedChanges.Inserts.AddRange(applyChangesByKnowledgeResult.Inserts);
+                    syncResult.ServerLog.AppliedChanges.Updates.AddRange(applyChangesByKnowledgeResult.Updates);
+                    syncResult.ServerLog.AppliedChanges.Deletes.AddRange(applyChangesByKnowledgeResult.Deletes);
+                    syncResult.ServerLog.AppliedChanges.Conflicts.AddRange(applyChangesByKnowledgeResult.Conflicts);
+                }
+                if (!string.IsNullOrEmpty(applyChangesByKnowledgeErrMsg)) throw new Exception(applyChangesByKnowledgeErrMsg);
+            }
+            else
+            {
+                try
+                {
+                    syncEngine.ApplyChangesByKnowledge(applyChangesByKnowledgeParameter, ref applyChangesByKnowledgeResult);
+                }
+                catch (Exception)
+                {
+                    throw;
+                }
+                finally
+                {
+                    if (applyChangesByKnowledgeResult != null)
+                    {
+                        syncResult.ClientLog.AppliedChanges.Inserts.AddRange(applyChangesByKnowledgeResult.Inserts);
+                        syncResult.ClientLog.AppliedChanges.Updates.AddRange(applyChangesByKnowledgeResult.Updates);
+                        syncResult.ClientLog.AppliedChanges.Deletes.AddRange(applyChangesByKnowledgeResult.Deletes);
+                        syncResult.ClientLog.AppliedChanges.Conflicts.AddRange(applyChangesByKnowledgeResult.Conflicts);
+                    }
                 }
             }
         }
 
-        private async Task SynchronizeGlobalTimeStamp(Dictionary<string, object> customInfo, SyncResult syncResult)
+        private async Task SynchronizeGlobalTimeStamp(SynchronizationMethodEnum synchronizationMethod, Dictionary<string, object> customInfo, SyncResult syncResult)
         {
+            if (synchronizationMethod != SynchronizationMethodEnum.PushThenPull)
+            {
+                throw new SyncEngineConstraintException($"{nameof(synchronizationMethod)} other than {SynchronizationMethodEnum.PushThenPull.ToString()} is not supported, because {nameof(SyncConfiguration.TimeStampStrategyEnum.GlobalTimeStamp)} is already using Global DateTime (World Clock) as the time stamp, therefore, performing PushThenPull / PullThenPush will not have different effect (due to the same kind of time stamp being compared)");
+            }
+
             syncResult.Log.Add("=== Client Get Changes ===");
             SyncEngine.GetChangesParameter clientGetChangesParameter = new SyncEngine.GetChangesParameter(
                 SyncEngine.PayloadAction.Synchronize,

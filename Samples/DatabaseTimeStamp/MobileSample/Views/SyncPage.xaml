@@ -11,6 +11,8 @@
             <StackLayout Spacing="20" Padding="15">
                 <Label Text="Server URL" />
                 <Entry Text="{Binding ServerUrl}" />
+                <Label Text="Synchronization Method" />
+                <Picker Title="Select Synchronization Method" ItemsSource="{Binding SynchronizationMethods}" SelectedItem="{Binding SelectedSynchronizationMethod, Mode=TwoWay}" />
                 <Button Text="Synchronize" Command="{Binding SynchronizeCommand}" />
                 <ActivityIndicator IsVisible="{Binding IsSynchronizing}" IsRunning="{Binding IsSynchronizing}" />
                 <Label Text="Log" />
