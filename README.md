@@ -31,7 +31,7 @@ Data synchronization between server and clients will use their own _internal tim
 * Eliminates the **GlobalTimeStamp** weakness, therefore more suitable to use in mobile clients.
 
 **Cons:**
-* Harder to implement than the other one, and, will require one additional table to keep the _time stamp knowledge_.
+* Harder to implement than the other one, and, will require one additional table (or some form of records persistence) to keep the _time stamp knowledge_.
 ***
 ## The Caveats...
 Here they come...
