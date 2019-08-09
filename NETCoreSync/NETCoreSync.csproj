@@ -9,7 +9,9 @@
     <PackageProjectUrl>https://github.com/aldycool/NETCoreSync</PackageProjectUrl>
     <RepositoryUrl>https://github.com/aldycool/NETCoreSync</RepositoryUrl>
     <PackageTags>database sync synchronization framework NETCoreApp NETStandard Xamarin Forms</PackageTags>
-    <PackageReleaseNotes>## Added Features
+    <PackageReleaseNotes># v1.2.0 Release Notes
+
+## Added Features
 * Support conflict handling during `DeserializeJsonToExistingData` method
 * Support suppressing Exception during hook calls if updated with older time stamp (GlobalTimeStamp only)
 
