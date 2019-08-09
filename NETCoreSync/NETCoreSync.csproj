@@ -11,7 +11,7 @@
     <PackageTags>database sync synchronization framework NETCoreApp NETStandard Xamarin Forms</PackageTags>
     <PackageReleaseNotes />
     <PackageRequireLicenseAcceptance>true</PackageRequireLicenseAcceptance>
-    <Version>1.1.0</Version>
+    <Version>1.2.0</Version>
   </PropertyGroup>
 
   <ItemGroup>

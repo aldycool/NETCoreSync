@@ -74,7 +74,7 @@ namespace NETCoreSync
 
         public abstract object DeserializeJsonToNewData(Type classType, JObject jObject, object transaction, OperationType operationType, string synchronizationId, Dictionary<string, object> customInfo);
 
-        public abstract object DeserializeJsonToExistingData(Type classType, JObject jObject, object data, object transaction, OperationType operationType, string synchronizationId, Dictionary<string, object> customInfo);
+        public abstract object DeserializeJsonToExistingData(Type classType, JObject jObject, object data, object transaction, OperationType operationType, ConflictType conflictType, string synchronizationId, Dictionary<string, object> customInfo);
 
         public abstract void PersistData(Type classType, object data, bool isNew, object transaction, OperationType operationType, string synchronizationId, Dictionary<string, object> customInfo);
 
@@ -97,7 +97,7 @@ namespace NETCoreSync
                 if (!IsServerEngine())
                 {
                     long lastSync = GetClientLastSync();
-                    if (nowTicks <= lastSync) throw new SyncEngineConstraintException("System Date and Time is older than the lastSync value");
+                    if (nowTicks <= lastSync && !SyncConfiguration.SyncConfigurationOptions.GlobalTimeStampAllowHooksToUpdateWithOlderSystemDateTime) throw new SyncEngineConstraintException("System Date and Time is older than the lastSync value");
                 }
                 data.GetType().GetProperty(schemaInfo.PropertyInfoLastUpdated.Name).SetValue(data, nowTicks);
             }
@@ -117,7 +117,7 @@ namespace NETCoreSync
                 if (!IsServerEngine())
                 {
                     long lastSync = GetClientLastSync();
-                    if (nowTicks <= lastSync) throw new SyncEngineConstraintException("System Date and Time is older than the lastSync value");
+                    if (nowTicks <= lastSync && !SyncConfiguration.SyncConfigurationOptions.GlobalTimeStampAllowHooksToUpdateWithOlderSystemDateTime) throw new SyncEngineConstraintException("System Date and Time is older than the lastSync value");
                 }
                 data.GetType().GetProperty(schemaInfo.PropertyInfoDeleted.Name).SetValue(data, nowTicks);
             }

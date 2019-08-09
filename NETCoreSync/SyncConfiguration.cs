@@ -20,6 +20,7 @@ namespace NETCoreSync
         internal TimeStampStrategyEnum TimeStampStrategy = TimeStampStrategyEnum.GlobalTimeStamp;
         internal readonly List<Type> SyncTypes = new List<Type>();
         internal readonly Dictionary<Type, SchemaInfo> SyncSchemaInfos = new Dictionary<Type, SchemaInfo>();
+        internal readonly Options SyncConfigurationOptions = new Options();
 
         public SyncConfiguration(Assembly[] assemblies) : this(assemblies, TimeStampStrategyEnum.GlobalTimeStamp)
         {
@@ -92,6 +93,17 @@ namespace NETCoreSync
                 SyncTypes.Add(type);
                 SyncSchemaInfos.Add(type, schemaInfo);
             }
+        }
+
+        public SyncConfiguration SetOptions(Action<Options> options)
+        {
+            options(SyncConfigurationOptions);
+            return this;
+        }
+
+        public class Options
+        {
+            public bool GlobalTimeStampAllowHooksToUpdateWithOlderSystemDateTime { get; set; } = false;
         }
 
         internal class SchemaInfo

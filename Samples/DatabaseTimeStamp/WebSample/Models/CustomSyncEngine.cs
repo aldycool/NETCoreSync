@@ -118,8 +118,18 @@ namespace WebSample.Models
             return data;
         }
 
-        public override object DeserializeJsonToExistingData(Type classType, JObject jObject, object data, object transaction, OperationType operationType, string synchronizationId, Dictionary<string, object> customInfo)
+        public override object DeserializeJsonToExistingData(Type classType, JObject jObject, object data, object transaction, OperationType operationType, ConflictType conflictType, string synchronizationId, Dictionary<string, object> customInfo)
         {
+            if (conflictType != ConflictType.NoConflict)
+            {
+                // Here you can react accordingly if there's a conflict during Updates.
+                // For DatabaseTimeStamp, the possibilities of conflict types are:
+                // 1. ConflictType.ExistingDataIsNewerThanIncomingData, means that the ExistingData (parameter: data) timestamp is newer than the IncomingData (parameter: jObject).
+                // 2. ConflictType.ExistingDataIsUpdatedByDifferentDatabaseInstanceId, means that the ExistingData (parameter: data) is updated by different Database Instance Id (perhaps updated by other devices) than the IncomingData (parameter: jObject) Database Instance Id.
+                //
+                // If you return null here, then the update will be canceled and the conflict will be registered in the SyncResult's Conflict Log.
+                // In this example, the conflict is ignored and continue with the data update.
+            }
             ConvertClientObjectToLocal(classType, jObject, data);
             JsonConvert.PopulateObject(jObject.ToString(), data);
             return data;

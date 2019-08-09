@@ -46,15 +46,10 @@ namespace NETCoreSync
 
         public class SyncLogConflict
         {
-            public enum ConflictTypeEnum
-            {
-                TargetDataIsNewerThanSource
-            }
-
-            public ConflictTypeEnum ConflictType { get; set; }
+            public SyncEngine.ConflictType ConflictType { get; set; }
             public SyncLogData Data { get; set; }
 
-            public SyncLogConflict(ConflictTypeEnum conflictType, SyncLogData data)
+            public SyncLogConflict(SyncEngine.ConflictType conflictType, SyncLogData data)
             {
                 ConflictType = conflictType;
                 Data = data;

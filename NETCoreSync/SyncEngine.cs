@@ -451,49 +451,48 @@ namespace NETCoreSync
 
                         if (!isDeleted)
                         {
+                            ConflictType updateConflictType = ConflictType.NoConflict;
                             long localLastUpdated = (long)localData.GetType().GetProperty(localSchemaInfo.PropertyInfoLastUpdated.Name).GetValue(localData);
-                            string localDatabaseInstanceId = null;
-                            bool shouldUpdate = false;
                             if (SyncConfiguration.TimeStampStrategy == SyncConfiguration.TimeStampStrategyEnum.GlobalTimeStamp)
                             {
-                                if (lastUpdated > localLastUpdated) shouldUpdate = true;
+                                if (localLastUpdated > lastUpdated) updateConflictType = ConflictType.ExistingDataIsNewerThanIncomingData;
                             }
                             if (SyncConfiguration.TimeStampStrategy == SyncConfiguration.TimeStampStrategyEnum.DatabaseTimeStamp)
                             {
-                                localDatabaseInstanceId = (string)localData.GetType().GetProperty(localSchemaInfo.PropertyInfoDatabaseInstanceId.Name).GetValue(localData);
+                                string localDatabaseInstanceId = (string)localData.GetType().GetProperty(localSchemaInfo.PropertyInfoDatabaseInstanceId.Name).GetValue(localData);
                                 string correctDatabaseInstanceId = GetCorrectDatabaseInstanceId(databaseInstanceId, sourceDatabaseInstanceId, destinationDatabaseInstanceId, null, 0);
                                 if (localDatabaseInstanceId == correctDatabaseInstanceId)
                                 {
-                                    if (lastUpdated > localLastUpdated) shouldUpdate = true;
+                                    if (localLastUpdated > lastUpdated) updateConflictType = ConflictType.ExistingDataIsNewerThanIncomingData;
                                 }
                                 else
                                 {
-                                    shouldUpdate = true;
+                                    updateConflictType = ConflictType.ExistingDataIsUpdatedByDifferentDatabaseInstanceId;
                                 }
                             }
-                            if (shouldUpdate)
-                            {
-                                object existingData = InvokeDeserializeJsonToExistingData(localSyncType, jObjectData, localData, localId, transaction, operationType, synchronizationId, customInfo, localSchemaInfo);
-                                existingData.GetType().GetProperty(localSchemaInfo.PropertyInfoLastUpdated.Name).SetValue(existingData, lastUpdated);
 
+                            object existingData = InvokeDeserializeJsonToExistingData(localSyncType, jObjectData, localData, localId, transaction, operationType, updateConflictType, synchronizationId, customInfo, localSchemaInfo);
+                            if (existingData == null && updateConflictType == ConflictType.NoConflict) throw new SyncEngineConstraintException($"{nameof(DeserializeJsonToExistingData)} must not return null for conflictType equals to {ConflictType.NoConflict.ToString()}");
+                            if (existingData != null)
+                            {
+                                existingData.GetType().GetProperty(localSchemaInfo.PropertyInfoLastUpdated.Name).SetValue(existingData, lastUpdated);
                                 if (SyncConfiguration.TimeStampStrategy == SyncConfiguration.TimeStampStrategyEnum.DatabaseTimeStamp)
                                 {
                                     existingData.GetType().GetProperty(localSchemaInfo.PropertyInfoDatabaseInstanceId.Name).SetValue(existingData, GetCorrectDatabaseInstanceId(databaseInstanceId, sourceDatabaseInstanceId, destinationDatabaseInstanceId, databaseInstanceMaxTimeStamps, lastUpdated));
                                 }
-
                                 PersistData(localSyncType, existingData, false, transaction, operationType, synchronizationId, customInfo);
                                 if (!appliedIds.Contains(localId)) appliedIds.Add(localId);
                                 updates.Add(SyncLog.SyncLogData.FromJObject(InvokeSerializeDataToJson(localSyncType, existingData, localSchemaInfo, transaction, operationType, synchronizationId, customInfo), localSyncType, localSchemaInfo));
                             }
                             else
                             {
-                                log.Add($"CONFLICT Detected: Target Data is newer than Source Data. Id: {id}");
-                                conflicts.Add(new SyncLog.SyncLogConflict(SyncLog.SyncLogConflict.ConflictTypeEnum.TargetDataIsNewerThanSource, SyncLog.SyncLogData.FromJObject(jObjectData, localSyncType, schemaInfo)));
+                                log.Add($"CONFLICT Detected: {updateConflictType.ToString()}. Id: {id}");
+                                conflicts.Add(new SyncLog.SyncLogConflict(updateConflictType, SyncLog.SyncLogData.FromJObject(jObjectData, localSyncType, schemaInfo)));
                             }
                         }
                         else
                         {
-                            object existingData = InvokeDeserializeJsonToExistingData(localSyncType, jObjectData, localData, localId, transaction, operationType, synchronizationId, customInfo, localSchemaInfo);
+                            object existingData = InvokeDeserializeJsonToExistingData(localSyncType, jObjectData, localData, localId, transaction, operationType, ConflictType.NoConflict, synchronizationId, customInfo, localSchemaInfo);
 
                             if (SyncConfiguration.TimeStampStrategy == SyncConfiguration.TimeStampStrategyEnum.GlobalTimeStamp)
                             {
@@ -632,10 +631,11 @@ namespace NETCoreSync
             return newData;
         }
 
-        private object InvokeDeserializeJsonToExistingData(Type classType, JObject jObject, object data, object localId, object transaction, OperationType operationType, string synchronizationId, Dictionary<string, object> customInfo, SyncConfiguration.SchemaInfo localSchemaInfo)
+        private object InvokeDeserializeJsonToExistingData(Type classType, JObject jObject, object data, object localId, object transaction, OperationType operationType, ConflictType conflictType, string synchronizationId, Dictionary<string, object> customInfo, SyncConfiguration.SchemaInfo localSchemaInfo)
         {
-            object existingData = DeserializeJsonToExistingData(classType, jObject, data, transaction, operationType, synchronizationId, customInfo);
-            if (existingData == null) throw new SyncEngineConstraintException($"{nameof(DeserializeJsonToExistingData)} must not return null");
+            object existingData = DeserializeJsonToExistingData(classType, jObject, data, transaction, operationType, conflictType, synchronizationId, customInfo);
+            if (conflictType != ConflictType.NoConflict && existingData == null) return null;
+            if (existingData == null) throw new SyncEngineConstraintException($"{nameof(DeserializeJsonToExistingData)} must not return null for {nameof(conflictType)} equals to {conflictType.ToString()}");
             if (existingData.GetType().FullName != classType.FullName) throw new SyncEngineConstraintException($"Expected returned Type: {classType.FullName} during {nameof(DeserializeJsonToExistingData)}, but Type: {existingData.GetType().FullName} is returned instead.");
             object existingDataId = classType.GetProperty(localSchemaInfo.PropertyInfoId.Name).GetValue(existingData);
             if (!existingDataId.Equals(localId)) throw new SyncEngineConstraintException($"The returned Object Id ({existingDataId}) is different than the existing data Id: {localId}");

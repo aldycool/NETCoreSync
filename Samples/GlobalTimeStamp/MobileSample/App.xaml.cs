@@ -37,6 +37,15 @@ namespace MobileSample
 
             List<Type> syncTypes = new List<Type>() { typeof(Department), typeof(Employee) };
             SyncConfiguration syncConfiguration = new SyncConfiguration(syncTypes.ToArray(), SyncConfiguration.TimeStampStrategyEnum.GlobalTimeStamp);
+            syncConfiguration.SetOptions(options => 
+            {
+                // On this example, we set the GlobalTimeStampAllowHooksToUpdateWithOlderSystemDateTime to true,
+                // This allows the mobile apps to continue executing HookPreInsertOrUpdateGlobalTimeStamp and HookPreDeleteGlobalTimeStamp without raising errors if the device's Date Time is older than the last sync value.
+                // FYI, the mobile system's Date and Time is actually CAN be older if the mobile users are deliberately changing its system's Date Time settings to an older Date Time.
+                // So if this option is set to true, the hooks will not raise errors, BUT, conflicts can happened during synchronization. You should handle the conflicts accordingly in the DeserializeJsonToExistingData method in the server's SyncEngine subclass.
+                // By default, this option is set to false.
+                options.GlobalTimeStampAllowHooksToUpdateWithOlderSystemDateTime = true;
+            });
             builder.RegisterInstance(syncConfiguration);
 
             Container = builder.Build();

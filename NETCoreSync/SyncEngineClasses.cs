@@ -23,6 +23,13 @@ namespace NETCoreSync
             ProvisionKnowledge = 3
         }
 
+        public enum ConflictType
+        {
+            NoConflict,
+            ExistingDataIsNewerThanIncomingData,
+            ExistingDataIsUpdatedByDifferentDatabaseInstanceId
+        }
+
         public class KnowledgeInfo
         {
             public string DatabaseInstanceId { get; set; }
