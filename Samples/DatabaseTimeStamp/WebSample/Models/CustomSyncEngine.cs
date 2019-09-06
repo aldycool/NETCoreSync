@@ -34,7 +34,7 @@ namespace WebSample.Models
         {
             return databaseContext.Knowledges.Where(w => w.SynchronizationID == synchronizationId).Select(s => new KnowledgeInfo()
             {
-                DatabaseInstanceId = s.DatabaseInstanceId.ToString(),
+                DatabaseInstanceId = s.DatabaseInstanceId,
                 IsLocal = s.IsLocal,
                 MaxTimeStamp = s.MaxTimeStamp
             }).ToList();
@@ -42,16 +42,16 @@ namespace WebSample.Models
 
         public override void CreateOrUpdateKnowledgeInfo(KnowledgeInfo knowledgeInfo, string synchronizationId, Dictionary<string, object> customInfo)
         {
-            Guid id = new Guid(knowledgeInfo.DatabaseInstanceId);
-            Knowledge knowledge = databaseContext.Knowledges.Where(w => w.SynchronizationID == synchronizationId && w.DatabaseInstanceId == id).FirstOrDefault();
+            Knowledge knowledge = databaseContext.Knowledges.Where(w => w.SynchronizationID == synchronizationId && w.DatabaseInstanceId == knowledgeInfo.DatabaseInstanceId).FirstOrDefault();
             if (knowledge == null)
             {
                 knowledge = new Knowledge();
-                knowledge.DatabaseInstanceId = id;
+                knowledge.ID = Guid.NewGuid();
                 knowledge.SynchronizationID = synchronizationId;
+                knowledge.DatabaseInstanceId = knowledgeInfo.DatabaseInstanceId;
                 databaseContext.Add(knowledge);
                 databaseContext.SaveChanges();
-                knowledge = databaseContext.Knowledges.Where(w => w.SynchronizationID == synchronizationId && w.DatabaseInstanceId == id).First();
+                knowledge = databaseContext.Knowledges.Where(w => w.SynchronizationID == synchronizationId && w.DatabaseInstanceId == knowledgeInfo.DatabaseInstanceId).First();
             }
             knowledge.IsLocal = knowledgeInfo.IsLocal;
             knowledge.MaxTimeStamp = knowledgeInfo.MaxTimeStamp;

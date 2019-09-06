@@ -12,9 +12,11 @@ namespace WebSample.Models
     {
         [Key]
         [DatabaseGenerated(DatabaseGeneratedOption.None)]
-        public Guid DatabaseInstanceId { get; set; }
+        public Guid ID { get; set; }
 
         public string SynchronizationID { get; set; }
+
+        public string DatabaseInstanceId { get; set; }
 
         public bool IsLocal { get; set; }
 
