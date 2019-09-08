@@ -15,6 +15,7 @@ namespace NETCoreSync
         private readonly string synchronizationId;
         private readonly SyncEngine syncEngine;
         private readonly string serverUrl;
+        private readonly Dictionary<string, string> httpHeaders;
 
         public enum SynchronizationMethodEnum
         {
@@ -23,10 +24,16 @@ namespace NETCoreSync
         }
 
         public SyncClient(string synchronizationId, SyncEngine syncEngine, string serverUrl)
+            : this(synchronizationId, syncEngine, serverUrl, null)
+        {
+        }
+
+        public SyncClient(string synchronizationId, SyncEngine syncEngine, string serverUrl, Dictionary<string, string> httpHeaders)
         {
             this.synchronizationId = synchronizationId ?? throw new NullReferenceException(nameof(synchronizationId));
             this.syncEngine = syncEngine ?? throw new NullReferenceException(nameof(syncEngine));
             this.serverUrl = serverUrl ?? throw new NullReferenceException(nameof(serverUrl));
+            this.httpHeaders = httpHeaders;
         }
 
         public async Task<SyncResult> SynchronizeAsync(SynchronizationMethodEnum synchronizationMethod = SynchronizationMethodEnum.PushThenPull, Dictionary<string, object> customInfo = null)
@@ -345,6 +352,15 @@ namespace NETCoreSync
 
             using (var httpClient = new HttpClient())
             {
+                if (httpHeaders != null)
+                {
+                    httpHeaders.ToList().ForEach(kvp => 
+                    {
+                        if (httpClient.DefaultRequestHeaders.Contains(kvp.Key)) httpClient.DefaultRequestHeaders.Remove(kvp.Key);
+                        httpClient.DefaultRequestHeaders.Add(kvp.Key, kvp.Value);
+                    });
+                }
+
                 using (var multipartFormDataContent = new MultipartFormDataContent())
                 {
                     ByteArrayContent byteArrayContent = new ByteArrayContent(compressed);
