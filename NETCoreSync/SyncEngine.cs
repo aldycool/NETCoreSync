@@ -211,11 +211,11 @@ namespace NETCoreSync
                 SyncConfiguration.SchemaInfo schemaInfo = GetSchemaInfo(SyncConfiguration, syncType);
                 IQueryable queryable = InvokeGetQueryable(syncType, transaction, operationType, synchronizationId, customInfo);
                 queryable = queryable.Where($"{schemaInfo.PropertyInfoDatabaseInstanceId.Name} = null || {schemaInfo.PropertyInfoDatabaseInstanceId.Name} = \"\"");
-                System.Collections.IEnumerator enumerator = queryable.GetEnumerator();
-                while (enumerator.MoveNext())
+                List<object> datas = queryable.Cast<object>().ToList();
+                for (int j = 0; j < datas.Count; j++)
                 {
                     dataCount += 1;
-                    object data = enumerator.Current;
+                    object data = datas[j];
                     data.GetType().GetProperty(schemaInfo.PropertyInfoDatabaseInstanceId.Name).SetValue(data, null);
                     data.GetType().GetProperty(schemaInfo.PropertyInfoLastUpdated.Name).SetValue(data, timeStamp);
                     PersistData(syncType, data, false, transaction, operationType, synchronizationId, customInfo);
