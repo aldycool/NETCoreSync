@@ -1,0 +1,3 @@
+class SyncFriendlyId {
+  const SyncFriendlyId();
+}

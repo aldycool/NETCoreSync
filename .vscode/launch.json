@@ -25,9 +25,10 @@
             }
         },
         {
-            "name": ".NET Core Attach",
-            "type": "coreclr",
-            "request": "attach"
+            "name": "Flutter-ClientApp",
+            "cwd": "${workspaceFolder}/Samples/Flutter/client_app",
+            "request": "launch",
+            "type": "dart",
         }
     ]
 }
