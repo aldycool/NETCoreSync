@@ -1445,6 +1445,487 @@ class $ConfigurationsTable extends Configurations
   }
 }
 
+class Concept extends DataClass implements Insertable<Concept> {
+  final String id;
+  final String fieldString;
+  final String? fieldStringNullable;
+  final int fieldInt;
+  final int? fieldIntNullable;
+  final bool fieldBoolean;
+  final bool? fieldBooleanNullable;
+  final DateTime fieldDateTime;
+  final DateTime? fieldDateTimeNullable;
+  Concept(
+      {required this.id,
+      required this.fieldString,
+      this.fieldStringNullable,
+      required this.fieldInt,
+      this.fieldIntNullable,
+      required this.fieldBoolean,
+      this.fieldBooleanNullable,
+      required this.fieldDateTime,
+      this.fieldDateTimeNullable});
+  factory Concept.fromData(Map<String, dynamic> data, GeneratedDatabase db,
+      {String? prefix}) {
+    final effectivePrefix = prefix ?? '';
+    return Concept(
+      id: const StringType()
+          .mapFromDatabaseResponse(data['${effectivePrefix}id'])!,
+      fieldString: const StringType()
+          .mapFromDatabaseResponse(data['${effectivePrefix}field_string'])!,
+      fieldStringNullable: const StringType().mapFromDatabaseResponse(
+          data['${effectivePrefix}field_string_nullable']),
+      fieldInt: const IntType()
+          .mapFromDatabaseResponse(data['${effectivePrefix}field_int'])!,
+      fieldIntNullable: const IntType().mapFromDatabaseResponse(
+          data['${effectivePrefix}field_int_nullable']),
+      fieldBoolean: const BoolType()
+          .mapFromDatabaseResponse(data['${effectivePrefix}field_boolean'])!,
+      fieldBooleanNullable: const BoolType().mapFromDatabaseResponse(
+          data['${effectivePrefix}field_boolean_nullable']),
+      fieldDateTime: const DateTimeType()
+          .mapFromDatabaseResponse(data['${effectivePrefix}field_date_time'])!,
+      fieldDateTimeNullable: const DateTimeType().mapFromDatabaseResponse(
+          data['${effectivePrefix}field_date_time_nullable']),
+    );
+  }
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['field_string'] = Variable<String>(fieldString);
+    if (!nullToAbsent || fieldStringNullable != null) {
+      map['field_string_nullable'] = Variable<String?>(fieldStringNullable);
+    }
+    map['field_int'] = Variable<int>(fieldInt);
+    if (!nullToAbsent || fieldIntNullable != null) {
+      map['field_int_nullable'] = Variable<int?>(fieldIntNullable);
+    }
+    map['field_boolean'] = Variable<bool>(fieldBoolean);
+    if (!nullToAbsent || fieldBooleanNullable != null) {
+      map['field_boolean_nullable'] = Variable<bool?>(fieldBooleanNullable);
+    }
+    map['field_date_time'] = Variable<DateTime>(fieldDateTime);
+    if (!nullToAbsent || fieldDateTimeNullable != null) {
+      map['field_date_time_nullable'] =
+          Variable<DateTime?>(fieldDateTimeNullable);
+    }
+    return map;
+  }
+
+  ConceptsCompanion toCompanion(bool nullToAbsent) {
+    return ConceptsCompanion(
+      id: Value(id),
+      fieldString: Value(fieldString),
+      fieldStringNullable: fieldStringNullable == null && nullToAbsent
+          ? const Value.absent()
+          : Value(fieldStringNullable),
+      fieldInt: Value(fieldInt),
+      fieldIntNullable: fieldIntNullable == null && nullToAbsent
+          ? const Value.absent()
+          : Value(fieldIntNullable),
+      fieldBoolean: Value(fieldBoolean),
+      fieldBooleanNullable: fieldBooleanNullable == null && nullToAbsent
+          ? const Value.absent()
+          : Value(fieldBooleanNullable),
+      fieldDateTime: Value(fieldDateTime),
+      fieldDateTimeNullable: fieldDateTimeNullable == null && nullToAbsent
+          ? const Value.absent()
+          : Value(fieldDateTimeNullable),
+    );
+  }
+
+  factory Concept.fromJson(Map<String, dynamic> json,
+      {ValueSerializer? serializer}) {
+    serializer ??= moorRuntimeOptions.defaultSerializer;
+    return Concept(
+      id: serializer.fromJson<String>(json['id']),
+      fieldString: serializer.fromJson<String>(json['fieldString']),
+      fieldStringNullable:
+          serializer.fromJson<String?>(json['fieldStringNullable']),
+      fieldInt: serializer.fromJson<int>(json['fieldInt']),
+      fieldIntNullable: serializer.fromJson<int?>(json['fieldIntNullable']),
+      fieldBoolean: serializer.fromJson<bool>(json['fieldBoolean']),
+      fieldBooleanNullable:
+          serializer.fromJson<bool?>(json['fieldBooleanNullable']),
+      fieldDateTime: serializer.fromJson<DateTime>(json['fieldDateTime']),
+      fieldDateTimeNullable:
+          serializer.fromJson<DateTime?>(json['fieldDateTimeNullable']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= moorRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'fieldString': serializer.toJson<String>(fieldString),
+      'fieldStringNullable': serializer.toJson<String?>(fieldStringNullable),
+      'fieldInt': serializer.toJson<int>(fieldInt),
+      'fieldIntNullable': serializer.toJson<int?>(fieldIntNullable),
+      'fieldBoolean': serializer.toJson<bool>(fieldBoolean),
+      'fieldBooleanNullable': serializer.toJson<bool?>(fieldBooleanNullable),
+      'fieldDateTime': serializer.toJson<DateTime>(fieldDateTime),
+      'fieldDateTimeNullable':
+          serializer.toJson<DateTime?>(fieldDateTimeNullable),
+    };
+  }
+
+  Concept copyWith(
+          {String? id,
+          String? fieldString,
+          String? fieldStringNullable,
+          int? fieldInt,
+          int? fieldIntNullable,
+          bool? fieldBoolean,
+          bool? fieldBooleanNullable,
+          DateTime? fieldDateTime,
+          DateTime? fieldDateTimeNullable}) =>
+      Concept(
+        id: id ?? this.id,
+        fieldString: fieldString ?? this.fieldString,
+        fieldStringNullable: fieldStringNullable ?? this.fieldStringNullable,
+        fieldInt: fieldInt ?? this.fieldInt,
+        fieldIntNullable: fieldIntNullable ?? this.fieldIntNullable,
+        fieldBoolean: fieldBoolean ?? this.fieldBoolean,
+        fieldBooleanNullable: fieldBooleanNullable ?? this.fieldBooleanNullable,
+        fieldDateTime: fieldDateTime ?? this.fieldDateTime,
+        fieldDateTimeNullable:
+            fieldDateTimeNullable ?? this.fieldDateTimeNullable,
+      );
+  @override
+  String toString() {
+    return (StringBuffer('Concept(')
+          ..write('id: $id, ')
+          ..write('fieldString: $fieldString, ')
+          ..write('fieldStringNullable: $fieldStringNullable, ')
+          ..write('fieldInt: $fieldInt, ')
+          ..write('fieldIntNullable: $fieldIntNullable, ')
+          ..write('fieldBoolean: $fieldBoolean, ')
+          ..write('fieldBooleanNullable: $fieldBooleanNullable, ')
+          ..write('fieldDateTime: $fieldDateTime, ')
+          ..write('fieldDateTimeNullable: $fieldDateTimeNullable')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => $mrjf($mrjc(
+      id.hashCode,
+      $mrjc(
+          fieldString.hashCode,
+          $mrjc(
+              fieldStringNullable.hashCode,
+              $mrjc(
+                  fieldInt.hashCode,
+                  $mrjc(
+                      fieldIntNullable.hashCode,
+                      $mrjc(
+                          fieldBoolean.hashCode,
+                          $mrjc(
+                              fieldBooleanNullable.hashCode,
+                              $mrjc(fieldDateTime.hashCode,
+                                  fieldDateTimeNullable.hashCode)))))))));
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is Concept &&
+          other.id == this.id &&
+          other.fieldString == this.fieldString &&
+          other.fieldStringNullable == this.fieldStringNullable &&
+          other.fieldInt == this.fieldInt &&
+          other.fieldIntNullable == this.fieldIntNullable &&
+          other.fieldBoolean == this.fieldBoolean &&
+          other.fieldBooleanNullable == this.fieldBooleanNullable &&
+          other.fieldDateTime == this.fieldDateTime &&
+          other.fieldDateTimeNullable == this.fieldDateTimeNullable);
+}
+
+class ConceptsCompanion extends UpdateCompanion<Concept> {
+  final Value<String> id;
+  final Value<String> fieldString;
+  final Value<String?> fieldStringNullable;
+  final Value<int> fieldInt;
+  final Value<int?> fieldIntNullable;
+  final Value<bool> fieldBoolean;
+  final Value<bool?> fieldBooleanNullable;
+  final Value<DateTime> fieldDateTime;
+  final Value<DateTime?> fieldDateTimeNullable;
+  const ConceptsCompanion({
+    this.id = const Value.absent(),
+    this.fieldString = const Value.absent(),
+    this.fieldStringNullable = const Value.absent(),
+    this.fieldInt = const Value.absent(),
+    this.fieldIntNullable = const Value.absent(),
+    this.fieldBoolean = const Value.absent(),
+    this.fieldBooleanNullable = const Value.absent(),
+    this.fieldDateTime = const Value.absent(),
+    this.fieldDateTimeNullable = const Value.absent(),
+  });
+  ConceptsCompanion.insert({
+    this.id = const Value.absent(),
+    this.fieldString = const Value.absent(),
+    this.fieldStringNullable = const Value.absent(),
+    this.fieldInt = const Value.absent(),
+    this.fieldIntNullable = const Value.absent(),
+    this.fieldBoolean = const Value.absent(),
+    this.fieldBooleanNullable = const Value.absent(),
+    this.fieldDateTime = const Value.absent(),
+    this.fieldDateTimeNullable = const Value.absent(),
+  });
+  static Insertable<Concept> custom({
+    Expression<String>? id,
+    Expression<String>? fieldString,
+    Expression<String?>? fieldStringNullable,
+    Expression<int>? fieldInt,
+    Expression<int?>? fieldIntNullable,
+    Expression<bool>? fieldBoolean,
+    Expression<bool?>? fieldBooleanNullable,
+    Expression<DateTime>? fieldDateTime,
+    Expression<DateTime?>? fieldDateTimeNullable,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (fieldString != null) 'field_string': fieldString,
+      if (fieldStringNullable != null)
+        'field_string_nullable': fieldStringNullable,
+      if (fieldInt != null) 'field_int': fieldInt,
+      if (fieldIntNullable != null) 'field_int_nullable': fieldIntNullable,
+      if (fieldBoolean != null) 'field_boolean': fieldBoolean,
+      if (fieldBooleanNullable != null)
+        'field_boolean_nullable': fieldBooleanNullable,
+      if (fieldDateTime != null) 'field_date_time': fieldDateTime,
+      if (fieldDateTimeNullable != null)
+        'field_date_time_nullable': fieldDateTimeNullable,
+    });
+  }
+
+  ConceptsCompanion copyWith(
+      {Value<String>? id,
+      Value<String>? fieldString,
+      Value<String?>? fieldStringNullable,
+      Value<int>? fieldInt,
+      Value<int?>? fieldIntNullable,
+      Value<bool>? fieldBoolean,
+      Value<bool?>? fieldBooleanNullable,
+      Value<DateTime>? fieldDateTime,
+      Value<DateTime?>? fieldDateTimeNullable}) {
+    return ConceptsCompanion(
+      id: id ?? this.id,
+      fieldString: fieldString ?? this.fieldString,
+      fieldStringNullable: fieldStringNullable ?? this.fieldStringNullable,
+      fieldInt: fieldInt ?? this.fieldInt,
+      fieldIntNullable: fieldIntNullable ?? this.fieldIntNullable,
+      fieldBoolean: fieldBoolean ?? this.fieldBoolean,
+      fieldBooleanNullable: fieldBooleanNullable ?? this.fieldBooleanNullable,
+      fieldDateTime: fieldDateTime ?? this.fieldDateTime,
+      fieldDateTimeNullable:
+          fieldDateTimeNullable ?? this.fieldDateTimeNullable,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (fieldString.present) {
+      map['field_string'] = Variable<String>(fieldString.value);
+    }
+    if (fieldStringNullable.present) {
+      map['field_string_nullable'] =
+          Variable<String?>(fieldStringNullable.value);
+    }
+    if (fieldInt.present) {
+      map['field_int'] = Variable<int>(fieldInt.value);
+    }
+    if (fieldIntNullable.present) {
+      map['field_int_nullable'] = Variable<int?>(fieldIntNullable.value);
+    }
+    if (fieldBoolean.present) {
+      map['field_boolean'] = Variable<bool>(fieldBoolean.value);
+    }
+    if (fieldBooleanNullable.present) {
+      map['field_boolean_nullable'] =
+          Variable<bool?>(fieldBooleanNullable.value);
+    }
+    if (fieldDateTime.present) {
+      map['field_date_time'] = Variable<DateTime>(fieldDateTime.value);
+    }
+    if (fieldDateTimeNullable.present) {
+      map['field_date_time_nullable'] =
+          Variable<DateTime?>(fieldDateTimeNullable.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ConceptsCompanion(')
+          ..write('id: $id, ')
+          ..write('fieldString: $fieldString, ')
+          ..write('fieldStringNullable: $fieldStringNullable, ')
+          ..write('fieldInt: $fieldInt, ')
+          ..write('fieldIntNullable: $fieldIntNullable, ')
+          ..write('fieldBoolean: $fieldBoolean, ')
+          ..write('fieldBooleanNullable: $fieldBooleanNullable, ')
+          ..write('fieldDateTime: $fieldDateTime, ')
+          ..write('fieldDateTimeNullable: $fieldDateTimeNullable')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $ConceptsTable extends Concepts with TableInfo<$ConceptsTable, Concept> {
+  final GeneratedDatabase _db;
+  final String? _alias;
+  $ConceptsTable(this._db, [this._alias]);
+  final VerificationMeta _idMeta = const VerificationMeta('id');
+  late final GeneratedColumn<String?> id = GeneratedColumn<String?>(
+      'id', aliasedName, false,
+      typeName: 'TEXT',
+      requiredDuringInsert: false,
+      clientDefault: () => Uuid().v4());
+  final VerificationMeta _fieldStringMeta =
+      const VerificationMeta('fieldString');
+  late final GeneratedColumn<String?> fieldString = GeneratedColumn<String?>(
+      'field_string', aliasedName, false,
+      additionalChecks: GeneratedColumn.checkTextLength(maxTextLength: 255),
+      typeName: 'TEXT',
+      requiredDuringInsert: false,
+      defaultValue: const Constant(""));
+  final VerificationMeta _fieldStringNullableMeta =
+      const VerificationMeta('fieldStringNullable');
+  late final GeneratedColumn<String?> fieldStringNullable =
+      GeneratedColumn<String?>('field_string_nullable', aliasedName, true,
+          additionalChecks: GeneratedColumn.checkTextLength(maxTextLength: 255),
+          typeName: 'TEXT',
+          requiredDuringInsert: false);
+  final VerificationMeta _fieldIntMeta = const VerificationMeta('fieldInt');
+  late final GeneratedColumn<int?> fieldInt = GeneratedColumn<int?>(
+      'field_int', aliasedName, false,
+      typeName: 'INTEGER',
+      requiredDuringInsert: false,
+      defaultValue: const Constant(0));
+  final VerificationMeta _fieldIntNullableMeta =
+      const VerificationMeta('fieldIntNullable');
+  late final GeneratedColumn<int?> fieldIntNullable = GeneratedColumn<int?>(
+      'field_int_nullable', aliasedName, true,
+      typeName: 'INTEGER', requiredDuringInsert: false);
+  final VerificationMeta _fieldBooleanMeta =
+      const VerificationMeta('fieldBoolean');
+  late final GeneratedColumn<bool?> fieldBoolean = GeneratedColumn<bool?>(
+      'field_boolean', aliasedName, false,
+      typeName: 'INTEGER',
+      requiredDuringInsert: false,
+      defaultConstraints: 'CHECK (field_boolean IN (0, 1))',
+      defaultValue: const Constant(false));
+  final VerificationMeta _fieldBooleanNullableMeta =
+      const VerificationMeta('fieldBooleanNullable');
+  late final GeneratedColumn<bool?> fieldBooleanNullable =
+      GeneratedColumn<bool?>('field_boolean_nullable', aliasedName, true,
+          typeName: 'INTEGER',
+          requiredDuringInsert: false,
+          defaultConstraints: 'CHECK (field_boolean_nullable IN (0, 1))');
+  final VerificationMeta _fieldDateTimeMeta =
+      const VerificationMeta('fieldDateTime');
+  late final GeneratedColumn<DateTime?> fieldDateTime =
+      GeneratedColumn<DateTime?>('field_date_time', aliasedName, false,
+          typeName: 'INTEGER',
+          requiredDuringInsert: false,
+          defaultValue: Constant(DateTime(0)));
+  final VerificationMeta _fieldDateTimeNullableMeta =
+      const VerificationMeta('fieldDateTimeNullable');
+  late final GeneratedColumn<DateTime?> fieldDateTimeNullable =
+      GeneratedColumn<DateTime?>('field_date_time_nullable', aliasedName, true,
+          typeName: 'INTEGER', requiredDuringInsert: false);
+  @override
+  List<GeneratedColumn> get $columns => [
+        id,
+        fieldString,
+        fieldStringNullable,
+        fieldInt,
+        fieldIntNullable,
+        fieldBoolean,
+        fieldBooleanNullable,
+        fieldDateTime,
+        fieldDateTimeNullable
+      ];
+  @override
+  String get aliasedName => _alias ?? 'concept';
+  @override
+  String get actualTableName => 'concept';
+  @override
+  VerificationContext validateIntegrity(Insertable<Concept> instance,
+      {bool isInserting = false}) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('field_string')) {
+      context.handle(
+          _fieldStringMeta,
+          fieldString.isAcceptableOrUnknown(
+              data['field_string']!, _fieldStringMeta));
+    }
+    if (data.containsKey('field_string_nullable')) {
+      context.handle(
+          _fieldStringNullableMeta,
+          fieldStringNullable.isAcceptableOrUnknown(
+              data['field_string_nullable']!, _fieldStringNullableMeta));
+    }
+    if (data.containsKey('field_int')) {
+      context.handle(_fieldIntMeta,
+          fieldInt.isAcceptableOrUnknown(data['field_int']!, _fieldIntMeta));
+    }
+    if (data.containsKey('field_int_nullable')) {
+      context.handle(
+          _fieldIntNullableMeta,
+          fieldIntNullable.isAcceptableOrUnknown(
+              data['field_int_nullable']!, _fieldIntNullableMeta));
+    }
+    if (data.containsKey('field_boolean')) {
+      context.handle(
+          _fieldBooleanMeta,
+          fieldBoolean.isAcceptableOrUnknown(
+              data['field_boolean']!, _fieldBooleanMeta));
+    }
+    if (data.containsKey('field_boolean_nullable')) {
+      context.handle(
+          _fieldBooleanNullableMeta,
+          fieldBooleanNullable.isAcceptableOrUnknown(
+              data['field_boolean_nullable']!, _fieldBooleanNullableMeta));
+    }
+    if (data.containsKey('field_date_time')) {
+      context.handle(
+          _fieldDateTimeMeta,
+          fieldDateTime.isAcceptableOrUnknown(
+              data['field_date_time']!, _fieldDateTimeMeta));
+    }
+    if (data.containsKey('field_date_time_nullable')) {
+      context.handle(
+          _fieldDateTimeNullableMeta,
+          fieldDateTimeNullable.isAcceptableOrUnknown(
+              data['field_date_time_nullable']!, _fieldDateTimeNullableMeta));
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  Concept map(Map<String, dynamic> data, {String? tablePrefix}) {
+    return Concept.fromData(data, _db,
+        prefix: tablePrefix != null ? '$tablePrefix.' : null);
+  }
+
+  @override
+  $ConceptsTable createAlias(String alias) {
+    return $ConceptsTable(_db, alias);
+  }
+}
+
 abstract class _$Database extends GeneratedDatabase {
   _$Database(QueryExecutor e) : super(SqlTypeSystem.defaultInstance, e);
   late final $EmployeesTable employees = $EmployeesTable(this);
@@ -1452,9 +1933,16 @@ abstract class _$Database extends GeneratedDatabase {
   late final $KnowledgesTable knowledges = $KnowledgesTable(this);
   late final $TimeStampsTable timeStamps = $TimeStampsTable(this);
   late final $ConfigurationsTable configurations = $ConfigurationsTable(this);
+  late final $ConceptsTable concepts = $ConceptsTable(this);
   @override
   Iterable<TableInfo> get allTables => allSchemaEntities.whereType<TableInfo>();
   @override
-  List<DatabaseSchemaEntity> get allSchemaEntities =>
-      [employees, departments, knowledges, timeStamps, configurations];
+  List<DatabaseSchemaEntity> get allSchemaEntities => [
+        employees,
+        departments,
+        knowledges,
+        timeStamps,
+        configurations,
+        concepts
+      ];
 }

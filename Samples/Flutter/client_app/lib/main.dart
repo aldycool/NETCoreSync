@@ -4,9 +4,12 @@ import 'src/global.dart';
 import 'src/ui/home_page.dart';
 
 void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
   await openSqlite();
   Database database = await constructDatabase();
   Global.instance.setDatabase(database);
+  // TODO: Still Testing Concepts!
+  database.testConcepts();
   runApp(MyApp());
 }
 

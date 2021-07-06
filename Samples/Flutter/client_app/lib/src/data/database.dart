@@ -1,3 +1,4 @@
+import 'package:client_app/src/data/concepts.dart';
 import 'package:moor/moor.dart';
 import 'package:uuid/uuid.dart';
 import 'employees.dart';
@@ -5,6 +6,7 @@ import 'departments.dart';
 import 'knowledges.dart';
 import 'timestamps.dart';
 import 'configurations.dart';
+import 'concepts.dart';
 
 export 'database_shared.dart';
 
@@ -16,6 +18,7 @@ part 'database.g.dart';
   Knowledges,
   TimeStamps,
   Configurations,
+  Concepts,
 ])
 class Database extends _$Database {
   Database(QueryExecutor queryExecutor) : super(queryExecutor);
@@ -34,6 +37,12 @@ class Database extends _$Database {
 
   static const String _configuration_key_synchronizationId =
       "SYNCHRONIZATIONID";
+
+  void testConcepts() async {
+    ConceptsCompanion data = ConceptsCompanion();
+    await into(concepts).insert(data);
+    print(await select(concepts).get());
+  }
 
   Future<void> resetDatabase({bool includeConfiguration = false}) async {
     await delete(employees).go();
