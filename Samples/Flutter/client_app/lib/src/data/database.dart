@@ -1,4 +1,5 @@
-import 'package:client_app/src/data/concepts.dart';
+import 'package:client_app/main.reflectable.dart';
+import 'package:netcoresync_client_flutter/netcoresync_client_flutter.dart';
 import 'package:moor/moor.dart';
 import 'package:uuid/uuid.dart';
 import 'employees.dart';
@@ -6,7 +7,7 @@ import 'departments.dart';
 import 'knowledges.dart';
 import 'timestamps.dart';
 import 'configurations.dart';
-import 'concepts.dart';
+import 'users.dart';
 
 export 'database_shared.dart';
 
@@ -18,7 +19,7 @@ part 'database.g.dart';
   Knowledges,
   TimeStamps,
   Configurations,
-  Concepts,
+  Users,
 ])
 class Database extends _$Database {
   Database(QueryExecutor queryExecutor) : super(queryExecutor);
@@ -39,9 +40,36 @@ class Database extends _$Database {
       "SYNCHRONIZATIONID";
 
   void testConcepts() async {
-    ConceptsCompanion data = ConceptsCompanion();
-    await into(concepts).insert(data);
-    print(await select(concepts).get());
+    netcoresync_doTests(initializeReflectable, User());
+
+    User user = User();
+    await into(users).insert(user);
+    List<User> datas = await select(users).get();
+    print(datas);
+
+    datas[0].fieldString = "ABC";
+    datas[0].fieldStringNullable = "DEF";
+    datas[0].fieldInt = 10;
+    datas[0].fieldIntNullable = 20;
+    datas[0].fieldBoolean = true;
+    datas[0].fieldBooleanNullable = false;
+    datas[0].fieldDateTime = DateTime.now();
+    datas[0].fieldDateTimeNullable = DateTime(2021, 1, 1);
+    await update(users).replace(datas[0]);
+    List<User> datasUpdated = await select(users).get();
+    print(datasUpdated);
+
+    datasUpdated[0].fieldStringNullable = null;
+    datasUpdated[0].fieldIntNullable = null;
+    datasUpdated[0].fieldBooleanNullable = null;
+    datasUpdated[0].fieldDateTimeNullable = null;
+    await update(users).replace(datasUpdated[0]);
+    List<User> datas2 = await select(users).get();
+    print(datas2);
+
+    await delete(users).delete(datas2[0]);
+    List<User> empty = await select(users).get();
+    print(empty);
   }
 
   Future<void> resetDatabase({bool includeConfiguration = false}) async {

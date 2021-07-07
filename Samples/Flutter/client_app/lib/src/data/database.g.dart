@@ -1445,202 +1445,7 @@ class $ConfigurationsTable extends Configurations
   }
 }
 
-class Concept extends DataClass implements Insertable<Concept> {
-  final String id;
-  final String fieldString;
-  final String? fieldStringNullable;
-  final int fieldInt;
-  final int? fieldIntNullable;
-  final bool fieldBoolean;
-  final bool? fieldBooleanNullable;
-  final DateTime fieldDateTime;
-  final DateTime? fieldDateTimeNullable;
-  Concept(
-      {required this.id,
-      required this.fieldString,
-      this.fieldStringNullable,
-      required this.fieldInt,
-      this.fieldIntNullable,
-      required this.fieldBoolean,
-      this.fieldBooleanNullable,
-      required this.fieldDateTime,
-      this.fieldDateTimeNullable});
-  factory Concept.fromData(Map<String, dynamic> data, GeneratedDatabase db,
-      {String? prefix}) {
-    final effectivePrefix = prefix ?? '';
-    return Concept(
-      id: const StringType()
-          .mapFromDatabaseResponse(data['${effectivePrefix}id'])!,
-      fieldString: const StringType()
-          .mapFromDatabaseResponse(data['${effectivePrefix}field_string'])!,
-      fieldStringNullable: const StringType().mapFromDatabaseResponse(
-          data['${effectivePrefix}field_string_nullable']),
-      fieldInt: const IntType()
-          .mapFromDatabaseResponse(data['${effectivePrefix}field_int'])!,
-      fieldIntNullable: const IntType().mapFromDatabaseResponse(
-          data['${effectivePrefix}field_int_nullable']),
-      fieldBoolean: const BoolType()
-          .mapFromDatabaseResponse(data['${effectivePrefix}field_boolean'])!,
-      fieldBooleanNullable: const BoolType().mapFromDatabaseResponse(
-          data['${effectivePrefix}field_boolean_nullable']),
-      fieldDateTime: const DateTimeType()
-          .mapFromDatabaseResponse(data['${effectivePrefix}field_date_time'])!,
-      fieldDateTimeNullable: const DateTimeType().mapFromDatabaseResponse(
-          data['${effectivePrefix}field_date_time_nullable']),
-    );
-  }
-  @override
-  Map<String, Expression> toColumns(bool nullToAbsent) {
-    final map = <String, Expression>{};
-    map['id'] = Variable<String>(id);
-    map['field_string'] = Variable<String>(fieldString);
-    if (!nullToAbsent || fieldStringNullable != null) {
-      map['field_string_nullable'] = Variable<String?>(fieldStringNullable);
-    }
-    map['field_int'] = Variable<int>(fieldInt);
-    if (!nullToAbsent || fieldIntNullable != null) {
-      map['field_int_nullable'] = Variable<int?>(fieldIntNullable);
-    }
-    map['field_boolean'] = Variable<bool>(fieldBoolean);
-    if (!nullToAbsent || fieldBooleanNullable != null) {
-      map['field_boolean_nullable'] = Variable<bool?>(fieldBooleanNullable);
-    }
-    map['field_date_time'] = Variable<DateTime>(fieldDateTime);
-    if (!nullToAbsent || fieldDateTimeNullable != null) {
-      map['field_date_time_nullable'] =
-          Variable<DateTime?>(fieldDateTimeNullable);
-    }
-    return map;
-  }
-
-  ConceptsCompanion toCompanion(bool nullToAbsent) {
-    return ConceptsCompanion(
-      id: Value(id),
-      fieldString: Value(fieldString),
-      fieldStringNullable: fieldStringNullable == null && nullToAbsent
-          ? const Value.absent()
-          : Value(fieldStringNullable),
-      fieldInt: Value(fieldInt),
-      fieldIntNullable: fieldIntNullable == null && nullToAbsent
-          ? const Value.absent()
-          : Value(fieldIntNullable),
-      fieldBoolean: Value(fieldBoolean),
-      fieldBooleanNullable: fieldBooleanNullable == null && nullToAbsent
-          ? const Value.absent()
-          : Value(fieldBooleanNullable),
-      fieldDateTime: Value(fieldDateTime),
-      fieldDateTimeNullable: fieldDateTimeNullable == null && nullToAbsent
-          ? const Value.absent()
-          : Value(fieldDateTimeNullable),
-    );
-  }
-
-  factory Concept.fromJson(Map<String, dynamic> json,
-      {ValueSerializer? serializer}) {
-    serializer ??= moorRuntimeOptions.defaultSerializer;
-    return Concept(
-      id: serializer.fromJson<String>(json['id']),
-      fieldString: serializer.fromJson<String>(json['fieldString']),
-      fieldStringNullable:
-          serializer.fromJson<String?>(json['fieldStringNullable']),
-      fieldInt: serializer.fromJson<int>(json['fieldInt']),
-      fieldIntNullable: serializer.fromJson<int?>(json['fieldIntNullable']),
-      fieldBoolean: serializer.fromJson<bool>(json['fieldBoolean']),
-      fieldBooleanNullable:
-          serializer.fromJson<bool?>(json['fieldBooleanNullable']),
-      fieldDateTime: serializer.fromJson<DateTime>(json['fieldDateTime']),
-      fieldDateTimeNullable:
-          serializer.fromJson<DateTime?>(json['fieldDateTimeNullable']),
-    );
-  }
-  @override
-  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
-    serializer ??= moorRuntimeOptions.defaultSerializer;
-    return <String, dynamic>{
-      'id': serializer.toJson<String>(id),
-      'fieldString': serializer.toJson<String>(fieldString),
-      'fieldStringNullable': serializer.toJson<String?>(fieldStringNullable),
-      'fieldInt': serializer.toJson<int>(fieldInt),
-      'fieldIntNullable': serializer.toJson<int?>(fieldIntNullable),
-      'fieldBoolean': serializer.toJson<bool>(fieldBoolean),
-      'fieldBooleanNullable': serializer.toJson<bool?>(fieldBooleanNullable),
-      'fieldDateTime': serializer.toJson<DateTime>(fieldDateTime),
-      'fieldDateTimeNullable':
-          serializer.toJson<DateTime?>(fieldDateTimeNullable),
-    };
-  }
-
-  Concept copyWith(
-          {String? id,
-          String? fieldString,
-          String? fieldStringNullable,
-          int? fieldInt,
-          int? fieldIntNullable,
-          bool? fieldBoolean,
-          bool? fieldBooleanNullable,
-          DateTime? fieldDateTime,
-          DateTime? fieldDateTimeNullable}) =>
-      Concept(
-        id: id ?? this.id,
-        fieldString: fieldString ?? this.fieldString,
-        fieldStringNullable: fieldStringNullable ?? this.fieldStringNullable,
-        fieldInt: fieldInt ?? this.fieldInt,
-        fieldIntNullable: fieldIntNullable ?? this.fieldIntNullable,
-        fieldBoolean: fieldBoolean ?? this.fieldBoolean,
-        fieldBooleanNullable: fieldBooleanNullable ?? this.fieldBooleanNullable,
-        fieldDateTime: fieldDateTime ?? this.fieldDateTime,
-        fieldDateTimeNullable:
-            fieldDateTimeNullable ?? this.fieldDateTimeNullable,
-      );
-  @override
-  String toString() {
-    return (StringBuffer('Concept(')
-          ..write('id: $id, ')
-          ..write('fieldString: $fieldString, ')
-          ..write('fieldStringNullable: $fieldStringNullable, ')
-          ..write('fieldInt: $fieldInt, ')
-          ..write('fieldIntNullable: $fieldIntNullable, ')
-          ..write('fieldBoolean: $fieldBoolean, ')
-          ..write('fieldBooleanNullable: $fieldBooleanNullable, ')
-          ..write('fieldDateTime: $fieldDateTime, ')
-          ..write('fieldDateTimeNullable: $fieldDateTimeNullable')
-          ..write(')'))
-        .toString();
-  }
-
-  @override
-  int get hashCode => $mrjf($mrjc(
-      id.hashCode,
-      $mrjc(
-          fieldString.hashCode,
-          $mrjc(
-              fieldStringNullable.hashCode,
-              $mrjc(
-                  fieldInt.hashCode,
-                  $mrjc(
-                      fieldIntNullable.hashCode,
-                      $mrjc(
-                          fieldBoolean.hashCode,
-                          $mrjc(
-                              fieldBooleanNullable.hashCode,
-                              $mrjc(fieldDateTime.hashCode,
-                                  fieldDateTimeNullable.hashCode)))))))));
-  @override
-  bool operator ==(Object other) =>
-      identical(this, other) ||
-      (other is Concept &&
-          other.id == this.id &&
-          other.fieldString == this.fieldString &&
-          other.fieldStringNullable == this.fieldStringNullable &&
-          other.fieldInt == this.fieldInt &&
-          other.fieldIntNullable == this.fieldIntNullable &&
-          other.fieldBoolean == this.fieldBoolean &&
-          other.fieldBooleanNullable == this.fieldBooleanNullable &&
-          other.fieldDateTime == this.fieldDateTime &&
-          other.fieldDateTimeNullable == this.fieldDateTimeNullable);
-}
-
-class ConceptsCompanion extends UpdateCompanion<Concept> {
+class UsersCompanion extends UpdateCompanion<User> {
   final Value<String> id;
   final Value<String> fieldString;
   final Value<String?> fieldStringNullable;
@@ -1650,7 +1455,10 @@ class ConceptsCompanion extends UpdateCompanion<Concept> {
   final Value<bool?> fieldBooleanNullable;
   final Value<DateTime> fieldDateTime;
   final Value<DateTime?> fieldDateTimeNullable;
-  const ConceptsCompanion({
+  final Value<int> lastUpdated;
+  final Value<bool> deleted;
+  final Value<String?> databaseInstanceId;
+  const UsersCompanion({
     this.id = const Value.absent(),
     this.fieldString = const Value.absent(),
     this.fieldStringNullable = const Value.absent(),
@@ -1660,19 +1468,31 @@ class ConceptsCompanion extends UpdateCompanion<Concept> {
     this.fieldBooleanNullable = const Value.absent(),
     this.fieldDateTime = const Value.absent(),
     this.fieldDateTimeNullable = const Value.absent(),
+    this.lastUpdated = const Value.absent(),
+    this.deleted = const Value.absent(),
+    this.databaseInstanceId = const Value.absent(),
   });
-  ConceptsCompanion.insert({
-    this.id = const Value.absent(),
-    this.fieldString = const Value.absent(),
+  UsersCompanion.insert({
+    required String id,
+    required String fieldString,
     this.fieldStringNullable = const Value.absent(),
-    this.fieldInt = const Value.absent(),
+    required int fieldInt,
     this.fieldIntNullable = const Value.absent(),
-    this.fieldBoolean = const Value.absent(),
+    required bool fieldBoolean,
     this.fieldBooleanNullable = const Value.absent(),
-    this.fieldDateTime = const Value.absent(),
+    required DateTime fieldDateTime,
     this.fieldDateTimeNullable = const Value.absent(),
-  });
-  static Insertable<Concept> custom({
+    required int lastUpdated,
+    required bool deleted,
+    this.databaseInstanceId = const Value.absent(),
+  })  : id = Value(id),
+        fieldString = Value(fieldString),
+        fieldInt = Value(fieldInt),
+        fieldBoolean = Value(fieldBoolean),
+        fieldDateTime = Value(fieldDateTime),
+        lastUpdated = Value(lastUpdated),
+        deleted = Value(deleted);
+  static Insertable<User> custom({
     Expression<String>? id,
     Expression<String>? fieldString,
     Expression<String?>? fieldStringNullable,
@@ -1682,6 +1502,9 @@ class ConceptsCompanion extends UpdateCompanion<Concept> {
     Expression<bool?>? fieldBooleanNullable,
     Expression<DateTime>? fieldDateTime,
     Expression<DateTime?>? fieldDateTimeNullable,
+    Expression<int>? lastUpdated,
+    Expression<bool>? deleted,
+    Expression<String?>? databaseInstanceId,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
@@ -1696,10 +1519,14 @@ class ConceptsCompanion extends UpdateCompanion<Concept> {
       if (fieldDateTime != null) 'field_date_time': fieldDateTime,
       if (fieldDateTimeNullable != null)
         'field_date_time_nullable': fieldDateTimeNullable,
+      if (lastUpdated != null) 'last_updated': lastUpdated,
+      if (deleted != null) 'deleted': deleted,
+      if (databaseInstanceId != null)
+        'database_instance_id': databaseInstanceId,
     });
   }
 
-  ConceptsCompanion copyWith(
+  UsersCompanion copyWith(
       {Value<String>? id,
       Value<String>? fieldString,
       Value<String?>? fieldStringNullable,
@@ -1708,8 +1535,11 @@ class ConceptsCompanion extends UpdateCompanion<Concept> {
       Value<bool>? fieldBoolean,
       Value<bool?>? fieldBooleanNullable,
       Value<DateTime>? fieldDateTime,
-      Value<DateTime?>? fieldDateTimeNullable}) {
-    return ConceptsCompanion(
+      Value<DateTime?>? fieldDateTimeNullable,
+      Value<int>? lastUpdated,
+      Value<bool>? deleted,
+      Value<String?>? databaseInstanceId}) {
+    return UsersCompanion(
       id: id ?? this.id,
       fieldString: fieldString ?? this.fieldString,
       fieldStringNullable: fieldStringNullable ?? this.fieldStringNullable,
@@ -1720,6 +1550,9 @@ class ConceptsCompanion extends UpdateCompanion<Concept> {
       fieldDateTime: fieldDateTime ?? this.fieldDateTime,
       fieldDateTimeNullable:
           fieldDateTimeNullable ?? this.fieldDateTimeNullable,
+      lastUpdated: lastUpdated ?? this.lastUpdated,
+      deleted: deleted ?? this.deleted,
+      databaseInstanceId: databaseInstanceId ?? this.databaseInstanceId,
     );
   }
 
@@ -1756,12 +1589,21 @@ class ConceptsCompanion extends UpdateCompanion<Concept> {
       map['field_date_time_nullable'] =
           Variable<DateTime?>(fieldDateTimeNullable.value);
     }
+    if (lastUpdated.present) {
+      map['last_updated'] = Variable<int>(lastUpdated.value);
+    }
+    if (deleted.present) {
+      map['deleted'] = Variable<bool>(deleted.value);
+    }
+    if (databaseInstanceId.present) {
+      map['database_instance_id'] = Variable<String?>(databaseInstanceId.value);
+    }
     return map;
   }
 
   @override
   String toString() {
-    return (StringBuffer('ConceptsCompanion(')
+    return (StringBuffer('UsersCompanion(')
           ..write('id: $id, ')
           ..write('fieldString: $fieldString, ')
           ..write('fieldStringNullable: $fieldStringNullable, ')
@@ -1770,30 +1612,32 @@ class ConceptsCompanion extends UpdateCompanion<Concept> {
           ..write('fieldBoolean: $fieldBoolean, ')
           ..write('fieldBooleanNullable: $fieldBooleanNullable, ')
           ..write('fieldDateTime: $fieldDateTime, ')
-          ..write('fieldDateTimeNullable: $fieldDateTimeNullable')
+          ..write('fieldDateTimeNullable: $fieldDateTimeNullable, ')
+          ..write('lastUpdated: $lastUpdated, ')
+          ..write('deleted: $deleted, ')
+          ..write('databaseInstanceId: $databaseInstanceId')
           ..write(')'))
         .toString();
   }
 }
 
-class $ConceptsTable extends Concepts with TableInfo<$ConceptsTable, Concept> {
+class $UsersTable extends Users with TableInfo<$UsersTable, User> {
   final GeneratedDatabase _db;
   final String? _alias;
-  $ConceptsTable(this._db, [this._alias]);
+  $UsersTable(this._db, [this._alias]);
   final VerificationMeta _idMeta = const VerificationMeta('id');
   late final GeneratedColumn<String?> id = GeneratedColumn<String?>(
       'id', aliasedName, false,
+      additionalChecks: GeneratedColumn.checkTextLength(maxTextLength: 36),
       typeName: 'TEXT',
-      requiredDuringInsert: false,
-      clientDefault: () => Uuid().v4());
+      requiredDuringInsert: true);
   final VerificationMeta _fieldStringMeta =
       const VerificationMeta('fieldString');
   late final GeneratedColumn<String?> fieldString = GeneratedColumn<String?>(
       'field_string', aliasedName, false,
       additionalChecks: GeneratedColumn.checkTextLength(maxTextLength: 255),
       typeName: 'TEXT',
-      requiredDuringInsert: false,
-      defaultValue: const Constant(""));
+      requiredDuringInsert: true);
   final VerificationMeta _fieldStringNullableMeta =
       const VerificationMeta('fieldStringNullable');
   late final GeneratedColumn<String?> fieldStringNullable =
@@ -1804,9 +1648,7 @@ class $ConceptsTable extends Concepts with TableInfo<$ConceptsTable, Concept> {
   final VerificationMeta _fieldIntMeta = const VerificationMeta('fieldInt');
   late final GeneratedColumn<int?> fieldInt = GeneratedColumn<int?>(
       'field_int', aliasedName, false,
-      typeName: 'INTEGER',
-      requiredDuringInsert: false,
-      defaultValue: const Constant(0));
+      typeName: 'INTEGER', requiredDuringInsert: true);
   final VerificationMeta _fieldIntNullableMeta =
       const VerificationMeta('fieldIntNullable');
   late final GeneratedColumn<int?> fieldIntNullable = GeneratedColumn<int?>(
@@ -1817,9 +1659,8 @@ class $ConceptsTable extends Concepts with TableInfo<$ConceptsTable, Concept> {
   late final GeneratedColumn<bool?> fieldBoolean = GeneratedColumn<bool?>(
       'field_boolean', aliasedName, false,
       typeName: 'INTEGER',
-      requiredDuringInsert: false,
-      defaultConstraints: 'CHECK (field_boolean IN (0, 1))',
-      defaultValue: const Constant(false));
+      requiredDuringInsert: true,
+      defaultConstraints: 'CHECK (field_boolean IN (0, 1))');
   final VerificationMeta _fieldBooleanNullableMeta =
       const VerificationMeta('fieldBooleanNullable');
   late final GeneratedColumn<bool?> fieldBooleanNullable =
@@ -1831,14 +1672,30 @@ class $ConceptsTable extends Concepts with TableInfo<$ConceptsTable, Concept> {
       const VerificationMeta('fieldDateTime');
   late final GeneratedColumn<DateTime?> fieldDateTime =
       GeneratedColumn<DateTime?>('field_date_time', aliasedName, false,
-          typeName: 'INTEGER',
-          requiredDuringInsert: false,
-          defaultValue: Constant(DateTime(0)));
+          typeName: 'INTEGER', requiredDuringInsert: true);
   final VerificationMeta _fieldDateTimeNullableMeta =
       const VerificationMeta('fieldDateTimeNullable');
   late final GeneratedColumn<DateTime?> fieldDateTimeNullable =
       GeneratedColumn<DateTime?>('field_date_time_nullable', aliasedName, true,
           typeName: 'INTEGER', requiredDuringInsert: false);
+  final VerificationMeta _lastUpdatedMeta =
+      const VerificationMeta('lastUpdated');
+  late final GeneratedColumn<int?> lastUpdated = GeneratedColumn<int?>(
+      'last_updated', aliasedName, false,
+      typeName: 'INTEGER', requiredDuringInsert: true);
+  final VerificationMeta _deletedMeta = const VerificationMeta('deleted');
+  late final GeneratedColumn<bool?> deleted = GeneratedColumn<bool?>(
+      'deleted', aliasedName, false,
+      typeName: 'INTEGER',
+      requiredDuringInsert: true,
+      defaultConstraints: 'CHECK (deleted IN (0, 1))');
+  final VerificationMeta _databaseInstanceIdMeta =
+      const VerificationMeta('databaseInstanceId');
+  late final GeneratedColumn<String?> databaseInstanceId =
+      GeneratedColumn<String?>('database_instance_id', aliasedName, true,
+          additionalChecks: GeneratedColumn.checkTextLength(maxTextLength: 36),
+          typeName: 'TEXT',
+          requiredDuringInsert: false);
   @override
   List<GeneratedColumn> get $columns => [
         id,
@@ -1849,25 +1706,32 @@ class $ConceptsTable extends Concepts with TableInfo<$ConceptsTable, Concept> {
         fieldBoolean,
         fieldBooleanNullable,
         fieldDateTime,
-        fieldDateTimeNullable
+        fieldDateTimeNullable,
+        lastUpdated,
+        deleted,
+        databaseInstanceId
       ];
   @override
-  String get aliasedName => _alias ?? 'concept';
+  String get aliasedName => _alias ?? 'user';
   @override
-  String get actualTableName => 'concept';
+  String get actualTableName => 'user';
   @override
-  VerificationContext validateIntegrity(Insertable<Concept> instance,
+  VerificationContext validateIntegrity(Insertable<User> instance,
       {bool isInserting = false}) {
     final context = VerificationContext();
     final data = instance.toColumns(true);
     if (data.containsKey('id')) {
       context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
     }
     if (data.containsKey('field_string')) {
       context.handle(
           _fieldStringMeta,
           fieldString.isAcceptableOrUnknown(
               data['field_string']!, _fieldStringMeta));
+    } else if (isInserting) {
+      context.missing(_fieldStringMeta);
     }
     if (data.containsKey('field_string_nullable')) {
       context.handle(
@@ -1878,6 +1742,8 @@ class $ConceptsTable extends Concepts with TableInfo<$ConceptsTable, Concept> {
     if (data.containsKey('field_int')) {
       context.handle(_fieldIntMeta,
           fieldInt.isAcceptableOrUnknown(data['field_int']!, _fieldIntMeta));
+    } else if (isInserting) {
+      context.missing(_fieldIntMeta);
     }
     if (data.containsKey('field_int_nullable')) {
       context.handle(
@@ -1890,6 +1756,8 @@ class $ConceptsTable extends Concepts with TableInfo<$ConceptsTable, Concept> {
           _fieldBooleanMeta,
           fieldBoolean.isAcceptableOrUnknown(
               data['field_boolean']!, _fieldBooleanMeta));
+    } else if (isInserting) {
+      context.missing(_fieldBooleanMeta);
     }
     if (data.containsKey('field_boolean_nullable')) {
       context.handle(
@@ -1902,6 +1770,8 @@ class $ConceptsTable extends Concepts with TableInfo<$ConceptsTable, Concept> {
           _fieldDateTimeMeta,
           fieldDateTime.isAcceptableOrUnknown(
               data['field_date_time']!, _fieldDateTimeMeta));
+    } else if (isInserting) {
+      context.missing(_fieldDateTimeMeta);
     }
     if (data.containsKey('field_date_time_nullable')) {
       context.handle(
@@ -1909,20 +1779,65 @@ class $ConceptsTable extends Concepts with TableInfo<$ConceptsTable, Concept> {
           fieldDateTimeNullable.isAcceptableOrUnknown(
               data['field_date_time_nullable']!, _fieldDateTimeNullableMeta));
     }
+    if (data.containsKey('last_updated')) {
+      context.handle(
+          _lastUpdatedMeta,
+          lastUpdated.isAcceptableOrUnknown(
+              data['last_updated']!, _lastUpdatedMeta));
+    } else if (isInserting) {
+      context.missing(_lastUpdatedMeta);
+    }
+    if (data.containsKey('deleted')) {
+      context.handle(_deletedMeta,
+          deleted.isAcceptableOrUnknown(data['deleted']!, _deletedMeta));
+    } else if (isInserting) {
+      context.missing(_deletedMeta);
+    }
+    if (data.containsKey('database_instance_id')) {
+      context.handle(
+          _databaseInstanceIdMeta,
+          databaseInstanceId.isAcceptableOrUnknown(
+              data['database_instance_id']!, _databaseInstanceIdMeta));
+    }
     return context;
   }
 
   @override
   Set<GeneratedColumn> get $primaryKey => {id};
   @override
-  Concept map(Map<String, dynamic> data, {String? tablePrefix}) {
-    return Concept.fromData(data, _db,
-        prefix: tablePrefix != null ? '$tablePrefix.' : null);
+  User map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return User.fromDb(
+      id: const StringType()
+          .mapFromDatabaseResponse(data['${effectivePrefix}id'])!,
+      fieldString: const StringType()
+          .mapFromDatabaseResponse(data['${effectivePrefix}field_string'])!,
+      fieldStringNullable: const StringType().mapFromDatabaseResponse(
+          data['${effectivePrefix}field_string_nullable']),
+      fieldInt: const IntType()
+          .mapFromDatabaseResponse(data['${effectivePrefix}field_int'])!,
+      fieldIntNullable: const IntType().mapFromDatabaseResponse(
+          data['${effectivePrefix}field_int_nullable']),
+      fieldBoolean: const BoolType()
+          .mapFromDatabaseResponse(data['${effectivePrefix}field_boolean'])!,
+      fieldBooleanNullable: const BoolType().mapFromDatabaseResponse(
+          data['${effectivePrefix}field_boolean_nullable']),
+      fieldDateTime: const DateTimeType()
+          .mapFromDatabaseResponse(data['${effectivePrefix}field_date_time'])!,
+      fieldDateTimeNullable: const DateTimeType().mapFromDatabaseResponse(
+          data['${effectivePrefix}field_date_time_nullable']),
+      lastUpdated: const IntType()
+          .mapFromDatabaseResponse(data['${effectivePrefix}last_updated'])!,
+      deleted: const BoolType()
+          .mapFromDatabaseResponse(data['${effectivePrefix}deleted'])!,
+      databaseInstanceId: const StringType().mapFromDatabaseResponse(
+          data['${effectivePrefix}database_instance_id']),
+    );
   }
 
   @override
-  $ConceptsTable createAlias(String alias) {
-    return $ConceptsTable(_db, alias);
+  $UsersTable createAlias(String alias) {
+    return $UsersTable(_db, alias);
   }
 }
 
@@ -1933,16 +1848,10 @@ abstract class _$Database extends GeneratedDatabase {
   late final $KnowledgesTable knowledges = $KnowledgesTable(this);
   late final $TimeStampsTable timeStamps = $TimeStampsTable(this);
   late final $ConfigurationsTable configurations = $ConfigurationsTable(this);
-  late final $ConceptsTable concepts = $ConceptsTable(this);
+  late final $UsersTable users = $UsersTable(this);
   @override
   Iterable<TableInfo> get allTables => allSchemaEntities.whereType<TableInfo>();
   @override
-  List<DatabaseSchemaEntity> get allSchemaEntities => [
-        employees,
-        departments,
-        knowledges,
-        timeStamps,
-        configurations,
-        concepts
-      ];
+  List<DatabaseSchemaEntity> get allSchemaEntities =>
+      [employees, departments, knowledges, timeStamps, configurations, users];
 }

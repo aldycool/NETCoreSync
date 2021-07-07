@@ -11,12 +11,13 @@ To run the examples:
 - MacOS, Android, iOS, Web: No special instructions necessary, just run it.
 - **As Per Writing: Flutter Sync Is Not Ready Yet, still in the works**
 
-## Moor Notes
+## netcoresync_client_flutter Notes
 
-- The recommended and cleanest way on generating Moor is in this order:
+- To use the library, the package `build_runner` must also be specified in the `pubspec.yaml`'s `dev_dependencies` section. This library uses the `reflectable` package to generate reflections on your data classes. After including the `build_runner` package, to generate the `reflectable`'s file:
   ```sh
   flutter packages pub run build_runner clean
   flutter clean
   flutter pub get
   flutter packages pub run build_runner build --delete-conflicting-outputs  
   ```
+  NOTE: this example is using Moor, where `build_runner` is already a requirement in Moor. You should still add the `build_runner` package yourself even if you are not using Moor.
