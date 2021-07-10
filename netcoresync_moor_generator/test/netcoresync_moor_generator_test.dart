@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:netcoresync_client_flutter/netcoresync_client_flutter.dart';
+import 'package:netcoresync_moor_generator/netcoresync_moor_generator.dart';
 
 void main() {
   test('adds one to input values', () {

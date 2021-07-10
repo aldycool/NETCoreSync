@@ -1,9 +1,10 @@
 import 'package:client_app/src/data/database.dart';
 import 'package:moor/moor.dart';
 import 'package:uuid/uuid.dart';
-import 'package:netcoresync_client_flutter/netcoresync_client_flutter.dart';
 
+// NOTE: replace @DataClassName with below to use standard class
 @UseRowClass(User, constructor: "fromDb")
+// @DataClassName("User")
 class Users extends Table {
   TextColumn get id => text().withLength(max: 36)();
 
@@ -37,13 +38,9 @@ class Users extends Table {
   String? get tableName => "user";
 }
 
-@syncReflector
-@SyncSchema(mapToClassName: "SyncUser")
 class User implements Insertable<User> {
-  @SyncProperty(propertyIndicator: PropertyIndicatorEnum.id)
   String id = Uuid().v4();
 
-  @SyncFriendlyId()
   String fieldString = "";
 
   String? fieldStringNullable;
@@ -54,11 +51,8 @@ class User implements Insertable<User> {
   DateTime fieldDateTime = DateTime(0);
   DateTime? fieldDateTimeNullable;
 
-  @SyncProperty(propertyIndicator: PropertyIndicatorEnum.lastUpdated)
   int lastUpdated = 0;
-  @SyncProperty(propertyIndicator: PropertyIndicatorEnum.deleted)
   bool deleted = false;
-  @SyncProperty(propertyIndicator: PropertyIndicatorEnum.databaseInstanceId)
   String? databaseInstanceId;
 
   User();

@@ -1,11 +1,8 @@
-import 'package:client_app/main.reflectable.dart';
-import 'package:netcoresync_client_flutter/netcoresync_client_flutter.dart';
+import 'package:netcoresync_moor/netcoresync_moor.dart';
 import 'package:moor/moor.dart';
 import 'package:uuid/uuid.dart';
 import 'employees.dart';
 import 'departments.dart';
-import 'knowledges.dart';
-import 'timestamps.dart';
 import 'configurations.dart';
 import 'users.dart';
 
@@ -16,10 +13,9 @@ part 'database.g.dart';
 @UseMoor(tables: [
   Employees,
   Departments,
-  Knowledges,
-  TimeStamps,
   Configurations,
   Users,
+  NetCoreSyncKnowledges,
 ])
 class Database extends _$Database {
   Database(QueryExecutor queryExecutor) : super(queryExecutor);
@@ -34,14 +30,15 @@ class Database extends _$Database {
         beforeOpen: (openingDetails) async {
           await this.customStatement("PRAGMA foreign_keys = ON");
         },
+        onCreate: (Migrator m) {
+          return m.createAll();
+        },
       );
 
   static const String _configuration_key_synchronizationId =
       "SYNCHRONIZATIONID";
 
   void testConcepts() async {
-    netcoresync_doTests(initializeReflectable, User());
-
     User user = User();
     await into(users).insert(user);
     List<User> datas = await select(users).get();
@@ -70,13 +67,15 @@ class Database extends _$Database {
     await delete(users).delete(datas2[0]);
     List<User> empty = await select(users).get();
     print(empty);
+
+    user = User();
+    user.fieldString = "FINDME!";
+    await into(users).insert(user);
   }
 
   Future<void> resetDatabase({bool includeConfiguration = false}) async {
     await delete(employees).go();
     await delete(departments).go();
-    await delete(knowledges).go();
-    await delete(timeStamps).go();
     if (includeConfiguration) {
       await delete(configurations).go();
     }

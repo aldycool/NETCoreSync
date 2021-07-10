@@ -18,6 +18,6 @@ To run the examples:
   flutter packages pub run build_runner clean
   flutter clean
   flutter pub get
-  flutter packages pub run build_runner build --delete-conflicting-outputs  
+  flutter packages pub run build_runner build --delete-conflicting-outputs
   ```
   NOTE: this example is using Moor, where `build_runner` is already a requirement in Moor. You should still add the `build_runner` package yourself even if you are not using Moor.

@@ -1,10 +1,20 @@
-# netcoresync_client_flutter
+# netcoresync_moor
 
-Dart / Flutter Client for NETCoreSync - a data synchronization library / server component implemented using .NET Core.
+Dart / Flutter Client (opinionated to Moor) for NETCoreSync (a data synchronization library / server component implemented using .NET Core).
 
 ## Usage Example
 
 Please check the NETCoreSync's example that uses Flutter [here](https://github.com/aldycool/NETCoreSync/tree/master/Samples/Flutter). The server-side uses .NET Core 5.0 + EntityFramework Core + PostgreSQL, while the client-side uses Flutter + Moor as its offline database. The Flutter project supports all platforms, including Android, iOS, Windows, MacOS, Linux, and Web. Read the documentation on how to deploy the clients. **NOTE: FLUTTER SYNC IS STILL IN WORKS!**
+
+## Notes
+
+- Generate builds:
+  ```sh
+  flutter packages pub run build_runner clean
+  flutter clean
+  flutter pub get
+  flutter packages pub run build_runner build --delete-conflicting-outputs
+  ```
 
 ## Dev Notes
 
@@ -20,5 +30,3 @@ Please check the NETCoreSync's example that uses Flutter [here](https://github.c
 - Avoid using too many package dependencies, in my experience, the more you use external dependencies, the higher the risk of something breaks in the future
 - We may have to continue without reflection, just use interfaces (and more work on the implementation to assign `lastUpdated`, etc.)
 - Also I'd like to stay with the current server-side .NET Core with no changes (if possible)
-
-

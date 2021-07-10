@@ -804,438 +804,6 @@ class $DepartmentsTable extends Departments
   }
 }
 
-class Knowledge extends DataClass implements Insertable<Knowledge> {
-  final String id;
-  final String? databaseInstanceId;
-  final bool isLocal;
-  final int maxTimeStamp;
-  Knowledge(
-      {required this.id,
-      this.databaseInstanceId,
-      required this.isLocal,
-      required this.maxTimeStamp});
-  factory Knowledge.fromData(Map<String, dynamic> data, GeneratedDatabase db,
-      {String? prefix}) {
-    final effectivePrefix = prefix ?? '';
-    return Knowledge(
-      id: const StringType()
-          .mapFromDatabaseResponse(data['${effectivePrefix}id'])!,
-      databaseInstanceId: const StringType().mapFromDatabaseResponse(
-          data['${effectivePrefix}database_instance_id']),
-      isLocal: const BoolType()
-          .mapFromDatabaseResponse(data['${effectivePrefix}is_local'])!,
-      maxTimeStamp: const IntType()
-          .mapFromDatabaseResponse(data['${effectivePrefix}max_time_stamp'])!,
-    );
-  }
-  @override
-  Map<String, Expression> toColumns(bool nullToAbsent) {
-    final map = <String, Expression>{};
-    map['id'] = Variable<String>(id);
-    if (!nullToAbsent || databaseInstanceId != null) {
-      map['database_instance_id'] = Variable<String?>(databaseInstanceId);
-    }
-    map['is_local'] = Variable<bool>(isLocal);
-    map['max_time_stamp'] = Variable<int>(maxTimeStamp);
-    return map;
-  }
-
-  KnowledgesCompanion toCompanion(bool nullToAbsent) {
-    return KnowledgesCompanion(
-      id: Value(id),
-      databaseInstanceId: databaseInstanceId == null && nullToAbsent
-          ? const Value.absent()
-          : Value(databaseInstanceId),
-      isLocal: Value(isLocal),
-      maxTimeStamp: Value(maxTimeStamp),
-    );
-  }
-
-  factory Knowledge.fromJson(Map<String, dynamic> json,
-      {ValueSerializer? serializer}) {
-    serializer ??= moorRuntimeOptions.defaultSerializer;
-    return Knowledge(
-      id: serializer.fromJson<String>(json['id']),
-      databaseInstanceId:
-          serializer.fromJson<String?>(json['databaseInstanceId']),
-      isLocal: serializer.fromJson<bool>(json['isLocal']),
-      maxTimeStamp: serializer.fromJson<int>(json['maxTimeStamp']),
-    );
-  }
-  @override
-  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
-    serializer ??= moorRuntimeOptions.defaultSerializer;
-    return <String, dynamic>{
-      'id': serializer.toJson<String>(id),
-      'databaseInstanceId': serializer.toJson<String?>(databaseInstanceId),
-      'isLocal': serializer.toJson<bool>(isLocal),
-      'maxTimeStamp': serializer.toJson<int>(maxTimeStamp),
-    };
-  }
-
-  Knowledge copyWith(
-          {String? id,
-          String? databaseInstanceId,
-          bool? isLocal,
-          int? maxTimeStamp}) =>
-      Knowledge(
-        id: id ?? this.id,
-        databaseInstanceId: databaseInstanceId ?? this.databaseInstanceId,
-        isLocal: isLocal ?? this.isLocal,
-        maxTimeStamp: maxTimeStamp ?? this.maxTimeStamp,
-      );
-  @override
-  String toString() {
-    return (StringBuffer('Knowledge(')
-          ..write('id: $id, ')
-          ..write('databaseInstanceId: $databaseInstanceId, ')
-          ..write('isLocal: $isLocal, ')
-          ..write('maxTimeStamp: $maxTimeStamp')
-          ..write(')'))
-        .toString();
-  }
-
-  @override
-  int get hashCode => $mrjf($mrjc(
-      id.hashCode,
-      $mrjc(databaseInstanceId.hashCode,
-          $mrjc(isLocal.hashCode, maxTimeStamp.hashCode))));
-  @override
-  bool operator ==(Object other) =>
-      identical(this, other) ||
-      (other is Knowledge &&
-          other.id == this.id &&
-          other.databaseInstanceId == this.databaseInstanceId &&
-          other.isLocal == this.isLocal &&
-          other.maxTimeStamp == this.maxTimeStamp);
-}
-
-class KnowledgesCompanion extends UpdateCompanion<Knowledge> {
-  final Value<String> id;
-  final Value<String?> databaseInstanceId;
-  final Value<bool> isLocal;
-  final Value<int> maxTimeStamp;
-  const KnowledgesCompanion({
-    this.id = const Value.absent(),
-    this.databaseInstanceId = const Value.absent(),
-    this.isLocal = const Value.absent(),
-    this.maxTimeStamp = const Value.absent(),
-  });
-  KnowledgesCompanion.insert({
-    this.id = const Value.absent(),
-    this.databaseInstanceId = const Value.absent(),
-    this.isLocal = const Value.absent(),
-    this.maxTimeStamp = const Value.absent(),
-  });
-  static Insertable<Knowledge> custom({
-    Expression<String>? id,
-    Expression<String?>? databaseInstanceId,
-    Expression<bool>? isLocal,
-    Expression<int>? maxTimeStamp,
-  }) {
-    return RawValuesInsertable({
-      if (id != null) 'id': id,
-      if (databaseInstanceId != null)
-        'database_instance_id': databaseInstanceId,
-      if (isLocal != null) 'is_local': isLocal,
-      if (maxTimeStamp != null) 'max_time_stamp': maxTimeStamp,
-    });
-  }
-
-  KnowledgesCompanion copyWith(
-      {Value<String>? id,
-      Value<String?>? databaseInstanceId,
-      Value<bool>? isLocal,
-      Value<int>? maxTimeStamp}) {
-    return KnowledgesCompanion(
-      id: id ?? this.id,
-      databaseInstanceId: databaseInstanceId ?? this.databaseInstanceId,
-      isLocal: isLocal ?? this.isLocal,
-      maxTimeStamp: maxTimeStamp ?? this.maxTimeStamp,
-    );
-  }
-
-  @override
-  Map<String, Expression> toColumns(bool nullToAbsent) {
-    final map = <String, Expression>{};
-    if (id.present) {
-      map['id'] = Variable<String>(id.value);
-    }
-    if (databaseInstanceId.present) {
-      map['database_instance_id'] = Variable<String?>(databaseInstanceId.value);
-    }
-    if (isLocal.present) {
-      map['is_local'] = Variable<bool>(isLocal.value);
-    }
-    if (maxTimeStamp.present) {
-      map['max_time_stamp'] = Variable<int>(maxTimeStamp.value);
-    }
-    return map;
-  }
-
-  @override
-  String toString() {
-    return (StringBuffer('KnowledgesCompanion(')
-          ..write('id: $id, ')
-          ..write('databaseInstanceId: $databaseInstanceId, ')
-          ..write('isLocal: $isLocal, ')
-          ..write('maxTimeStamp: $maxTimeStamp')
-          ..write(')'))
-        .toString();
-  }
-}
-
-class $KnowledgesTable extends Knowledges
-    with TableInfo<$KnowledgesTable, Knowledge> {
-  final GeneratedDatabase _db;
-  final String? _alias;
-  $KnowledgesTable(this._db, [this._alias]);
-  final VerificationMeta _idMeta = const VerificationMeta('id');
-  late final GeneratedColumn<String?> id = GeneratedColumn<String?>(
-      'id', aliasedName, false,
-      typeName: 'TEXT',
-      requiredDuringInsert: false,
-      clientDefault: () => Uuid().v4());
-  final VerificationMeta _databaseInstanceIdMeta =
-      const VerificationMeta('databaseInstanceId');
-  late final GeneratedColumn<String?> databaseInstanceId =
-      GeneratedColumn<String?>('database_instance_id', aliasedName, true,
-          additionalChecks: GeneratedColumn.checkTextLength(maxTextLength: 255),
-          typeName: 'TEXT',
-          requiredDuringInsert: false);
-  final VerificationMeta _isLocalMeta = const VerificationMeta('isLocal');
-  late final GeneratedColumn<bool?> isLocal = GeneratedColumn<bool?>(
-      'is_local', aliasedName, false,
-      typeName: 'INTEGER',
-      requiredDuringInsert: false,
-      defaultConstraints: 'CHECK (is_local IN (0, 1))',
-      defaultValue: const Constant(false));
-  final VerificationMeta _maxTimeStampMeta =
-      const VerificationMeta('maxTimeStamp');
-  late final GeneratedColumn<int?> maxTimeStamp = GeneratedColumn<int?>(
-      'max_time_stamp', aliasedName, false,
-      typeName: 'INTEGER',
-      requiredDuringInsert: false,
-      defaultValue: const Constant(0));
-  @override
-  List<GeneratedColumn> get $columns =>
-      [id, databaseInstanceId, isLocal, maxTimeStamp];
-  @override
-  String get aliasedName => _alias ?? 'knowledge';
-  @override
-  String get actualTableName => 'knowledge';
-  @override
-  VerificationContext validateIntegrity(Insertable<Knowledge> instance,
-      {bool isInserting = false}) {
-    final context = VerificationContext();
-    final data = instance.toColumns(true);
-    if (data.containsKey('id')) {
-      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
-    }
-    if (data.containsKey('database_instance_id')) {
-      context.handle(
-          _databaseInstanceIdMeta,
-          databaseInstanceId.isAcceptableOrUnknown(
-              data['database_instance_id']!, _databaseInstanceIdMeta));
-    }
-    if (data.containsKey('is_local')) {
-      context.handle(_isLocalMeta,
-          isLocal.isAcceptableOrUnknown(data['is_local']!, _isLocalMeta));
-    }
-    if (data.containsKey('max_time_stamp')) {
-      context.handle(
-          _maxTimeStampMeta,
-          maxTimeStamp.isAcceptableOrUnknown(
-              data['max_time_stamp']!, _maxTimeStampMeta));
-    }
-    return context;
-  }
-
-  @override
-  Set<GeneratedColumn> get $primaryKey => {id};
-  @override
-  Knowledge map(Map<String, dynamic> data, {String? tablePrefix}) {
-    return Knowledge.fromData(data, _db,
-        prefix: tablePrefix != null ? '$tablePrefix.' : null);
-  }
-
-  @override
-  $KnowledgesTable createAlias(String alias) {
-    return $KnowledgesTable(_db, alias);
-  }
-}
-
-class TimeStamp extends DataClass implements Insertable<TimeStamp> {
-  final String id;
-  final int counter;
-  TimeStamp({required this.id, required this.counter});
-  factory TimeStamp.fromData(Map<String, dynamic> data, GeneratedDatabase db,
-      {String? prefix}) {
-    final effectivePrefix = prefix ?? '';
-    return TimeStamp(
-      id: const StringType()
-          .mapFromDatabaseResponse(data['${effectivePrefix}id'])!,
-      counter: const IntType()
-          .mapFromDatabaseResponse(data['${effectivePrefix}counter'])!,
-    );
-  }
-  @override
-  Map<String, Expression> toColumns(bool nullToAbsent) {
-    final map = <String, Expression>{};
-    map['id'] = Variable<String>(id);
-    map['counter'] = Variable<int>(counter);
-    return map;
-  }
-
-  TimeStampsCompanion toCompanion(bool nullToAbsent) {
-    return TimeStampsCompanion(
-      id: Value(id),
-      counter: Value(counter),
-    );
-  }
-
-  factory TimeStamp.fromJson(Map<String, dynamic> json,
-      {ValueSerializer? serializer}) {
-    serializer ??= moorRuntimeOptions.defaultSerializer;
-    return TimeStamp(
-      id: serializer.fromJson<String>(json['id']),
-      counter: serializer.fromJson<int>(json['counter']),
-    );
-  }
-  @override
-  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
-    serializer ??= moorRuntimeOptions.defaultSerializer;
-    return <String, dynamic>{
-      'id': serializer.toJson<String>(id),
-      'counter': serializer.toJson<int>(counter),
-    };
-  }
-
-  TimeStamp copyWith({String? id, int? counter}) => TimeStamp(
-        id: id ?? this.id,
-        counter: counter ?? this.counter,
-      );
-  @override
-  String toString() {
-    return (StringBuffer('TimeStamp(')
-          ..write('id: $id, ')
-          ..write('counter: $counter')
-          ..write(')'))
-        .toString();
-  }
-
-  @override
-  int get hashCode => $mrjf($mrjc(id.hashCode, counter.hashCode));
-  @override
-  bool operator ==(Object other) =>
-      identical(this, other) ||
-      (other is TimeStamp &&
-          other.id == this.id &&
-          other.counter == this.counter);
-}
-
-class TimeStampsCompanion extends UpdateCompanion<TimeStamp> {
-  final Value<String> id;
-  final Value<int> counter;
-  const TimeStampsCompanion({
-    this.id = const Value.absent(),
-    this.counter = const Value.absent(),
-  });
-  TimeStampsCompanion.insert({
-    this.id = const Value.absent(),
-    this.counter = const Value.absent(),
-  });
-  static Insertable<TimeStamp> custom({
-    Expression<String>? id,
-    Expression<int>? counter,
-  }) {
-    return RawValuesInsertable({
-      if (id != null) 'id': id,
-      if (counter != null) 'counter': counter,
-    });
-  }
-
-  TimeStampsCompanion copyWith({Value<String>? id, Value<int>? counter}) {
-    return TimeStampsCompanion(
-      id: id ?? this.id,
-      counter: counter ?? this.counter,
-    );
-  }
-
-  @override
-  Map<String, Expression> toColumns(bool nullToAbsent) {
-    final map = <String, Expression>{};
-    if (id.present) {
-      map['id'] = Variable<String>(id.value);
-    }
-    if (counter.present) {
-      map['counter'] = Variable<int>(counter.value);
-    }
-    return map;
-  }
-
-  @override
-  String toString() {
-    return (StringBuffer('TimeStampsCompanion(')
-          ..write('id: $id, ')
-          ..write('counter: $counter')
-          ..write(')'))
-        .toString();
-  }
-}
-
-class $TimeStampsTable extends TimeStamps
-    with TableInfo<$TimeStampsTable, TimeStamp> {
-  final GeneratedDatabase _db;
-  final String? _alias;
-  $TimeStampsTable(this._db, [this._alias]);
-  final VerificationMeta _idMeta = const VerificationMeta('id');
-  late final GeneratedColumn<String?> id = GeneratedColumn<String?>(
-      'id', aliasedName, false,
-      typeName: 'TEXT',
-      requiredDuringInsert: false,
-      clientDefault: () => Uuid().v4());
-  final VerificationMeta _counterMeta = const VerificationMeta('counter');
-  late final GeneratedColumn<int?> counter = GeneratedColumn<int?>(
-      'counter', aliasedName, false,
-      typeName: 'INTEGER',
-      requiredDuringInsert: false,
-      defaultValue: const Constant(0));
-  @override
-  List<GeneratedColumn> get $columns => [id, counter];
-  @override
-  String get aliasedName => _alias ?? 'timestamp';
-  @override
-  String get actualTableName => 'timestamp';
-  @override
-  VerificationContext validateIntegrity(Insertable<TimeStamp> instance,
-      {bool isInserting = false}) {
-    final context = VerificationContext();
-    final data = instance.toColumns(true);
-    if (data.containsKey('id')) {
-      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
-    }
-    if (data.containsKey('counter')) {
-      context.handle(_counterMeta,
-          counter.isAcceptableOrUnknown(data['counter']!, _counterMeta));
-    }
-    return context;
-  }
-
-  @override
-  Set<GeneratedColumn> get $primaryKey => {id};
-  @override
-  TimeStamp map(Map<String, dynamic> data, {String? tablePrefix}) {
-    return TimeStamp.fromData(data, _db,
-        prefix: tablePrefix != null ? '$tablePrefix.' : null);
-  }
-
-  @override
-  $TimeStampsTable createAlias(String alias) {
-    return $TimeStampsTable(_db, alias);
-  }
-}
-
 class Configuration extends DataClass implements Insertable<Configuration> {
   final String id;
   final String key;
@@ -1841,17 +1409,225 @@ class $UsersTable extends Users with TableInfo<$UsersTable, User> {
   }
 }
 
+class Knowledge extends DataClass implements Insertable<Knowledge> {
+  final String id;
+  final bool local;
+  final int maxTimeStamp;
+  Knowledge(
+      {required this.id, required this.local, required this.maxTimeStamp});
+  factory Knowledge.fromData(Map<String, dynamic> data, GeneratedDatabase db,
+      {String? prefix}) {
+    final effectivePrefix = prefix ?? '';
+    return Knowledge(
+      id: const StringType()
+          .mapFromDatabaseResponse(data['${effectivePrefix}id'])!,
+      local: const BoolType()
+          .mapFromDatabaseResponse(data['${effectivePrefix}local'])!,
+      maxTimeStamp: const IntType()
+          .mapFromDatabaseResponse(data['${effectivePrefix}max_time_stamp'])!,
+    );
+  }
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['local'] = Variable<bool>(local);
+    map['max_time_stamp'] = Variable<int>(maxTimeStamp);
+    return map;
+  }
+
+  NetCoreSyncKnowledgesCompanion toCompanion(bool nullToAbsent) {
+    return NetCoreSyncKnowledgesCompanion(
+      id: Value(id),
+      local: Value(local),
+      maxTimeStamp: Value(maxTimeStamp),
+    );
+  }
+
+  factory Knowledge.fromJson(Map<String, dynamic> json,
+      {ValueSerializer? serializer}) {
+    serializer ??= moorRuntimeOptions.defaultSerializer;
+    return Knowledge(
+      id: serializer.fromJson<String>(json['id']),
+      local: serializer.fromJson<bool>(json['local']),
+      maxTimeStamp: serializer.fromJson<int>(json['maxTimeStamp']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= moorRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'local': serializer.toJson<bool>(local),
+      'maxTimeStamp': serializer.toJson<int>(maxTimeStamp),
+    };
+  }
+
+  Knowledge copyWith({String? id, bool? local, int? maxTimeStamp}) => Knowledge(
+        id: id ?? this.id,
+        local: local ?? this.local,
+        maxTimeStamp: maxTimeStamp ?? this.maxTimeStamp,
+      );
+  @override
+  String toString() {
+    return (StringBuffer('Knowledge(')
+          ..write('id: $id, ')
+          ..write('local: $local, ')
+          ..write('maxTimeStamp: $maxTimeStamp')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode =>
+      $mrjf($mrjc(id.hashCode, $mrjc(local.hashCode, maxTimeStamp.hashCode)));
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is Knowledge &&
+          other.id == this.id &&
+          other.local == this.local &&
+          other.maxTimeStamp == this.maxTimeStamp);
+}
+
+class NetCoreSyncKnowledgesCompanion extends UpdateCompanion<Knowledge> {
+  final Value<String> id;
+  final Value<bool> local;
+  final Value<int> maxTimeStamp;
+  const NetCoreSyncKnowledgesCompanion({
+    this.id = const Value.absent(),
+    this.local = const Value.absent(),
+    this.maxTimeStamp = const Value.absent(),
+  });
+  NetCoreSyncKnowledgesCompanion.insert({
+    this.id = const Value.absent(),
+    this.local = const Value.absent(),
+    this.maxTimeStamp = const Value.absent(),
+  });
+  static Insertable<Knowledge> custom({
+    Expression<String>? id,
+    Expression<bool>? local,
+    Expression<int>? maxTimeStamp,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (local != null) 'local': local,
+      if (maxTimeStamp != null) 'max_time_stamp': maxTimeStamp,
+    });
+  }
+
+  NetCoreSyncKnowledgesCompanion copyWith(
+      {Value<String>? id, Value<bool>? local, Value<int>? maxTimeStamp}) {
+    return NetCoreSyncKnowledgesCompanion(
+      id: id ?? this.id,
+      local: local ?? this.local,
+      maxTimeStamp: maxTimeStamp ?? this.maxTimeStamp,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (local.present) {
+      map['local'] = Variable<bool>(local.value);
+    }
+    if (maxTimeStamp.present) {
+      map['max_time_stamp'] = Variable<int>(maxTimeStamp.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('NetCoreSyncKnowledgesCompanion(')
+          ..write('id: $id, ')
+          ..write('local: $local, ')
+          ..write('maxTimeStamp: $maxTimeStamp')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $NetCoreSyncKnowledgesTable extends NetCoreSyncKnowledges
+    with TableInfo<$NetCoreSyncKnowledgesTable, Knowledge> {
+  final GeneratedDatabase _db;
+  final String? _alias;
+  $NetCoreSyncKnowledgesTable(this._db, [this._alias]);
+  final VerificationMeta _idMeta = const VerificationMeta('id');
+  late final GeneratedColumn<String?> id = GeneratedColumn<String?>(
+      'id', aliasedName, false,
+      typeName: 'TEXT',
+      requiredDuringInsert: false,
+      clientDefault: () => Uuid().v4());
+  final VerificationMeta _localMeta = const VerificationMeta('local');
+  late final GeneratedColumn<bool?> local = GeneratedColumn<bool?>(
+      'local', aliasedName, false,
+      typeName: 'INTEGER',
+      requiredDuringInsert: false,
+      defaultConstraints: 'CHECK (local IN (0, 1))',
+      defaultValue: const Constant(false));
+  final VerificationMeta _maxTimeStampMeta =
+      const VerificationMeta('maxTimeStamp');
+  late final GeneratedColumn<int?> maxTimeStamp = GeneratedColumn<int?>(
+      'max_time_stamp', aliasedName, false,
+      typeName: 'INTEGER',
+      requiredDuringInsert: false,
+      defaultValue: const Constant(0));
+  @override
+  List<GeneratedColumn> get $columns => [id, local, maxTimeStamp];
+  @override
+  String get aliasedName => _alias ?? 'netcoresync_knowledges';
+  @override
+  String get actualTableName => 'netcoresync_knowledges';
+  @override
+  VerificationContext validateIntegrity(Insertable<Knowledge> instance,
+      {bool isInserting = false}) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('local')) {
+      context.handle(
+          _localMeta, local.isAcceptableOrUnknown(data['local']!, _localMeta));
+    }
+    if (data.containsKey('max_time_stamp')) {
+      context.handle(
+          _maxTimeStampMeta,
+          maxTimeStamp.isAcceptableOrUnknown(
+              data['max_time_stamp']!, _maxTimeStampMeta));
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  Knowledge map(Map<String, dynamic> data, {String? tablePrefix}) {
+    return Knowledge.fromData(data, _db,
+        prefix: tablePrefix != null ? '$tablePrefix.' : null);
+  }
+
+  @override
+  $NetCoreSyncKnowledgesTable createAlias(String alias) {
+    return $NetCoreSyncKnowledgesTable(_db, alias);
+  }
+}
+
 abstract class _$Database extends GeneratedDatabase {
   _$Database(QueryExecutor e) : super(SqlTypeSystem.defaultInstance, e);
   late final $EmployeesTable employees = $EmployeesTable(this);
   late final $DepartmentsTable departments = $DepartmentsTable(this);
-  late final $KnowledgesTable knowledges = $KnowledgesTable(this);
-  late final $TimeStampsTable timeStamps = $TimeStampsTable(this);
   late final $ConfigurationsTable configurations = $ConfigurationsTable(this);
   late final $UsersTable users = $UsersTable(this);
+  late final $NetCoreSyncKnowledgesTable netCoreSyncKnowledges =
+      $NetCoreSyncKnowledgesTable(this);
   @override
   Iterable<TableInfo> get allTables => allSchemaEntities.whereType<TableInfo>();
   @override
   List<DatabaseSchemaEntity> get allSchemaEntities =>
-      [employees, departments, knowledges, timeStamps, configurations, users];
+      [employees, departments, configurations, users, netCoreSyncKnowledges];
 }
