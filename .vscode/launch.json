@@ -29,6 +29,17 @@
             "cwd": "${workspaceFolder}/Samples/Flutter/client_app",
             "request": "launch",
             "type": "dart",
+        },
+        {
+            "name": "NetCoreSyncMoorGeneratorDebug",
+            "cwd": "${workspaceFolder}/Samples/Flutter/client_app",
+            "request": "launch",
+            "type": "dart",
+            "program": ".dart_tool/build/entrypoint/build.dart",
+            "args": [
+                "build",
+                "--delete-conflicting-outputs"
+            ]
         }
     ]
 }

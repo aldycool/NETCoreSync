@@ -41,7 +41,9 @@ dev_dependencies:
   flutter_test:
     sdk: flutter
   moor_generator: ^4.3.2 # https://pub.dev/packages/moor_generator
-  build_runner: ^2.0.5 # https://pub.dev/packages/build_runner
+  build_runner: ^2.0.6 # https://pub.dev/packages/build_runner
+  netcoresync_moor_generator:
+    path: ../../../netcoresync_moor_generator
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec

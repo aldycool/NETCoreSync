@@ -1,7 +1,9 @@
 import 'package:client_app/src/data/database.dart';
 import 'package:moor/moor.dart';
 import 'package:uuid/uuid.dart';
+import 'package:netcoresync_moor/netcoresync_moor.dart';
 
+@NetCoreSyncTable(mapToClassName: "SyncUser")
 // NOTE: replace @DataClassName with below to use standard class
 @UseRowClass(User, constructor: "fromDb")
 // @DataClassName("User")
@@ -25,11 +27,11 @@ class Users extends Table {
 
   DateTimeColumn get fieldDateTimeNullable => dateTime().nullable()();
 
-  IntColumn get lastUpdated => integer()();
+  IntColumn get timeStamp => integer()();
 
   BoolColumn get deleted => boolean()();
 
-  TextColumn get databaseInstanceId => text().withLength(max: 36).nullable()();
+  TextColumn get knowledgeId => text().withLength(max: 36).nullable()();
 
   @override
   Set<Column> get primaryKey => {id};
@@ -51,9 +53,9 @@ class User implements Insertable<User> {
   DateTime fieldDateTime = DateTime(0);
   DateTime? fieldDateTimeNullable;
 
-  int lastUpdated = 0;
+  int timeStamp = 0;
   bool deleted = false;
-  String? databaseInstanceId;
+  String? knowledgeId;
 
   User();
 
@@ -67,9 +69,9 @@ class User implements Insertable<User> {
     required this.fieldBooleanNullable,
     required this.fieldDateTime,
     required this.fieldDateTimeNullable,
-    required this.lastUpdated,
+    required this.timeStamp,
     required this.deleted,
-    required this.databaseInstanceId,
+    required this.knowledgeId,
   });
 
   @override
@@ -84,9 +86,9 @@ class User implements Insertable<User> {
       fieldBooleanNullable: Value(fieldBooleanNullable),
       fieldDateTime: Value(fieldDateTime),
       fieldDateTimeNullable: Value(fieldDateTimeNullable),
-      lastUpdated: Value(lastUpdated),
+      timeStamp: Value(timeStamp),
       deleted: Value(deleted),
-      databaseInstanceId: Value(databaseInstanceId),
+      knowledgeId: Value(knowledgeId),
     ).toColumns(nullToAbsent);
   }
 }

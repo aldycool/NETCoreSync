@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:netcoresync_moor/netcoresync_moor.dart';
 import 'src/data/database.dart';
 import 'src/global.dart';
 import 'src/ui/home_page.dart';
@@ -7,12 +6,9 @@ import 'src/ui/home_page.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await openSqlite();
-  Database database = await constructDatabase();
+  Database database = await constructDatabase(logStatements: true);
+  await database.netCoreSync_initialize();
   Global.instance.setDatabase(database);
-  NetCoreSyncClient netCoreSyncClient = await NetCoreSyncClient.initialize(
-    generatedDatabase: database,
-  );
-  Global.instance.setNetCoreSyncClient(netCoreSyncClient);
   database.testConcepts();
   runApp(MyApp());
 }

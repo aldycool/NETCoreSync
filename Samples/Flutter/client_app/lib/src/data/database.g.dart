@@ -15,9 +15,9 @@ class Employee extends DataClass implements Insertable<Employee> {
   final int savingAmount;
   final bool isActive;
   final String? departmentId;
-  final int lastUpdated;
+  final int timeStamp;
   final bool deleted;
-  final String? databaseInstanceId;
+  final String? knowledgeId;
   Employee(
       {required this.id,
       this.name,
@@ -26,9 +26,9 @@ class Employee extends DataClass implements Insertable<Employee> {
       required this.savingAmount,
       required this.isActive,
       this.departmentId,
-      required this.lastUpdated,
+      required this.timeStamp,
       required this.deleted,
-      this.databaseInstanceId});
+      this.knowledgeId});
   factory Employee.fromData(Map<String, dynamic> data, GeneratedDatabase db,
       {String? prefix}) {
     final effectivePrefix = prefix ?? '';
@@ -47,12 +47,12 @@ class Employee extends DataClass implements Insertable<Employee> {
           .mapFromDatabaseResponse(data['${effectivePrefix}is_active'])!,
       departmentId: const StringType()
           .mapFromDatabaseResponse(data['${effectivePrefix}department_id']),
-      lastUpdated: const IntType()
-          .mapFromDatabaseResponse(data['${effectivePrefix}last_updated'])!,
+      timeStamp: const IntType()
+          .mapFromDatabaseResponse(data['${effectivePrefix}time_stamp'])!,
       deleted: const BoolType()
           .mapFromDatabaseResponse(data['${effectivePrefix}deleted'])!,
-      databaseInstanceId: const StringType().mapFromDatabaseResponse(
-          data['${effectivePrefix}database_instance_id']),
+      knowledgeId: const StringType()
+          .mapFromDatabaseResponse(data['${effectivePrefix}knowledge_id']),
     );
   }
   @override
@@ -69,10 +69,10 @@ class Employee extends DataClass implements Insertable<Employee> {
     if (!nullToAbsent || departmentId != null) {
       map['department_id'] = Variable<String?>(departmentId);
     }
-    map['last_updated'] = Variable<int>(lastUpdated);
+    map['time_stamp'] = Variable<int>(timeStamp);
     map['deleted'] = Variable<bool>(deleted);
-    if (!nullToAbsent || databaseInstanceId != null) {
-      map['database_instance_id'] = Variable<String?>(databaseInstanceId);
+    if (!nullToAbsent || knowledgeId != null) {
+      map['knowledge_id'] = Variable<String?>(knowledgeId);
     }
     return map;
   }
@@ -88,11 +88,11 @@ class Employee extends DataClass implements Insertable<Employee> {
       departmentId: departmentId == null && nullToAbsent
           ? const Value.absent()
           : Value(departmentId),
-      lastUpdated: Value(lastUpdated),
+      timeStamp: Value(timeStamp),
       deleted: Value(deleted),
-      databaseInstanceId: databaseInstanceId == null && nullToAbsent
+      knowledgeId: knowledgeId == null && nullToAbsent
           ? const Value.absent()
-          : Value(databaseInstanceId),
+          : Value(knowledgeId),
     );
   }
 
@@ -107,10 +107,9 @@ class Employee extends DataClass implements Insertable<Employee> {
       savingAmount: serializer.fromJson<int>(json['savingAmount']),
       isActive: serializer.fromJson<bool>(json['isActive']),
       departmentId: serializer.fromJson<String?>(json['departmentId']),
-      lastUpdated: serializer.fromJson<int>(json['lastUpdated']),
+      timeStamp: serializer.fromJson<int>(json['timeStamp']),
       deleted: serializer.fromJson<bool>(json['deleted']),
-      databaseInstanceId:
-          serializer.fromJson<String?>(json['databaseInstanceId']),
+      knowledgeId: serializer.fromJson<String?>(json['knowledgeId']),
     );
   }
   @override
@@ -124,9 +123,9 @@ class Employee extends DataClass implements Insertable<Employee> {
       'savingAmount': serializer.toJson<int>(savingAmount),
       'isActive': serializer.toJson<bool>(isActive),
       'departmentId': serializer.toJson<String?>(departmentId),
-      'lastUpdated': serializer.toJson<int>(lastUpdated),
+      'timeStamp': serializer.toJson<int>(timeStamp),
       'deleted': serializer.toJson<bool>(deleted),
-      'databaseInstanceId': serializer.toJson<String?>(databaseInstanceId),
+      'knowledgeId': serializer.toJson<String?>(knowledgeId),
     };
   }
 
@@ -138,9 +137,9 @@ class Employee extends DataClass implements Insertable<Employee> {
           int? savingAmount,
           bool? isActive,
           String? departmentId,
-          int? lastUpdated,
+          int? timeStamp,
           bool? deleted,
-          String? databaseInstanceId}) =>
+          String? knowledgeId}) =>
       Employee(
         id: id ?? this.id,
         name: name ?? this.name,
@@ -149,9 +148,9 @@ class Employee extends DataClass implements Insertable<Employee> {
         savingAmount: savingAmount ?? this.savingAmount,
         isActive: isActive ?? this.isActive,
         departmentId: departmentId ?? this.departmentId,
-        lastUpdated: lastUpdated ?? this.lastUpdated,
+        timeStamp: timeStamp ?? this.timeStamp,
         deleted: deleted ?? this.deleted,
-        databaseInstanceId: databaseInstanceId ?? this.databaseInstanceId,
+        knowledgeId: knowledgeId ?? this.knowledgeId,
       );
   @override
   String toString() {
@@ -163,9 +162,9 @@ class Employee extends DataClass implements Insertable<Employee> {
           ..write('savingAmount: $savingAmount, ')
           ..write('isActive: $isActive, ')
           ..write('departmentId: $departmentId, ')
-          ..write('lastUpdated: $lastUpdated, ')
+          ..write('timeStamp: $timeStamp, ')
           ..write('deleted: $deleted, ')
-          ..write('databaseInstanceId: $databaseInstanceId')
+          ..write('knowledgeId: $knowledgeId')
           ..write(')'))
         .toString();
   }
@@ -186,9 +185,9 @@ class Employee extends DataClass implements Insertable<Employee> {
                           $mrjc(
                               departmentId.hashCode,
                               $mrjc(
-                                  lastUpdated.hashCode,
+                                  timeStamp.hashCode,
                                   $mrjc(deleted.hashCode,
-                                      databaseInstanceId.hashCode))))))))));
+                                      knowledgeId.hashCode))))))))));
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -200,9 +199,9 @@ class Employee extends DataClass implements Insertable<Employee> {
           other.savingAmount == this.savingAmount &&
           other.isActive == this.isActive &&
           other.departmentId == this.departmentId &&
-          other.lastUpdated == this.lastUpdated &&
+          other.timeStamp == this.timeStamp &&
           other.deleted == this.deleted &&
-          other.databaseInstanceId == this.databaseInstanceId);
+          other.knowledgeId == this.knowledgeId);
 }
 
 class EmployeesCompanion extends UpdateCompanion<Employee> {
@@ -213,9 +212,9 @@ class EmployeesCompanion extends UpdateCompanion<Employee> {
   final Value<int> savingAmount;
   final Value<bool> isActive;
   final Value<String?> departmentId;
-  final Value<int> lastUpdated;
+  final Value<int> timeStamp;
   final Value<bool> deleted;
-  final Value<String?> databaseInstanceId;
+  final Value<String?> knowledgeId;
   const EmployeesCompanion({
     this.id = const Value.absent(),
     this.name = const Value.absent(),
@@ -224,9 +223,9 @@ class EmployeesCompanion extends UpdateCompanion<Employee> {
     this.savingAmount = const Value.absent(),
     this.isActive = const Value.absent(),
     this.departmentId = const Value.absent(),
-    this.lastUpdated = const Value.absent(),
+    this.timeStamp = const Value.absent(),
     this.deleted = const Value.absent(),
-    this.databaseInstanceId = const Value.absent(),
+    this.knowledgeId = const Value.absent(),
   });
   EmployeesCompanion.insert({
     this.id = const Value.absent(),
@@ -236,9 +235,9 @@ class EmployeesCompanion extends UpdateCompanion<Employee> {
     this.savingAmount = const Value.absent(),
     this.isActive = const Value.absent(),
     this.departmentId = const Value.absent(),
-    this.lastUpdated = const Value.absent(),
+    this.timeStamp = const Value.absent(),
     this.deleted = const Value.absent(),
-    this.databaseInstanceId = const Value.absent(),
+    this.knowledgeId = const Value.absent(),
   });
   static Insertable<Employee> custom({
     Expression<String>? id,
@@ -248,9 +247,9 @@ class EmployeesCompanion extends UpdateCompanion<Employee> {
     Expression<int>? savingAmount,
     Expression<bool>? isActive,
     Expression<String?>? departmentId,
-    Expression<int>? lastUpdated,
+    Expression<int>? timeStamp,
     Expression<bool>? deleted,
-    Expression<String?>? databaseInstanceId,
+    Expression<String?>? knowledgeId,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
@@ -260,10 +259,9 @@ class EmployeesCompanion extends UpdateCompanion<Employee> {
       if (savingAmount != null) 'saving_amount': savingAmount,
       if (isActive != null) 'is_active': isActive,
       if (departmentId != null) 'department_id': departmentId,
-      if (lastUpdated != null) 'last_updated': lastUpdated,
+      if (timeStamp != null) 'time_stamp': timeStamp,
       if (deleted != null) 'deleted': deleted,
-      if (databaseInstanceId != null)
-        'database_instance_id': databaseInstanceId,
+      if (knowledgeId != null) 'knowledge_id': knowledgeId,
     });
   }
 
@@ -275,9 +273,9 @@ class EmployeesCompanion extends UpdateCompanion<Employee> {
       Value<int>? savingAmount,
       Value<bool>? isActive,
       Value<String?>? departmentId,
-      Value<int>? lastUpdated,
+      Value<int>? timeStamp,
       Value<bool>? deleted,
-      Value<String?>? databaseInstanceId}) {
+      Value<String?>? knowledgeId}) {
     return EmployeesCompanion(
       id: id ?? this.id,
       name: name ?? this.name,
@@ -286,9 +284,9 @@ class EmployeesCompanion extends UpdateCompanion<Employee> {
       savingAmount: savingAmount ?? this.savingAmount,
       isActive: isActive ?? this.isActive,
       departmentId: departmentId ?? this.departmentId,
-      lastUpdated: lastUpdated ?? this.lastUpdated,
+      timeStamp: timeStamp ?? this.timeStamp,
       deleted: deleted ?? this.deleted,
-      databaseInstanceId: databaseInstanceId ?? this.databaseInstanceId,
+      knowledgeId: knowledgeId ?? this.knowledgeId,
     );
   }
 
@@ -316,14 +314,14 @@ class EmployeesCompanion extends UpdateCompanion<Employee> {
     if (departmentId.present) {
       map['department_id'] = Variable<String?>(departmentId.value);
     }
-    if (lastUpdated.present) {
-      map['last_updated'] = Variable<int>(lastUpdated.value);
+    if (timeStamp.present) {
+      map['time_stamp'] = Variable<int>(timeStamp.value);
     }
     if (deleted.present) {
       map['deleted'] = Variable<bool>(deleted.value);
     }
-    if (databaseInstanceId.present) {
-      map['database_instance_id'] = Variable<String?>(databaseInstanceId.value);
+    if (knowledgeId.present) {
+      map['knowledge_id'] = Variable<String?>(knowledgeId.value);
     }
     return map;
   }
@@ -338,9 +336,9 @@ class EmployeesCompanion extends UpdateCompanion<Employee> {
           ..write('savingAmount: $savingAmount, ')
           ..write('isActive: $isActive, ')
           ..write('departmentId: $departmentId, ')
-          ..write('lastUpdated: $lastUpdated, ')
+          ..write('timeStamp: $timeStamp, ')
           ..write('deleted: $deleted, ')
-          ..write('databaseInstanceId: $databaseInstanceId')
+          ..write('knowledgeId: $knowledgeId')
           ..write(')'))
         .toString();
   }
@@ -397,10 +395,9 @@ class $EmployeesTable extends Employees
       typeName: 'TEXT',
       requiredDuringInsert: false,
       $customConstraints: 'NULLABLE REFERENCES department(id)');
-  final VerificationMeta _lastUpdatedMeta =
-      const VerificationMeta('lastUpdated');
-  late final GeneratedColumn<int?> lastUpdated = GeneratedColumn<int?>(
-      'last_updated', aliasedName, false,
+  final VerificationMeta _timeStampMeta = const VerificationMeta('timeStamp');
+  late final GeneratedColumn<int?> timeStamp = GeneratedColumn<int?>(
+      'time_stamp', aliasedName, false,
       typeName: 'INTEGER',
       requiredDuringInsert: false,
       defaultValue: const Constant(0));
@@ -411,13 +408,13 @@ class $EmployeesTable extends Employees
       requiredDuringInsert: false,
       defaultConstraints: 'CHECK (deleted IN (0, 1))',
       defaultValue: const Constant(false));
-  final VerificationMeta _databaseInstanceIdMeta =
-      const VerificationMeta('databaseInstanceId');
-  late final GeneratedColumn<String?> databaseInstanceId =
-      GeneratedColumn<String?>('database_instance_id', aliasedName, true,
-          additionalChecks: GeneratedColumn.checkTextLength(maxTextLength: 255),
-          typeName: 'TEXT',
-          requiredDuringInsert: false);
+  final VerificationMeta _knowledgeIdMeta =
+      const VerificationMeta('knowledgeId');
+  late final GeneratedColumn<String?> knowledgeId = GeneratedColumn<String?>(
+      'knowledge_id', aliasedName, true,
+      additionalChecks: GeneratedColumn.checkTextLength(maxTextLength: 255),
+      typeName: 'TEXT',
+      requiredDuringInsert: false);
   @override
   List<GeneratedColumn> get $columns => [
         id,
@@ -427,9 +424,9 @@ class $EmployeesTable extends Employees
         savingAmount,
         isActive,
         departmentId,
-        lastUpdated,
+        timeStamp,
         deleted,
-        databaseInstanceId
+        knowledgeId
       ];
   @override
   String get aliasedName => _alias ?? 'employee';
@@ -473,21 +470,19 @@ class $EmployeesTable extends Employees
           departmentId.isAcceptableOrUnknown(
               data['department_id']!, _departmentIdMeta));
     }
-    if (data.containsKey('last_updated')) {
-      context.handle(
-          _lastUpdatedMeta,
-          lastUpdated.isAcceptableOrUnknown(
-              data['last_updated']!, _lastUpdatedMeta));
+    if (data.containsKey('time_stamp')) {
+      context.handle(_timeStampMeta,
+          timeStamp.isAcceptableOrUnknown(data['time_stamp']!, _timeStampMeta));
     }
     if (data.containsKey('deleted')) {
       context.handle(_deletedMeta,
           deleted.isAcceptableOrUnknown(data['deleted']!, _deletedMeta));
     }
-    if (data.containsKey('database_instance_id')) {
+    if (data.containsKey('knowledge_id')) {
       context.handle(
-          _databaseInstanceIdMeta,
-          databaseInstanceId.isAcceptableOrUnknown(
-              data['database_instance_id']!, _databaseInstanceIdMeta));
+          _knowledgeIdMeta,
+          knowledgeId.isAcceptableOrUnknown(
+              data['knowledge_id']!, _knowledgeIdMeta));
     }
     return context;
   }
@@ -509,15 +504,15 @@ class $EmployeesTable extends Employees
 class Department extends DataClass implements Insertable<Department> {
   final String id;
   final String? name;
-  final int lastUpdated;
+  final int timeStamp;
   final bool deleted;
-  final String? databaseInstanceId;
+  final String? knowledgeId;
   Department(
       {required this.id,
       this.name,
-      required this.lastUpdated,
+      required this.timeStamp,
       required this.deleted,
-      this.databaseInstanceId});
+      this.knowledgeId});
   factory Department.fromData(Map<String, dynamic> data, GeneratedDatabase db,
       {String? prefix}) {
     final effectivePrefix = prefix ?? '';
@@ -526,12 +521,12 @@ class Department extends DataClass implements Insertable<Department> {
           .mapFromDatabaseResponse(data['${effectivePrefix}id'])!,
       name: const StringType()
           .mapFromDatabaseResponse(data['${effectivePrefix}name']),
-      lastUpdated: const IntType()
-          .mapFromDatabaseResponse(data['${effectivePrefix}last_updated'])!,
+      timeStamp: const IntType()
+          .mapFromDatabaseResponse(data['${effectivePrefix}time_stamp'])!,
       deleted: const BoolType()
           .mapFromDatabaseResponse(data['${effectivePrefix}deleted'])!,
-      databaseInstanceId: const StringType().mapFromDatabaseResponse(
-          data['${effectivePrefix}database_instance_id']),
+      knowledgeId: const StringType()
+          .mapFromDatabaseResponse(data['${effectivePrefix}knowledge_id']),
     );
   }
   @override
@@ -541,10 +536,10 @@ class Department extends DataClass implements Insertable<Department> {
     if (!nullToAbsent || name != null) {
       map['name'] = Variable<String?>(name);
     }
-    map['last_updated'] = Variable<int>(lastUpdated);
+    map['time_stamp'] = Variable<int>(timeStamp);
     map['deleted'] = Variable<bool>(deleted);
-    if (!nullToAbsent || databaseInstanceId != null) {
-      map['database_instance_id'] = Variable<String?>(databaseInstanceId);
+    if (!nullToAbsent || knowledgeId != null) {
+      map['knowledge_id'] = Variable<String?>(knowledgeId);
     }
     return map;
   }
@@ -553,11 +548,11 @@ class Department extends DataClass implements Insertable<Department> {
     return DepartmentsCompanion(
       id: Value(id),
       name: name == null && nullToAbsent ? const Value.absent() : Value(name),
-      lastUpdated: Value(lastUpdated),
+      timeStamp: Value(timeStamp),
       deleted: Value(deleted),
-      databaseInstanceId: databaseInstanceId == null && nullToAbsent
+      knowledgeId: knowledgeId == null && nullToAbsent
           ? const Value.absent()
-          : Value(databaseInstanceId),
+          : Value(knowledgeId),
     );
   }
 
@@ -567,10 +562,9 @@ class Department extends DataClass implements Insertable<Department> {
     return Department(
       id: serializer.fromJson<String>(json['id']),
       name: serializer.fromJson<String?>(json['name']),
-      lastUpdated: serializer.fromJson<int>(json['lastUpdated']),
+      timeStamp: serializer.fromJson<int>(json['timeStamp']),
       deleted: serializer.fromJson<bool>(json['deleted']),
-      databaseInstanceId:
-          serializer.fromJson<String?>(json['databaseInstanceId']),
+      knowledgeId: serializer.fromJson<String?>(json['knowledgeId']),
     );
   }
   @override
@@ -579,33 +573,33 @@ class Department extends DataClass implements Insertable<Department> {
     return <String, dynamic>{
       'id': serializer.toJson<String>(id),
       'name': serializer.toJson<String?>(name),
-      'lastUpdated': serializer.toJson<int>(lastUpdated),
+      'timeStamp': serializer.toJson<int>(timeStamp),
       'deleted': serializer.toJson<bool>(deleted),
-      'databaseInstanceId': serializer.toJson<String?>(databaseInstanceId),
+      'knowledgeId': serializer.toJson<String?>(knowledgeId),
     };
   }
 
   Department copyWith(
           {String? id,
           String? name,
-          int? lastUpdated,
+          int? timeStamp,
           bool? deleted,
-          String? databaseInstanceId}) =>
+          String? knowledgeId}) =>
       Department(
         id: id ?? this.id,
         name: name ?? this.name,
-        lastUpdated: lastUpdated ?? this.lastUpdated,
+        timeStamp: timeStamp ?? this.timeStamp,
         deleted: deleted ?? this.deleted,
-        databaseInstanceId: databaseInstanceId ?? this.databaseInstanceId,
+        knowledgeId: knowledgeId ?? this.knowledgeId,
       );
   @override
   String toString() {
     return (StringBuffer('Department(')
           ..write('id: $id, ')
           ..write('name: $name, ')
-          ..write('lastUpdated: $lastUpdated, ')
+          ..write('timeStamp: $timeStamp, ')
           ..write('deleted: $deleted, ')
-          ..write('databaseInstanceId: $databaseInstanceId')
+          ..write('knowledgeId: $knowledgeId')
           ..write(')'))
         .toString();
   }
@@ -615,68 +609,67 @@ class Department extends DataClass implements Insertable<Department> {
       id.hashCode,
       $mrjc(
           name.hashCode,
-          $mrjc(lastUpdated.hashCode,
-              $mrjc(deleted.hashCode, databaseInstanceId.hashCode)))));
+          $mrjc(timeStamp.hashCode,
+              $mrjc(deleted.hashCode, knowledgeId.hashCode)))));
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
       (other is Department &&
           other.id == this.id &&
           other.name == this.name &&
-          other.lastUpdated == this.lastUpdated &&
+          other.timeStamp == this.timeStamp &&
           other.deleted == this.deleted &&
-          other.databaseInstanceId == this.databaseInstanceId);
+          other.knowledgeId == this.knowledgeId);
 }
 
 class DepartmentsCompanion extends UpdateCompanion<Department> {
   final Value<String> id;
   final Value<String?> name;
-  final Value<int> lastUpdated;
+  final Value<int> timeStamp;
   final Value<bool> deleted;
-  final Value<String?> databaseInstanceId;
+  final Value<String?> knowledgeId;
   const DepartmentsCompanion({
     this.id = const Value.absent(),
     this.name = const Value.absent(),
-    this.lastUpdated = const Value.absent(),
+    this.timeStamp = const Value.absent(),
     this.deleted = const Value.absent(),
-    this.databaseInstanceId = const Value.absent(),
+    this.knowledgeId = const Value.absent(),
   });
   DepartmentsCompanion.insert({
     this.id = const Value.absent(),
     this.name = const Value.absent(),
-    this.lastUpdated = const Value.absent(),
+    this.timeStamp = const Value.absent(),
     this.deleted = const Value.absent(),
-    this.databaseInstanceId = const Value.absent(),
+    this.knowledgeId = const Value.absent(),
   });
   static Insertable<Department> custom({
     Expression<String>? id,
     Expression<String?>? name,
-    Expression<int>? lastUpdated,
+    Expression<int>? timeStamp,
     Expression<bool>? deleted,
-    Expression<String?>? databaseInstanceId,
+    Expression<String?>? knowledgeId,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
       if (name != null) 'name': name,
-      if (lastUpdated != null) 'last_updated': lastUpdated,
+      if (timeStamp != null) 'time_stamp': timeStamp,
       if (deleted != null) 'deleted': deleted,
-      if (databaseInstanceId != null)
-        'database_instance_id': databaseInstanceId,
+      if (knowledgeId != null) 'knowledge_id': knowledgeId,
     });
   }
 
   DepartmentsCompanion copyWith(
       {Value<String>? id,
       Value<String?>? name,
-      Value<int>? lastUpdated,
+      Value<int>? timeStamp,
       Value<bool>? deleted,
-      Value<String?>? databaseInstanceId}) {
+      Value<String?>? knowledgeId}) {
     return DepartmentsCompanion(
       id: id ?? this.id,
       name: name ?? this.name,
-      lastUpdated: lastUpdated ?? this.lastUpdated,
+      timeStamp: timeStamp ?? this.timeStamp,
       deleted: deleted ?? this.deleted,
-      databaseInstanceId: databaseInstanceId ?? this.databaseInstanceId,
+      knowledgeId: knowledgeId ?? this.knowledgeId,
     );
   }
 
@@ -689,14 +682,14 @@ class DepartmentsCompanion extends UpdateCompanion<Department> {
     if (name.present) {
       map['name'] = Variable<String?>(name.value);
     }
-    if (lastUpdated.present) {
-      map['last_updated'] = Variable<int>(lastUpdated.value);
+    if (timeStamp.present) {
+      map['time_stamp'] = Variable<int>(timeStamp.value);
     }
     if (deleted.present) {
       map['deleted'] = Variable<bool>(deleted.value);
     }
-    if (databaseInstanceId.present) {
-      map['database_instance_id'] = Variable<String?>(databaseInstanceId.value);
+    if (knowledgeId.present) {
+      map['knowledge_id'] = Variable<String?>(knowledgeId.value);
     }
     return map;
   }
@@ -706,9 +699,9 @@ class DepartmentsCompanion extends UpdateCompanion<Department> {
     return (StringBuffer('DepartmentsCompanion(')
           ..write('id: $id, ')
           ..write('name: $name, ')
-          ..write('lastUpdated: $lastUpdated, ')
+          ..write('timeStamp: $timeStamp, ')
           ..write('deleted: $deleted, ')
-          ..write('databaseInstanceId: $databaseInstanceId')
+          ..write('knowledgeId: $knowledgeId')
           ..write(')'))
         .toString();
   }
@@ -731,10 +724,9 @@ class $DepartmentsTable extends Departments
       additionalChecks: GeneratedColumn.checkTextLength(maxTextLength: 255),
       typeName: 'TEXT',
       requiredDuringInsert: false);
-  final VerificationMeta _lastUpdatedMeta =
-      const VerificationMeta('lastUpdated');
-  late final GeneratedColumn<int?> lastUpdated = GeneratedColumn<int?>(
-      'last_updated', aliasedName, false,
+  final VerificationMeta _timeStampMeta = const VerificationMeta('timeStamp');
+  late final GeneratedColumn<int?> timeStamp = GeneratedColumn<int?>(
+      'time_stamp', aliasedName, false,
       typeName: 'INTEGER',
       requiredDuringInsert: false,
       defaultValue: const Constant(0));
@@ -745,16 +737,16 @@ class $DepartmentsTable extends Departments
       requiredDuringInsert: false,
       defaultConstraints: 'CHECK (deleted IN (0, 1))',
       defaultValue: const Constant(false));
-  final VerificationMeta _databaseInstanceIdMeta =
-      const VerificationMeta('databaseInstanceId');
-  late final GeneratedColumn<String?> databaseInstanceId =
-      GeneratedColumn<String?>('database_instance_id', aliasedName, true,
-          additionalChecks: GeneratedColumn.checkTextLength(maxTextLength: 255),
-          typeName: 'TEXT',
-          requiredDuringInsert: false);
+  final VerificationMeta _knowledgeIdMeta =
+      const VerificationMeta('knowledgeId');
+  late final GeneratedColumn<String?> knowledgeId = GeneratedColumn<String?>(
+      'knowledge_id', aliasedName, true,
+      additionalChecks: GeneratedColumn.checkTextLength(maxTextLength: 255),
+      typeName: 'TEXT',
+      requiredDuringInsert: false);
   @override
   List<GeneratedColumn> get $columns =>
-      [id, name, lastUpdated, deleted, databaseInstanceId];
+      [id, name, timeStamp, deleted, knowledgeId];
   @override
   String get aliasedName => _alias ?? 'department';
   @override
@@ -771,21 +763,19 @@ class $DepartmentsTable extends Departments
       context.handle(
           _nameMeta, name.isAcceptableOrUnknown(data['name']!, _nameMeta));
     }
-    if (data.containsKey('last_updated')) {
-      context.handle(
-          _lastUpdatedMeta,
-          lastUpdated.isAcceptableOrUnknown(
-              data['last_updated']!, _lastUpdatedMeta));
+    if (data.containsKey('time_stamp')) {
+      context.handle(_timeStampMeta,
+          timeStamp.isAcceptableOrUnknown(data['time_stamp']!, _timeStampMeta));
     }
     if (data.containsKey('deleted')) {
       context.handle(_deletedMeta,
           deleted.isAcceptableOrUnknown(data['deleted']!, _deletedMeta));
     }
-    if (data.containsKey('database_instance_id')) {
+    if (data.containsKey('knowledge_id')) {
       context.handle(
-          _databaseInstanceIdMeta,
-          databaseInstanceId.isAcceptableOrUnknown(
-              data['database_instance_id']!, _databaseInstanceIdMeta));
+          _knowledgeIdMeta,
+          knowledgeId.isAcceptableOrUnknown(
+              data['knowledge_id']!, _knowledgeIdMeta));
     }
     return context;
   }
@@ -1023,9 +1013,9 @@ class UsersCompanion extends UpdateCompanion<User> {
   final Value<bool?> fieldBooleanNullable;
   final Value<DateTime> fieldDateTime;
   final Value<DateTime?> fieldDateTimeNullable;
-  final Value<int> lastUpdated;
+  final Value<int> timeStamp;
   final Value<bool> deleted;
-  final Value<String?> databaseInstanceId;
+  final Value<String?> knowledgeId;
   const UsersCompanion({
     this.id = const Value.absent(),
     this.fieldString = const Value.absent(),
@@ -1036,9 +1026,9 @@ class UsersCompanion extends UpdateCompanion<User> {
     this.fieldBooleanNullable = const Value.absent(),
     this.fieldDateTime = const Value.absent(),
     this.fieldDateTimeNullable = const Value.absent(),
-    this.lastUpdated = const Value.absent(),
+    this.timeStamp = const Value.absent(),
     this.deleted = const Value.absent(),
-    this.databaseInstanceId = const Value.absent(),
+    this.knowledgeId = const Value.absent(),
   });
   UsersCompanion.insert({
     required String id,
@@ -1050,15 +1040,15 @@ class UsersCompanion extends UpdateCompanion<User> {
     this.fieldBooleanNullable = const Value.absent(),
     required DateTime fieldDateTime,
     this.fieldDateTimeNullable = const Value.absent(),
-    required int lastUpdated,
+    required int timeStamp,
     required bool deleted,
-    this.databaseInstanceId = const Value.absent(),
+    this.knowledgeId = const Value.absent(),
   })  : id = Value(id),
         fieldString = Value(fieldString),
         fieldInt = Value(fieldInt),
         fieldBoolean = Value(fieldBoolean),
         fieldDateTime = Value(fieldDateTime),
-        lastUpdated = Value(lastUpdated),
+        timeStamp = Value(timeStamp),
         deleted = Value(deleted);
   static Insertable<User> custom({
     Expression<String>? id,
@@ -1070,9 +1060,9 @@ class UsersCompanion extends UpdateCompanion<User> {
     Expression<bool?>? fieldBooleanNullable,
     Expression<DateTime>? fieldDateTime,
     Expression<DateTime?>? fieldDateTimeNullable,
-    Expression<int>? lastUpdated,
+    Expression<int>? timeStamp,
     Expression<bool>? deleted,
-    Expression<String?>? databaseInstanceId,
+    Expression<String?>? knowledgeId,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
@@ -1087,10 +1077,9 @@ class UsersCompanion extends UpdateCompanion<User> {
       if (fieldDateTime != null) 'field_date_time': fieldDateTime,
       if (fieldDateTimeNullable != null)
         'field_date_time_nullable': fieldDateTimeNullable,
-      if (lastUpdated != null) 'last_updated': lastUpdated,
+      if (timeStamp != null) 'time_stamp': timeStamp,
       if (deleted != null) 'deleted': deleted,
-      if (databaseInstanceId != null)
-        'database_instance_id': databaseInstanceId,
+      if (knowledgeId != null) 'knowledge_id': knowledgeId,
     });
   }
 
@@ -1104,9 +1093,9 @@ class UsersCompanion extends UpdateCompanion<User> {
       Value<bool?>? fieldBooleanNullable,
       Value<DateTime>? fieldDateTime,
       Value<DateTime?>? fieldDateTimeNullable,
-      Value<int>? lastUpdated,
+      Value<int>? timeStamp,
       Value<bool>? deleted,
-      Value<String?>? databaseInstanceId}) {
+      Value<String?>? knowledgeId}) {
     return UsersCompanion(
       id: id ?? this.id,
       fieldString: fieldString ?? this.fieldString,
@@ -1118,9 +1107,9 @@ class UsersCompanion extends UpdateCompanion<User> {
       fieldDateTime: fieldDateTime ?? this.fieldDateTime,
       fieldDateTimeNullable:
           fieldDateTimeNullable ?? this.fieldDateTimeNullable,
-      lastUpdated: lastUpdated ?? this.lastUpdated,
+      timeStamp: timeStamp ?? this.timeStamp,
       deleted: deleted ?? this.deleted,
-      databaseInstanceId: databaseInstanceId ?? this.databaseInstanceId,
+      knowledgeId: knowledgeId ?? this.knowledgeId,
     );
   }
 
@@ -1157,14 +1146,14 @@ class UsersCompanion extends UpdateCompanion<User> {
       map['field_date_time_nullable'] =
           Variable<DateTime?>(fieldDateTimeNullable.value);
     }
-    if (lastUpdated.present) {
-      map['last_updated'] = Variable<int>(lastUpdated.value);
+    if (timeStamp.present) {
+      map['time_stamp'] = Variable<int>(timeStamp.value);
     }
     if (deleted.present) {
       map['deleted'] = Variable<bool>(deleted.value);
     }
-    if (databaseInstanceId.present) {
-      map['database_instance_id'] = Variable<String?>(databaseInstanceId.value);
+    if (knowledgeId.present) {
+      map['knowledge_id'] = Variable<String?>(knowledgeId.value);
     }
     return map;
   }
@@ -1181,9 +1170,9 @@ class UsersCompanion extends UpdateCompanion<User> {
           ..write('fieldBooleanNullable: $fieldBooleanNullable, ')
           ..write('fieldDateTime: $fieldDateTime, ')
           ..write('fieldDateTimeNullable: $fieldDateTimeNullable, ')
-          ..write('lastUpdated: $lastUpdated, ')
+          ..write('timeStamp: $timeStamp, ')
           ..write('deleted: $deleted, ')
-          ..write('databaseInstanceId: $databaseInstanceId')
+          ..write('knowledgeId: $knowledgeId')
           ..write(')'))
         .toString();
   }
@@ -1246,10 +1235,9 @@ class $UsersTable extends Users with TableInfo<$UsersTable, User> {
   late final GeneratedColumn<DateTime?> fieldDateTimeNullable =
       GeneratedColumn<DateTime?>('field_date_time_nullable', aliasedName, true,
           typeName: 'INTEGER', requiredDuringInsert: false);
-  final VerificationMeta _lastUpdatedMeta =
-      const VerificationMeta('lastUpdated');
-  late final GeneratedColumn<int?> lastUpdated = GeneratedColumn<int?>(
-      'last_updated', aliasedName, false,
+  final VerificationMeta _timeStampMeta = const VerificationMeta('timeStamp');
+  late final GeneratedColumn<int?> timeStamp = GeneratedColumn<int?>(
+      'time_stamp', aliasedName, false,
       typeName: 'INTEGER', requiredDuringInsert: true);
   final VerificationMeta _deletedMeta = const VerificationMeta('deleted');
   late final GeneratedColumn<bool?> deleted = GeneratedColumn<bool?>(
@@ -1257,13 +1245,13 @@ class $UsersTable extends Users with TableInfo<$UsersTable, User> {
       typeName: 'INTEGER',
       requiredDuringInsert: true,
       defaultConstraints: 'CHECK (deleted IN (0, 1))');
-  final VerificationMeta _databaseInstanceIdMeta =
-      const VerificationMeta('databaseInstanceId');
-  late final GeneratedColumn<String?> databaseInstanceId =
-      GeneratedColumn<String?>('database_instance_id', aliasedName, true,
-          additionalChecks: GeneratedColumn.checkTextLength(maxTextLength: 36),
-          typeName: 'TEXT',
-          requiredDuringInsert: false);
+  final VerificationMeta _knowledgeIdMeta =
+      const VerificationMeta('knowledgeId');
+  late final GeneratedColumn<String?> knowledgeId = GeneratedColumn<String?>(
+      'knowledge_id', aliasedName, true,
+      additionalChecks: GeneratedColumn.checkTextLength(maxTextLength: 36),
+      typeName: 'TEXT',
+      requiredDuringInsert: false);
   @override
   List<GeneratedColumn> get $columns => [
         id,
@@ -1275,9 +1263,9 @@ class $UsersTable extends Users with TableInfo<$UsersTable, User> {
         fieldBooleanNullable,
         fieldDateTime,
         fieldDateTimeNullable,
-        lastUpdated,
+        timeStamp,
         deleted,
-        databaseInstanceId
+        knowledgeId
       ];
   @override
   String get aliasedName => _alias ?? 'user';
@@ -1347,13 +1335,11 @@ class $UsersTable extends Users with TableInfo<$UsersTable, User> {
           fieldDateTimeNullable.isAcceptableOrUnknown(
               data['field_date_time_nullable']!, _fieldDateTimeNullableMeta));
     }
-    if (data.containsKey('last_updated')) {
-      context.handle(
-          _lastUpdatedMeta,
-          lastUpdated.isAcceptableOrUnknown(
-              data['last_updated']!, _lastUpdatedMeta));
+    if (data.containsKey('time_stamp')) {
+      context.handle(_timeStampMeta,
+          timeStamp.isAcceptableOrUnknown(data['time_stamp']!, _timeStampMeta));
     } else if (isInserting) {
-      context.missing(_lastUpdatedMeta);
+      context.missing(_timeStampMeta);
     }
     if (data.containsKey('deleted')) {
       context.handle(_deletedMeta,
@@ -1361,11 +1347,11 @@ class $UsersTable extends Users with TableInfo<$UsersTable, User> {
     } else if (isInserting) {
       context.missing(_deletedMeta);
     }
-    if (data.containsKey('database_instance_id')) {
+    if (data.containsKey('knowledge_id')) {
       context.handle(
-          _databaseInstanceIdMeta,
-          databaseInstanceId.isAcceptableOrUnknown(
-              data['database_instance_id']!, _databaseInstanceIdMeta));
+          _knowledgeIdMeta,
+          knowledgeId.isAcceptableOrUnknown(
+              data['knowledge_id']!, _knowledgeIdMeta));
     }
     return context;
   }
@@ -1394,12 +1380,12 @@ class $UsersTable extends Users with TableInfo<$UsersTable, User> {
           .mapFromDatabaseResponse(data['${effectivePrefix}field_date_time'])!,
       fieldDateTimeNullable: const DateTimeType().mapFromDatabaseResponse(
           data['${effectivePrefix}field_date_time_nullable']),
-      lastUpdated: const IntType()
-          .mapFromDatabaseResponse(data['${effectivePrefix}last_updated'])!,
+      timeStamp: const IntType()
+          .mapFromDatabaseResponse(data['${effectivePrefix}time_stamp'])!,
       deleted: const BoolType()
           .mapFromDatabaseResponse(data['${effectivePrefix}deleted'])!,
-      databaseInstanceId: const StringType().mapFromDatabaseResponse(
-          data['${effectivePrefix}database_instance_id']),
+      knowledgeId: const StringType()
+          .mapFromDatabaseResponse(data['${effectivePrefix}knowledge_id']),
     );
   }
 
@@ -1409,88 +1395,8 @@ class $UsersTable extends Users with TableInfo<$UsersTable, User> {
   }
 }
 
-class Knowledge extends DataClass implements Insertable<Knowledge> {
-  final String id;
-  final bool local;
-  final int maxTimeStamp;
-  Knowledge(
-      {required this.id, required this.local, required this.maxTimeStamp});
-  factory Knowledge.fromData(Map<String, dynamic> data, GeneratedDatabase db,
-      {String? prefix}) {
-    final effectivePrefix = prefix ?? '';
-    return Knowledge(
-      id: const StringType()
-          .mapFromDatabaseResponse(data['${effectivePrefix}id'])!,
-      local: const BoolType()
-          .mapFromDatabaseResponse(data['${effectivePrefix}local'])!,
-      maxTimeStamp: const IntType()
-          .mapFromDatabaseResponse(data['${effectivePrefix}max_time_stamp'])!,
-    );
-  }
-  @override
-  Map<String, Expression> toColumns(bool nullToAbsent) {
-    final map = <String, Expression>{};
-    map['id'] = Variable<String>(id);
-    map['local'] = Variable<bool>(local);
-    map['max_time_stamp'] = Variable<int>(maxTimeStamp);
-    return map;
-  }
-
-  NetCoreSyncKnowledgesCompanion toCompanion(bool nullToAbsent) {
-    return NetCoreSyncKnowledgesCompanion(
-      id: Value(id),
-      local: Value(local),
-      maxTimeStamp: Value(maxTimeStamp),
-    );
-  }
-
-  factory Knowledge.fromJson(Map<String, dynamic> json,
-      {ValueSerializer? serializer}) {
-    serializer ??= moorRuntimeOptions.defaultSerializer;
-    return Knowledge(
-      id: serializer.fromJson<String>(json['id']),
-      local: serializer.fromJson<bool>(json['local']),
-      maxTimeStamp: serializer.fromJson<int>(json['maxTimeStamp']),
-    );
-  }
-  @override
-  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
-    serializer ??= moorRuntimeOptions.defaultSerializer;
-    return <String, dynamic>{
-      'id': serializer.toJson<String>(id),
-      'local': serializer.toJson<bool>(local),
-      'maxTimeStamp': serializer.toJson<int>(maxTimeStamp),
-    };
-  }
-
-  Knowledge copyWith({String? id, bool? local, int? maxTimeStamp}) => Knowledge(
-        id: id ?? this.id,
-        local: local ?? this.local,
-        maxTimeStamp: maxTimeStamp ?? this.maxTimeStamp,
-      );
-  @override
-  String toString() {
-    return (StringBuffer('Knowledge(')
-          ..write('id: $id, ')
-          ..write('local: $local, ')
-          ..write('maxTimeStamp: $maxTimeStamp')
-          ..write(')'))
-        .toString();
-  }
-
-  @override
-  int get hashCode =>
-      $mrjf($mrjc(id.hashCode, $mrjc(local.hashCode, maxTimeStamp.hashCode)));
-  @override
-  bool operator ==(Object other) =>
-      identical(this, other) ||
-      (other is Knowledge &&
-          other.id == this.id &&
-          other.local == this.local &&
-          other.maxTimeStamp == this.maxTimeStamp);
-}
-
-class NetCoreSyncKnowledgesCompanion extends UpdateCompanion<Knowledge> {
+class NetCoreSyncKnowledgesCompanion
+    extends UpdateCompanion<NetCoreSyncKnowledge> {
   final Value<String> id;
   final Value<bool> local;
   final Value<int> maxTimeStamp;
@@ -1500,11 +1406,13 @@ class NetCoreSyncKnowledgesCompanion extends UpdateCompanion<Knowledge> {
     this.maxTimeStamp = const Value.absent(),
   });
   NetCoreSyncKnowledgesCompanion.insert({
-    this.id = const Value.absent(),
-    this.local = const Value.absent(),
-    this.maxTimeStamp = const Value.absent(),
-  });
-  static Insertable<Knowledge> custom({
+    required String id,
+    required bool local,
+    required int maxTimeStamp,
+  })  : id = Value(id),
+        local = Value(local),
+        maxTimeStamp = Value(maxTimeStamp);
+  static Insertable<NetCoreSyncKnowledge> custom({
     Expression<String>? id,
     Expression<bool>? local,
     Expression<int>? maxTimeStamp,
@@ -1552,30 +1460,27 @@ class NetCoreSyncKnowledgesCompanion extends UpdateCompanion<Knowledge> {
 }
 
 class $NetCoreSyncKnowledgesTable extends NetCoreSyncKnowledges
-    with TableInfo<$NetCoreSyncKnowledgesTable, Knowledge> {
+    with TableInfo<$NetCoreSyncKnowledgesTable, NetCoreSyncKnowledge> {
   final GeneratedDatabase _db;
   final String? _alias;
   $NetCoreSyncKnowledgesTable(this._db, [this._alias]);
   final VerificationMeta _idMeta = const VerificationMeta('id');
   late final GeneratedColumn<String?> id = GeneratedColumn<String?>(
       'id', aliasedName, false,
+      additionalChecks: GeneratedColumn.checkTextLength(maxTextLength: 36),
       typeName: 'TEXT',
-      requiredDuringInsert: false,
-      clientDefault: () => Uuid().v4());
+      requiredDuringInsert: true);
   final VerificationMeta _localMeta = const VerificationMeta('local');
   late final GeneratedColumn<bool?> local = GeneratedColumn<bool?>(
       'local', aliasedName, false,
       typeName: 'INTEGER',
-      requiredDuringInsert: false,
-      defaultConstraints: 'CHECK (local IN (0, 1))',
-      defaultValue: const Constant(false));
+      requiredDuringInsert: true,
+      defaultConstraints: 'CHECK (local IN (0, 1))');
   final VerificationMeta _maxTimeStampMeta =
       const VerificationMeta('maxTimeStamp');
   late final GeneratedColumn<int?> maxTimeStamp = GeneratedColumn<int?>(
       'max_time_stamp', aliasedName, false,
-      typeName: 'INTEGER',
-      requiredDuringInsert: false,
-      defaultValue: const Constant(0));
+      typeName: 'INTEGER', requiredDuringInsert: true);
   @override
   List<GeneratedColumn> get $columns => [id, local, maxTimeStamp];
   @override
@@ -1583,22 +1488,29 @@ class $NetCoreSyncKnowledgesTable extends NetCoreSyncKnowledges
   @override
   String get actualTableName => 'netcoresync_knowledges';
   @override
-  VerificationContext validateIntegrity(Insertable<Knowledge> instance,
+  VerificationContext validateIntegrity(
+      Insertable<NetCoreSyncKnowledge> instance,
       {bool isInserting = false}) {
     final context = VerificationContext();
     final data = instance.toColumns(true);
     if (data.containsKey('id')) {
       context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
     }
     if (data.containsKey('local')) {
       context.handle(
           _localMeta, local.isAcceptableOrUnknown(data['local']!, _localMeta));
+    } else if (isInserting) {
+      context.missing(_localMeta);
     }
     if (data.containsKey('max_time_stamp')) {
       context.handle(
           _maxTimeStampMeta,
           maxTimeStamp.isAcceptableOrUnknown(
               data['max_time_stamp']!, _maxTimeStampMeta));
+    } else if (isInserting) {
+      context.missing(_maxTimeStampMeta);
     }
     return context;
   }
@@ -1606,9 +1518,16 @@ class $NetCoreSyncKnowledgesTable extends NetCoreSyncKnowledges
   @override
   Set<GeneratedColumn> get $primaryKey => {id};
   @override
-  Knowledge map(Map<String, dynamic> data, {String? tablePrefix}) {
-    return Knowledge.fromData(data, _db,
-        prefix: tablePrefix != null ? '$tablePrefix.' : null);
+  NetCoreSyncKnowledge map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return NetCoreSyncKnowledge.fromDb(
+      id: const StringType()
+          .mapFromDatabaseResponse(data['${effectivePrefix}id'])!,
+      local: const BoolType()
+          .mapFromDatabaseResponse(data['${effectivePrefix}local'])!,
+      maxTimeStamp: const IntType()
+          .mapFromDatabaseResponse(data['${effectivePrefix}max_time_stamp'])!,
+    );
   }
 
   @override
@@ -1630,4 +1549,73 @@ abstract class _$Database extends GeneratedDatabase {
   @override
   List<DatabaseSchemaEntity> get allSchemaEntities =>
       [employees, departments, configurations, users, netCoreSyncKnowledges];
+}
+
+// **************************************************************************
+// NetCoreSyncClientGenerator
+// **************************************************************************
+
+// NOTE: Obtained from @NetCoreSyncTable annotations:
+// Employees: {"tableClassName":"Employees","dataClassName":"Employee","useRowClass":false,"netCoreSyncTable":{"mapToClassName":"SyncEmployee","idFieldName":"id","timeStampFieldName":"timeStamp","deletedFieldName":"deleted","knowledgeIdFieldName":"knowledgeId"}}
+// Departments: {"tableClassName":"Departments","dataClassName":"Department","useRowClass":false,"netCoreSyncTable":{"mapToClassName":"SyncDepartment","idFieldName":"id","timeStampFieldName":"timeStamp","deletedFieldName":"deleted","knowledgeIdFieldName":"knowledgeId"}}
+// Users: {"tableClassName":"Users","dataClassName":"User","useRowClass":true,"netCoreSyncTable":{"mapToClassName":"SyncUser","idFieldName":"id","timeStampFieldName":"timeStamp","deletedFieldName":"deleted","knowledgeIdFieldName":"knowledgeId"}}
+class _$NetCoreSyncEngineUser extends NetCoreSyncEngine {
+  Insertable<D> updateSyncColumns<D>(
+    Insertable<D> entity, {
+    required int timeStamp,
+    bool? deleted,
+  }) {
+    if (entity is UpdateCompanion<D>) {
+      if (D == Employee) {
+        return (entity as EmployeesCompanion).copyWith(
+          timeStamp: Value(timeStamp),
+          knowledgeId: Value(null),
+          deleted: deleted != null ? Value(deleted) : Value.absent(),
+        ) as Insertable<D>;
+      }
+      if (D == Department) {
+        return (entity as DepartmentsCompanion).copyWith(
+          timeStamp: Value(timeStamp),
+          knowledgeId: Value(null),
+          deleted: deleted != null ? Value(deleted) : Value.absent(),
+        ) as Insertable<D>;
+      }
+      if (D == User) {
+        return (entity as UsersCompanion).copyWith(
+          timeStamp: Value(timeStamp),
+          knowledgeId: Value(null),
+          deleted: deleted != null ? Value(deleted) : Value.absent(),
+        ) as Insertable<D>;
+      }
+    } else if (entity is DataClass) {
+      if (D == Employee) {
+        return (entity as Employee).copyWith(
+          timeStamp: timeStamp,
+          knowledgeId: null,
+          deleted: deleted,
+        ) as Insertable<D>;
+      }
+      if (D == Department) {
+        return (entity as Department).copyWith(
+          timeStamp: timeStamp,
+          knowledgeId: null,
+          deleted: deleted,
+        ) as Insertable<D>;
+      }
+    } else {
+      if (D == User) {
+        (entity as User).timeStamp = timeStamp;
+        (entity as User).knowledgeId = null;
+        if (deleted != null) (entity as User).deleted = deleted;
+        return entity;
+      }
+    }
+    throw Exception("Unexpected entity Type: $entity");
+  }
+}
+
+extension $NetCoreSyncClientExtension on Database {
+  Future<void> netCoreSync_initialize() async {
+    await netCoreSync_initializeImpl(_$NetCoreSyncEngineUser());
+  }
 }

@@ -1,7 +1,17 @@
 library netcoresync_moor_generator;
 
-/// A Calculator.
-class Calculator {
-  /// Returns [value] plus 1.
-  int addOne(int value) => value + 1;
-}
+import 'package:build/build.dart';
+import 'package:source_gen/source_gen.dart';
+import 'src/table_generator.dart';
+import 'src/netcoresync_client_generator.dart';
+
+Builder TableGeneratorBuilder(BuilderOptions builderOptions) => LibraryBuilder(
+      TableGenerator(),
+      generatedExtension: ".netcoresync_moor_table.part",
+    );
+
+Builder ClientGeneratorBuilder(BuilderOptions builderOptions) =>
+    SharedPartBuilder(
+      [NetCoreSyncClientGenerator()],
+      "netcoresync_moor_client",
+    );

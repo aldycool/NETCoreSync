@@ -1,23 +1,27 @@
+import 'package:meta/meta.dart';
 import 'package:moor/moor.dart';
 import 'netcoresync_exceptions.dart';
-import 'database.dart';
+import 'netcoresync_engine.dart';
+import 'data_access.dart';
 
-class NetCoreSyncClient {
-  static Future<NetCoreSyncClient> initialize({
-    required GeneratedDatabase generatedDatabase,
-  }) async {
-    bool isOpened =
-        await generatedDatabase.executor.ensureOpen(generatedDatabase);
-    if (!isOpened) throw NetCoreSyncUnableToOpenDatabaseException();
-    return NetCoreSyncClient._(generatedDatabase: generatedDatabase);
+mixin NetCoreSyncClient on GeneratedDatabase {
+  static bool _initialized = false;
+  static late NetCoreSyncClient instance;
+
+  @internal
+  late DataAccess dataAccess;
+
+  Future<void> netCoreSync_initializeImpl(NetCoreSyncEngine engine) async {
+    if (_initialized)
+      throw NetCoreSyncException("Client is already initialized");
+    dataAccess = DataAccess(this, engine);
+    instance = this;
+    _initialized = true;
   }
 
-  late final Database _database;
-
-  NetCoreSyncClient._({required GeneratedDatabase generatedDatabase}) {
-    _database = Database(
-      queryExecutor: generatedDatabase.executor,
-      schemaVersion: generatedDatabase.schemaVersion,
-    );
+  @internal
+  static void throwIfNotInitialized() {
+    if (!_initialized)
+      throw NetCoreSyncException("Client is not initialized yet");
   }
 }
