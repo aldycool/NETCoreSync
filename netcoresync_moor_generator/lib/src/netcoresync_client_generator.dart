@@ -3,6 +3,7 @@ import 'package:analyzer/dart/element/element.dart';
 import 'package:source_gen/source_gen.dart';
 import 'package:build/build.dart';
 import 'package:glob/glob.dart';
+import 'package:recase/recase.dart';
 import 'package:moor/moor.dart';
 import 'exceptions.dart';
 
@@ -93,7 +94,7 @@ class NetCoreSyncClientGenerator extends GeneratorForAnnotation<UseMoor> {
       Map<String, dynamic> part = jsonDecode(jsonPart);
       // @UseRowClass never generate data class that extends DataClass
       if (part["useRowClass"]) continue;
-      buffer.writeln("if (D == ${part["dataClassName"]}) {");
+      buffer.writeln("if (entity is ${part["dataClassName"]}) {");
       buffer.writeln("return (entity as ${part["dataClassName"]}).copyWith(");
       buffer.writeln(
           "${part["netCoreSyncTable"]["timeStampFieldName"]}: timeStamp,");
@@ -109,7 +110,7 @@ class NetCoreSyncClientGenerator extends GeneratorForAnnotation<UseMoor> {
       Map<String, dynamic> part = jsonDecode(jsonPart);
       // @UseRowClass is processed here and expected to be mutable
       if (!part["useRowClass"]) continue;
-      buffer.writeln("if (D == ${part["dataClassName"]}) {");
+      buffer.writeln("if (entity is ${part["dataClassName"]}) {");
       buffer.writeln(
           "(entity as ${part["dataClassName"]}).${part["netCoreSyncTable"]["timeStampFieldName"]} = timeStamp;");
       buffer.writeln(
@@ -133,8 +134,22 @@ class NetCoreSyncClientGenerator extends GeneratorForAnnotation<UseMoor> {
 
     // START METHOD: netCoreSync_initialize
     buffer.writeln("Future<void> netCoreSync_initialize() async {");
-    buffer.writeln(
-        "await netCoreSync_initializeImpl(_\$NetCoreSyncEngineUser());");
+    buffer.writeln("await netCoreSync_initializeImpl(");
+    buffer.writeln("_\$NetCoreSyncEngineUser(),");
+    buffer.writeln("{");
+    for (var jsonPart in jsonParts) {
+      Map<String, dynamic> part = jsonDecode(jsonPart);
+      buffer.writeln('''
+      ${part["dataClassName"]}: NetCoreSyncTableUser(
+        ${ReCase(part["tableClassName"]).camelCase},
+        ${ReCase(part["tableClassName"]).camelCase}.${part["netCoreSyncTable"]["idFieldName"]}.escapedName,
+        ${ReCase(part["tableClassName"]).camelCase}.${part["netCoreSyncTable"]["timeStampFieldName"]}.escapedName,
+        ${ReCase(part["tableClassName"]).camelCase}.${part["netCoreSyncTable"]["deletedFieldName"]}.escapedName,
+        ${ReCase(part["tableClassName"]).camelCase}.${part["netCoreSyncTable"]["knowledgeIdFieldName"]}.escapedName,
+      ),''');
+    }
+    buffer.writeln("},");
+    buffer.writeln(");");
     buffer.writeln("}");
     // END METHOD: netCoreSync_initialize
 

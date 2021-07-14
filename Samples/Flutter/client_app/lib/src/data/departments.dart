@@ -3,7 +3,7 @@ import 'package:uuid/uuid.dart';
 import 'package:netcoresync_moor/netcoresync_moor.dart';
 
 @NetCoreSyncTable(mapToClassName: "SyncDepartment")
-@DataClassName("Department")
+// @DataClassName("Department") // This is remarked to test the netcoresync_moor_generator
 class Departments extends Table {
   TextColumn get id => text().clientDefault(() => Uuid().v4())();
 

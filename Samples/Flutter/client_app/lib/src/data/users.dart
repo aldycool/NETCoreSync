@@ -4,7 +4,7 @@ import 'package:uuid/uuid.dart';
 import 'package:netcoresync_moor/netcoresync_moor.dart';
 
 @NetCoreSyncTable(mapToClassName: "SyncUser")
-// NOTE: replace @DataClassName with below to use standard class
+// NOTE: replace @DataClassName with below to generate the standard class
 @UseRowClass(User, constructor: "fromDb")
 // @DataClassName("User")
 class Users extends Table {
@@ -42,9 +42,7 @@ class Users extends Table {
 
 class User implements Insertable<User> {
   String id = Uuid().v4();
-
   String fieldString = "";
-
   String? fieldStringNullable;
   int fieldInt = 0;
   int? fieldIntNullable;
@@ -90,5 +88,45 @@ class User implements Insertable<User> {
       deleted: Value(deleted),
       knowledgeId: Value(knowledgeId),
     ).toColumns(nullToAbsent);
+  }
+
+  factory User.fromJson(Map<String, dynamic> json) {
+    final serializer = moorRuntimeOptions.defaultSerializer;
+    User user = User();
+    user.id = serializer.fromJson<String>(json['id']);
+    user.fieldString = serializer.fromJson<String>(json['fieldString']);
+    user.fieldStringNullable =
+        serializer.fromJson<String?>(json['fieldStringNullable']);
+    user.fieldInt = serializer.fromJson<int>(json['fieldInt']);
+    user.fieldIntNullable = serializer.fromJson<int?>(json['fieldIntNullable']);
+    user.fieldBoolean = serializer.fromJson<bool>(json['fieldBoolean']);
+    user.fieldBooleanNullable =
+        serializer.fromJson<bool?>(json['fieldBooleanNullable']);
+    user.fieldDateTime = serializer.fromJson<DateTime>(json['fieldDateTime']);
+    user.fieldDateTimeNullable =
+        serializer.fromJson<DateTime?>(json['fieldDateTimeNullable']);
+    user.timeStamp = serializer.fromJson<int>(json['timeStamp']);
+    user.deleted = serializer.fromJson<bool>(json['deleted']);
+    user.knowledgeId = serializer.fromJson<String?>(json['knowledgeId']);
+    return user;
+  }
+
+  Map<String, dynamic> toJson() {
+    final serializer = moorRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'fieldString': serializer.toJson<String>(fieldString),
+      'fieldStringNullable': serializer.toJson<String?>(fieldStringNullable),
+      'fieldInt': serializer.toJson<int>(fieldInt),
+      'fieldIntNullable': serializer.toJson<int?>(fieldIntNullable),
+      'fieldBoolean': serializer.toJson<bool>(fieldBoolean),
+      'fieldBooleanNullable': serializer.toJson<bool?>(fieldBooleanNullable),
+      'fieldDateTime': serializer.toJson<DateTime>(fieldDateTime),
+      'fieldDateTimeNullable':
+          serializer.toJson<DateTime?>(fieldDateTimeNullable),
+      'timeStamp': serializer.toJson<int>(timeStamp),
+      'deleted': serializer.toJson<bool>(deleted),
+      'knowledgeId': serializer.toJson<String?>(knowledgeId),
+    };
   }
 }

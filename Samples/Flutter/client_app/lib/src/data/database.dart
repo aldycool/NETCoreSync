@@ -40,75 +40,8 @@ class Database extends _$Database with NetCoreSyncClient {
   static const String _configuration_key_synchronizationId =
       "SYNCHRONIZATIONID";
 
-  void testConcepts() async {
-    // TODO: TEST WITH NESTED DAN NO TRANSACTION (TO CHECK RAISED ERROR)
-    // TEST WITH NESTED TRANSACTIONS
-    await transaction(() async {
-      int res1 = await into(departments)
-          .syncInsert(DepartmentsCompanion(name: Value("FindMe1")));
-      print(res1);
-      int res2 = await into(departments)
-          .syncInsert(DepartmentsCompanion(name: Value("FindMe2")));
-      print(res2);
-      await transaction(() async {
-        int res3 = await into(departments)
-            .syncInsert(DepartmentsCompanion(name: Value("FindMe3")));
-        print(res3);
-        int res4 = await into(departments)
-            .syncInsert(DepartmentsCompanion(name: Value("FindMe4")));
-        print(res4);
-      });
-    });
-    print("Done");
-    // TEST WITHOUT TRANSACTION - NOT WORKING BECAUSE NOT WRAPPED WITH OUTER TRANSACTION
-    // int res5 = await into(departments)
-    //     .syncInsert(DepartmentsCompanion(name: Value("FindMe1")));
-    // print(res5);
-    // int res6 = await into(departments)
-    //     .syncInsert(DepartmentsCompanion(name: Value("FindMe2")));
-    // print(res6);
-    // print("Done");
-    // await transaction(() async {
-    // int testret = await into(departments)
-    //     .syncInsert(DepartmentsCompanion(name: Value("FindMe!")));
-    // print(testret);
-    // });
-
-    // await netCoreSync_tests_insert(
-    //     departments, DepartmentsCompanion(name: Value("AAA")));
-
-    // User user = User();
-    // await into(users).insert(user);
-    // List<User> datas = await select(users).get();
-    // print(datas);
-
-    // datas[0].fieldString = "ABC";
-    // datas[0].fieldStringNullable = "DEF";
-    // datas[0].fieldInt = 10;
-    // datas[0].fieldIntNullable = 20;
-    // datas[0].fieldBoolean = true;
-    // datas[0].fieldBooleanNullable = false;
-    // datas[0].fieldDateTime = DateTime.now();
-    // datas[0].fieldDateTimeNullable = DateTime(2021, 1, 1);
-    // await update(users).replace(datas[0]);
-    // List<User> datasUpdated = await select(users).get();
-    // print(datasUpdated);
-
-    // datasUpdated[0].fieldStringNullable = null;
-    // datasUpdated[0].fieldIntNullable = null;
-    // datasUpdated[0].fieldBooleanNullable = null;
-    // datasUpdated[0].fieldDateTimeNullable = null;
-    // await update(users).replace(datasUpdated[0]);
-    // List<User> datas2 = await select(users).get();
-    // print(datas2);
-
-    // await delete(users).delete(datas2[0]);
-    // List<User> empty = await select(users).get();
-    // print(empty);
-
-    // user = User();
-    // user.fieldString = "FINDME!";
-    // await into(users).insert(user);
+  Future<void> testConcepts() async {
+    await netCoreSync_testConcepts();
   }
 
   Future<void> resetDatabase({bool includeConfiguration = false}) async {

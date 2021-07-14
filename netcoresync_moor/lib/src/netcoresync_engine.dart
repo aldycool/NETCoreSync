@@ -7,3 +7,18 @@ abstract class NetCoreSyncEngine {
     bool? deleted,
   });
 }
+
+class NetCoreSyncTableUser<T extends Table, D> {
+  TableInfo<T, D> tableInfo;
+  String idEscapedName;
+  String timeStampEscapedName;
+  String deletedEscapedName;
+  String knowledgeIdEscapedName;
+  NetCoreSyncTableUser(
+    this.tableInfo,
+    this.idEscapedName,
+    this.timeStampEscapedName,
+    this.deletedEscapedName,
+    this.knowledgeIdEscapedName,
+  );
+}

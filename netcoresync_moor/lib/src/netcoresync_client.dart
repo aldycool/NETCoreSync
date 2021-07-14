@@ -11,12 +11,19 @@ mixin NetCoreSyncClient on GeneratedDatabase {
   @internal
   late DataAccess dataAccess;
 
-  Future<void> netCoreSync_initializeImpl(NetCoreSyncEngine engine) async {
+  Future<void> netCoreSync_initializeImpl(
+    NetCoreSyncEngine engine,
+    Map<Type, NetCoreSyncTableUser> tables,
+  ) async {
     if (_initialized)
       throw NetCoreSyncException("Client is already initialized");
-    dataAccess = DataAccess(this, engine);
+    dataAccess = DataAccess(this, engine, tables);
     instance = this;
     _initialized = true;
+  }
+
+  Future<void> netCoreSync_testConcepts() async {
+    await dataAccess.testConcepts();
   }
 
   @internal

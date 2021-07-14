@@ -1588,14 +1588,14 @@ class _$NetCoreSyncEngineUser extends NetCoreSyncEngine {
         ) as Insertable<D>;
       }
     } else if (entity is DataClass) {
-      if (D == Employee) {
+      if (entity is Employee) {
         return (entity as Employee).copyWith(
           timeStamp: timeStamp,
           knowledgeId: null,
           deleted: deleted,
         ) as Insertable<D>;
       }
-      if (D == Department) {
+      if (entity is Department) {
         return (entity as Department).copyWith(
           timeStamp: timeStamp,
           knowledgeId: null,
@@ -1603,7 +1603,7 @@ class _$NetCoreSyncEngineUser extends NetCoreSyncEngine {
         ) as Insertable<D>;
       }
     } else {
-      if (D == User) {
+      if (entity is User) {
         (entity as User).timeStamp = timeStamp;
         (entity as User).knowledgeId = null;
         if (deleted != null) (entity as User).deleted = deleted;
@@ -1616,6 +1616,31 @@ class _$NetCoreSyncEngineUser extends NetCoreSyncEngine {
 
 extension $NetCoreSyncClientExtension on Database {
   Future<void> netCoreSync_initialize() async {
-    await netCoreSync_initializeImpl(_$NetCoreSyncEngineUser());
+    await netCoreSync_initializeImpl(
+      _$NetCoreSyncEngineUser(),
+      {
+        Employee: NetCoreSyncTableUser(
+          employees,
+          employees.id.escapedName,
+          employees.timeStamp.escapedName,
+          employees.deleted.escapedName,
+          employees.knowledgeId.escapedName,
+        ),
+        Department: NetCoreSyncTableUser(
+          departments,
+          departments.id.escapedName,
+          departments.timeStamp.escapedName,
+          departments.deleted.escapedName,
+          departments.knowledgeId.escapedName,
+        ),
+        User: NetCoreSyncTableUser(
+          users,
+          users.id.escapedName,
+          users.timeStamp.escapedName,
+          users.deleted.escapedName,
+          users.knowledgeId.escapedName,
+        ),
+      },
+    );
   }
 }

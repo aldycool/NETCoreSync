@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:analyzer/dart/element/element.dart';
 import 'package:analyzer/dart/element/visitor.dart';
+import 'package:analyzer/dart/element/type.dart';
 import 'package:source_gen/source_gen.dart';
 import 'package:build/build.dart';
 import 'package:collection/collection.dart';
@@ -67,26 +68,51 @@ class TableGenerator extends GeneratorForAnnotation<NetCoreSyncTable> {
     String? dataClassName = null;
     bool useRowClass = false;
     ElementAnnotation? elementAnnotation =
-        _getElementAnnotation(element, "DataClassName");
+        _getElementAnnotation(element, "UseRowClass");
     if (elementAnnotation != null) {
       dataClassName = elementAnnotation
           .computeConstantValue()!
-          .getField("name")!
-          .toStringValue();
+          .getField("type")!
+          .toTypeValue()!
+          .getDisplayString(withNullability: false);
+      useRowClass = true;
+      // Must check if toJson() and factory fromJson() methods are exists (Moor's DataClass subclasses are (expected according the standard code generation) already define these methods)
+      MethodElement? methodToJson = (elementAnnotation
+              .computeConstantValue()!
+              .getField("type")!
+              .toTypeValue()! as InterfaceType)
+          .methods
+          .where((w) => w.name == "toJson")
+          .firstOrNull;
+      if (methodToJson == null ||
+          methodToJson.returnType.getDisplayString(withNullability: false) !=
+              "Map<String, dynamic>")
+        throw NetCoreSyncMoorGeneratorException(
+            "The $dataClassName class must have an instance method called 'toJson()' that returns 'Map<String, dynamic>'. It is required for the Dart's 'jsonEncode()' function later. Please take a look at the 'json_serializable' package on how to do this properly.");
+      ConstructorElement? constructorFromJson = (elementAnnotation
+              .computeConstantValue()!
+              .getField("type")!
+              .toTypeValue()! as InterfaceType)
+          .constructors
+          .where((w) => w.name == "fromJson")
+          .firstOrNull;
+      if (constructorFromJson == null ||
+          constructorFromJson.parameters.length < 1 ||
+          constructorFromJson.parameters[0].type
+                  .getDisplayString(withNullability: false) !=
+              "Map<String, dynamic>")
+        throw NetCoreSyncMoorGeneratorException(
+            "The $dataClassName class must have a constructor method called 'fromJson()' with type 'Map<String, dynamic>' on its first parameter. It is required for the Dart's 'jsonDecode()' function later. Please take a look at the 'json_serializable' package on how to do this properly.");
     } else {
-      elementAnnotation = _getElementAnnotation(element, "UseRowClass");
+      dataClassName = tableClassName.substring(0, tableClassName.length - 1);
+      elementAnnotation = _getElementAnnotation(element, "DataClassName");
       if (elementAnnotation != null) {
         dataClassName = elementAnnotation
             .computeConstantValue()!
-            .getField("type")!
-            .toTypeValue()!
-            .getDisplayString(withNullability: false);
-        useRowClass = true;
+            .getField("name")!
+            .toStringValue();
       }
     }
-    if (dataClassName == null)
-      throw NetCoreSyncMoorGeneratorException(
-          "Unable to detect the proper usage of Moor's @DataClassName or Moor's @UserRowClass on $tableClassName annotation");
 
     StringBuffer buffer = StringBuffer();
     Map<String, dynamic> content = {};

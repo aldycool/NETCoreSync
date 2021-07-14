@@ -13,6 +13,7 @@ dependencies:
   source_gen: ^1.0.2 # https://pub.dev/packages/source_gen
   build_config: ^1.0.0 # https://pub.dev/packages/build_config
   glob: ^2.0.1 # https://pub.dev/packages/glob
+  recase: ^4.0.0 # https://pub.dev/packages/recase
   moor: ^4.3.2 # https://pub.dev/packages/moor
   netcoresync_moor:
     path: ../netcoresync_moor

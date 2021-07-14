@@ -4,14 +4,21 @@ import 'netcoresync_engine.dart';
 import 'netcoresync_knowledges.dart';
 
 class DataAccess<D extends GeneratedDatabase> extends DatabaseAccessor<D> {
-  late NetCoreSyncEngine engine;
   late D database;
+  late NetCoreSyncEngine engine;
   late _NetCoreSyncKnowledgesTable knowledges;
+  late Map<Type, NetCoreSyncTableUser> tables;
 
-  DataAccess(D generatedDatabase, this.engine) : super(generatedDatabase) {
+  DataAccess(
+    D generatedDatabase,
+    this.engine,
+    this.tables,
+  ) : super(generatedDatabase) {
     database = attachedDatabase;
     knowledges = _NetCoreSyncKnowledgesTable(database);
   }
+
+  Future<void> testConcepts() async {}
 
   bool inTransaction() {
     return Zone.current[#DatabaseConnectionUser]
