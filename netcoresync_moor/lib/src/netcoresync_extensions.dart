@@ -1,7 +1,5 @@
 import 'package:moor/moor.dart';
 import 'netcoresync_client.dart';
-import 'data_access.dart';
-import 'netcoresync_exceptions.dart';
 
 extension NetCoreSyncInsertStatementExtension<T extends Table, D>
     on InsertStatement<T, D> {
@@ -11,13 +9,36 @@ extension NetCoreSyncInsertStatementExtension<T extends Table, D>
     UpsertClause<T, D>? onConflict,
   }) async {
     NetCoreSyncClient.throwIfNotInitialized();
-    DataAccess dataAccess = NetCoreSyncClient.instance.dataAccess;
-    if (!dataAccess.inTransaction())
-      throw NetCoreSyncMustInsideTransactionException();
-    int timeStamp = await dataAccess.getNextTimeStamp();
-    final syncEntity =
-        dataAccess.engine.updateSyncColumns(entity, timeStamp: timeStamp);
-    int result = await insert(syncEntity, mode: mode, onConflict: onConflict);
-    return result;
+    return NetCoreSyncClient.instance.dataAccess.syncAction(
+      entity,
+      (syncEntity) => insert(
+        syncEntity,
+        mode: mode,
+        onConflict: onConflict,
+      ),
+    );
+  }
+
+  Future<int> syncInsertOnConflictUpdate(Insertable<D> entity) async {
+    NetCoreSyncClient.throwIfNotInitialized();
+    return NetCoreSyncClient.instance.dataAccess.syncAction(
+      entity,
+      (syncEntity) => insertOnConflictUpdate(
+        syncEntity,
+      ),
+    );
+  }
+
+  Future<D> syncInsertReturning(Insertable<D> entity,
+      {InsertMode? mode, UpsertClause<T, D>? onConflict}) async {
+    NetCoreSyncClient.throwIfNotInitialized();
+    return NetCoreSyncClient.instance.dataAccess.syncAction(
+      entity,
+      (syncEntity) => insertReturning(
+        syncEntity,
+        mode: mode,
+        onConflict: onConflict,
+      ),
+    );
   }
 }

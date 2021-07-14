@@ -2,15 +2,16 @@ import 'dart:async';
 import 'package:moor/moor.dart';
 import 'netcoresync_engine.dart';
 import 'netcoresync_knowledges.dart';
+import 'netcoresync_exceptions.dart';
 
-class DataAccess<D extends GeneratedDatabase> extends DatabaseAccessor<D> {
-  late D database;
+class DataAccess<G extends GeneratedDatabase> extends DatabaseAccessor<G> {
+  late G database;
   late NetCoreSyncEngine engine;
   late _NetCoreSyncKnowledgesTable knowledges;
   late Map<Type, NetCoreSyncTableUser> tables;
 
   DataAccess(
-    D generatedDatabase,
+    G generatedDatabase,
     this.engine,
     this.tables,
   ) : super(generatedDatabase) {
@@ -43,6 +44,17 @@ class DataAccess<D extends GeneratedDatabase> extends DatabaseAccessor<D> {
       maxTimeStamp: Value(nextTimeStamp),
     ));
     return nextTimeStamp;
+  }
+
+  Future<T> syncAction<T, D>(
+    Insertable<D> entity,
+    Future<T> Function(dynamic syncEntity) action,
+  ) async {
+    if (!inTransaction()) throw NetCoreSyncMustInsideTransactionException();
+    int timeStamp = await getNextTimeStamp();
+    Insertable<D> syncEntity =
+        engine.updateSyncColumns(entity, timeStamp: timeStamp);
+    return await action(syncEntity);
   }
 }
 

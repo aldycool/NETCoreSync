@@ -41,6 +41,11 @@ class Database extends _$Database with NetCoreSyncClient {
       "SYNCHRONIZATIONID";
 
   Future<void> testConcepts() async {
+    await transaction(() async {
+      final returned = await into(departments)
+          .syncInsertReturning(DepartmentsCompanion(name: Value("AAA")));
+      print(returned);
+    });
     await netCoreSync_testConcepts();
   }
 

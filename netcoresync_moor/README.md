@@ -24,6 +24,7 @@ General Guide:
   });
   ```
   NetCoreSync introduces the equivalent counterpart methods like `syncInsert`, `syncReplace`, `syncDelete`, etc., for the standard Moor operations such as `insert`, `replace`, `delete`, etc. Read more on the documentation to find out what the changes are. Also it is required to **wrap any of the equivalent counterpart methods inside a Transaction block** as those methods will execute on several tables internally, so atomic operation is needed to ensure the data integrity.
+- The Moor's `batch` may not be supported yet, currently it is not checked thoroughly.
 - TODO: explain on how to do Synchronization
 
 ## Notes
