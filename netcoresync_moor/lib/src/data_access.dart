@@ -48,13 +48,13 @@ class DataAccess<G extends GeneratedDatabase> extends DatabaseAccessor<G> {
 
   Future<T> syncAction<T, D>(
     Insertable<D> entity,
-    Future<T> Function(dynamic syncEntity) action,
+    Future<T> Function(dynamic syncEntity, int obtainedTimeStamp) action,
   ) async {
     if (!inTransaction()) throw NetCoreSyncMustInsideTransactionException();
     int timeStamp = await getNextTimeStamp();
     Insertable<D> syncEntity =
         engine.updateSyncColumns(entity, timeStamp: timeStamp);
-    return await action(syncEntity);
+    return action(syncEntity, timeStamp);
   }
 }
 

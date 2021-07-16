@@ -13,6 +13,16 @@ class NetCoreSyncTable {
     this.knowledgeIdFieldName = "knowledgeId",
   });
 
+  factory NetCoreSyncTable.fromJson(Map<String, dynamic> json) {
+    return NetCoreSyncTable(
+      mapToClassName: json["mapToClassName"],
+      idFieldName: json["idFieldName"],
+      timeStampFieldName: json["timeStampFieldName"],
+      deletedFieldName: json["deletedFieldName"],
+      knowledgeIdFieldName: json["knowledgeIdFieldName"],
+    );
+  }
+
   Map<String, dynamic> toJson() {
     return {
       "mapToClassName": mapToClassName,

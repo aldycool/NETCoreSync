@@ -24,8 +24,14 @@ General Guide:
   });
   ```
   NetCoreSync introduces the equivalent counterpart methods like `syncInsert`, `syncReplace`, `syncDelete`, etc., for the standard Moor operations such as `insert`, `replace`, `delete`, etc. Read more on the documentation to find out what the changes are. Also it is required to **wrap any of the equivalent counterpart methods inside a Transaction block** as those methods will execute on several tables internally, so atomic operation is needed to ensure the data integrity.
-- The Moor's `batch` may not be supported yet, currently it is not checked thoroughly.
 - TODO: explain on how to do Synchronization
+- Restrictions:
+  - All restrictions inherited from NetCoreSync
+  - In Moor implementation, the primary key column's type must be `String` (usually implemented as Guid). We cannot guarantee its uniqueness if its type is other than `String`.
+  - Data classes that uses Moor's @UseRowClass must be mutable (its field values can be changed independently).
+- Unsupported Moor functions:
+  - `batch`: haven't got a clean way on how to work on top of this properly
+  - `onConflict` parameter on `insert`: It uses the class `DoUpdate<T, D>`, so initially I should subclass it (wrap it in a new class, for exampe `SyncDoUpdate<T, D>`) and perform the update of synchronization columns before returning the `Insertable<D>`. But internally it will be resolved back to the original `DoUpdate<T, D>` or (`UpsertMultiple<T, D>`) again so the changes will not be picked up.
 
 ## Notes
 

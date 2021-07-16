@@ -1559,7 +1559,113 @@ abstract class _$Database extends GeneratedDatabase {
 // Employees: {"tableClassName":"Employees","dataClassName":"Employee","useRowClass":false,"netCoreSyncTable":{"mapToClassName":"SyncEmployee","idFieldName":"id","timeStampFieldName":"timeStamp","deletedFieldName":"deleted","knowledgeIdFieldName":"knowledgeId"}}
 // Departments: {"tableClassName":"Departments","dataClassName":"Department","useRowClass":false,"netCoreSyncTable":{"mapToClassName":"SyncDepartment","idFieldName":"id","timeStampFieldName":"timeStamp","deletedFieldName":"deleted","knowledgeIdFieldName":"knowledgeId"}}
 // Users: {"tableClassName":"Users","dataClassName":"User","useRowClass":true,"netCoreSyncTable":{"mapToClassName":"SyncUser","idFieldName":"id","timeStampFieldName":"timeStamp","deletedFieldName":"deleted","knowledgeIdFieldName":"knowledgeId"}}
+
 class _$NetCoreSyncEngineUser extends NetCoreSyncEngine {
+  Object? getSyncColumnValue<D>(Insertable<D> entity, String fieldName) {
+    if (entity is UpdateCompanion<D>) {
+      if (D == Employee) {
+        switch (fieldName) {
+          case "id":
+            return (entity as EmployeesCompanion).id == Value.absent()
+                ? null
+                : (entity as EmployeesCompanion).id.value;
+          case "timeStamp":
+            return (entity as EmployeesCompanion).timeStamp == Value.absent()
+                ? null
+                : (entity as EmployeesCompanion).timeStamp.value;
+          case "deleted":
+            return (entity as EmployeesCompanion).deleted == Value.absent()
+                ? null
+                : (entity as EmployeesCompanion).deleted.value;
+          case "knowledgeId":
+            return (entity as EmployeesCompanion).knowledgeId == Value.absent()
+                ? null
+                : (entity as EmployeesCompanion).knowledgeId.value;
+        }
+      }
+      if (D == Department) {
+        switch (fieldName) {
+          case "id":
+            return (entity as DepartmentsCompanion).id == Value.absent()
+                ? null
+                : (entity as DepartmentsCompanion).id.value;
+          case "timeStamp":
+            return (entity as DepartmentsCompanion).timeStamp == Value.absent()
+                ? null
+                : (entity as DepartmentsCompanion).timeStamp.value;
+          case "deleted":
+            return (entity as DepartmentsCompanion).deleted == Value.absent()
+                ? null
+                : (entity as DepartmentsCompanion).deleted.value;
+          case "knowledgeId":
+            return (entity as DepartmentsCompanion).knowledgeId ==
+                    Value.absent()
+                ? null
+                : (entity as DepartmentsCompanion).knowledgeId.value;
+        }
+      }
+      if (D == User) {
+        switch (fieldName) {
+          case "id":
+            return (entity as UsersCompanion).id == Value.absent()
+                ? null
+                : (entity as UsersCompanion).id.value;
+          case "timeStamp":
+            return (entity as UsersCompanion).timeStamp == Value.absent()
+                ? null
+                : (entity as UsersCompanion).timeStamp.value;
+          case "deleted":
+            return (entity as UsersCompanion).deleted == Value.absent()
+                ? null
+                : (entity as UsersCompanion).deleted.value;
+          case "knowledgeId":
+            return (entity as UsersCompanion).knowledgeId == Value.absent()
+                ? null
+                : (entity as UsersCompanion).knowledgeId.value;
+        }
+      }
+    } else {
+      if (entity is Employee) {
+        switch (fieldName) {
+          case "id":
+            return (entity as Employee).id;
+          case "timeStamp":
+            return (entity as Employee).timeStamp;
+          case "deleted":
+            return (entity as Employee).deleted;
+          case "knowledgeId":
+            return (entity as Employee).knowledgeId;
+        }
+      }
+      if (entity is Department) {
+        switch (fieldName) {
+          case "id":
+            return (entity as Department).id;
+          case "timeStamp":
+            return (entity as Department).timeStamp;
+          case "deleted":
+            return (entity as Department).deleted;
+          case "knowledgeId":
+            return (entity as Department).knowledgeId;
+        }
+      }
+      if (entity is User) {
+        switch (fieldName) {
+          case "id":
+            return (entity as User).id;
+          case "timeStamp":
+            return (entity as User).timeStamp;
+          case "deleted":
+            return (entity as User).deleted;
+          case "knowledgeId":
+            return (entity as User).knowledgeId;
+        }
+      }
+    }
+    throw NetCoreSyncException(
+        "Unexpected entity Type: $entity, fieldName: $fieldName");
+  }
+
   Insertable<D> updateSyncColumns<D>(
     Insertable<D> entity, {
     required int timeStamp,
@@ -1610,7 +1716,7 @@ class _$NetCoreSyncEngineUser extends NetCoreSyncEngine {
         return entity;
       }
     }
-    throw Exception("Unexpected entity Type: $entity");
+    throw NetCoreSyncException("Unexpected entity Type: $entity");
   }
 }
 
@@ -1621,6 +1727,13 @@ extension $NetCoreSyncClientExtension on Database {
       {
         Employee: NetCoreSyncTableUser(
           employees,
+          NetCoreSyncTable.fromJson({
+            "mapToClassName": "SyncEmployee",
+            "idFieldName": "id",
+            "timeStampFieldName": "timeStamp",
+            "deletedFieldName": "deleted",
+            "knowledgeIdFieldName": "knowledgeId"
+          }),
           employees.id.escapedName,
           employees.timeStamp.escapedName,
           employees.deleted.escapedName,
@@ -1628,6 +1741,13 @@ extension $NetCoreSyncClientExtension on Database {
         ),
         Department: NetCoreSyncTableUser(
           departments,
+          NetCoreSyncTable.fromJson({
+            "mapToClassName": "SyncDepartment",
+            "idFieldName": "id",
+            "timeStampFieldName": "timeStamp",
+            "deletedFieldName": "deleted",
+            "knowledgeIdFieldName": "knowledgeId"
+          }),
           departments.id.escapedName,
           departments.timeStamp.escapedName,
           departments.deleted.escapedName,
@@ -1635,6 +1755,13 @@ extension $NetCoreSyncClientExtension on Database {
         ),
         User: NetCoreSyncTableUser(
           users,
+          NetCoreSyncTable.fromJson({
+            "mapToClassName": "SyncUser",
+            "idFieldName": "id",
+            "timeStampFieldName": "timeStamp",
+            "deletedFieldName": "deleted",
+            "knowledgeIdFieldName": "knowledgeId"
+          }),
           users.id.escapedName,
           users.timeStamp.escapedName,
           users.deleted.escapedName,
