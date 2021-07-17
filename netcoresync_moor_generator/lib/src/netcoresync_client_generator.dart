@@ -72,9 +72,12 @@ class NetCoreSyncClientGenerator extends GeneratorForAnnotation<UseMoor> {
     buffer.writeln();
     buffer
         .writeln("class _\$NetCoreSyncEngineUser extends NetCoreSyncEngine {");
+    buffer.writeln(
+        "_\$NetCoreSyncEngineUser(Map<Type, NetCoreSyncTableUser> tables) : super(tables);");
 
     // START METHOD: getSyncColumnValue
     buffer.writeln();
+    buffer.writeln("@override");
     buffer.writeln(
         "Object? getSyncColumnValue<D>(Insertable<D> entity, String fieldName) {");
     buffer.writeln("if (entity is UpdateCompanion<D>) {");
@@ -125,9 +128,18 @@ class NetCoreSyncClientGenerator extends GeneratorForAnnotation<UseMoor> {
 
     // START METHOD: updateSyncColumns
     buffer.writeln();
+    buffer.writeln("@override");
     buffer.writeln(
         "Insertable<D> updateSyncColumns<D>(Insertable<D> entity, {required int timeStamp, bool? deleted,}) {");
-    buffer.writeln("if (entity is UpdateCompanion<D>) {");
+    buffer.writeln("if (entity is RawValuesInsertable<D>) {");
+    buffer.writeln(
+        "entity.data[tables[D]!.timeStampEscapedName] = Constant(timeStamp);");
+    buffer.writeln(
+        "entity.data[tables[D]!.knowledgeIdEscapedName] = Constant(null);");
+    buffer.writeln(
+        "if (deleted != null) entity.data[tables[D]!.deletedEscapedName] = Constant(deleted);");
+    buffer.writeln("return entity;");
+    buffer.writeln("} else if (entity is UpdateCompanion<D>) {");
     for (var jsonPart in jsonParts) {
       Map<String, dynamic> part = jsonDecode(jsonPart);
       buffer.writeln("if (D == ${part["dataClassName"]}) {");
@@ -191,7 +203,7 @@ class NetCoreSyncClientGenerator extends GeneratorForAnnotation<UseMoor> {
     buffer.writeln();
     buffer.writeln("Future<void> netCoreSync_initialize() async {");
     buffer.writeln("await netCoreSync_initializeImpl(");
-    buffer.writeln("_\$NetCoreSyncEngineUser(),");
+    buffer.writeln("_\$NetCoreSyncEngineUser(");
     buffer.writeln("{");
     for (var jsonPart in jsonParts) {
       Map<String, dynamic> part = jsonDecode(jsonPart);
@@ -206,6 +218,7 @@ class NetCoreSyncClientGenerator extends GeneratorForAnnotation<UseMoor> {
       ),''');
     }
     buffer.writeln("},");
+    buffer.writeln("),");
     buffer.writeln(");");
     buffer.writeln("}");
     // END METHOD: netCoreSync_initialize

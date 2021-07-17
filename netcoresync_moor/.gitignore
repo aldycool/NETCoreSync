@@ -73,3 +73,6 @@ build/
 !**/ios/**/default.mode2v3
 !**/ios/**/default.pbxuser
 !**/ios/**/default.perspectivev3
+
+# Custom directory for Moor testing database file
+.test_files/

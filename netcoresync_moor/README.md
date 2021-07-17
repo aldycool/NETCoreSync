@@ -29,6 +29,7 @@ General Guide:
   - All restrictions inherited from NetCoreSync
   - In Moor implementation, the primary key column's type must be `String` (usually implemented as Guid). We cannot guarantee its uniqueness if its type is other than `String`.
   - Data classes that uses Moor's @UseRowClass must be mutable (its field values can be changed independently).
+  - As per writing (2021-Jul-16), the tests and also the library functions supports `insertReturning` (and its sync equivalent: `syncInsertReturning`), but, neither android, ios, macos or maybe other platforms shipped with the required sqlite version (3.35), so manual installation (or packaging in the output) is necessary to install the sqlite 3.35 or newer. Read more about this issue [here](https://github.com/simolus3/moor/issues/1096).
 - Unsupported Moor functions:
   - `batch`: haven't got a clean way on how to work on top of this properly
   - `onConflict` parameter on `insert`: It uses the class `DoUpdate<T, D>`, so initially I should subclass it (wrap it in a new class, for exampe `SyncDoUpdate<T, D>`) and perform the update of synchronization columns before returning the `Insertable<D>`. But internally it will be resolved back to the original `DoUpdate<T, D>` or (`UpsertMultiple<T, D>`) again so the changes will not be picked up.

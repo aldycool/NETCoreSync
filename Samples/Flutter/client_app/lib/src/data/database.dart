@@ -40,34 +40,6 @@ class Database extends _$Database with NetCoreSyncClient {
   static const String _configuration_key_synchronizationId =
       "SYNCHRONIZATIONID";
 
-  Future<void> testConcepts() async {
-    await transaction(() async {
-      // TODO: Fully test all inserts! check test creation if necessary so we don't have to do this anymore
-      await delete(departments).go();
-      final returned = await into(departments)
-          .syncInsertReturning(DepartmentsCompanion(name: Value("AAA")));
-      print(returned);
-      final conflict = returned.toCompanion(true).copyWith(name: Value("xxx"));
-      print(conflict);
-      int affected =
-          await into(departments).syncInsertOnConflictUpdate(conflict);
-      print(affected);
-      final check = await (select(departments)
-            ..where((tbl) => tbl.name.equals("xxx")))
-          .getSingle();
-      print(check);
-      int affected2 = await into(departments).syncInsert(check,
-          onConflict: SyncDoUpdate((old) => DepartmentsCompanion.custom(
-              id: Constant("abc"), name: old.name)));
-      print(affected2);
-      final check2 = await (select(departments)
-            ..where((tbl) => tbl.id.equals("abc")))
-          .getSingle();
-      print(check2);
-    });
-    await netCoreSync_testConcepts();
-  }
-
   Future<void> resetDatabase({bool includeConfiguration = false}) async {
     await delete(employees).go();
     await delete(departments).go();

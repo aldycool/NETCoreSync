@@ -9,7 +9,6 @@ void main() async {
   Database database = await constructDatabase(logStatements: true);
   await database.netCoreSync_initialize();
   Global.instance.setDatabase(database);
-  await database.testConcepts();
   runApp(MyApp());
 }
 

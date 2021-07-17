@@ -30,8 +30,7 @@ dependencies:
   sqlite3_flutter_libs: ^0.5.0 # https://pub.dev/packages/sqlite3_flutter_libs
   intl: ^0.17.0 # https://pub.dev/packages/intl
   datetime_picker_formfield: ^2.0.0 # https://pub.dev/packages/datetime_picker_formfield
-  netcoresync_moor:
-    path: ../../../netcoresync_moor
+  netcoresync_moor: any
 
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.
@@ -42,6 +41,11 @@ dev_dependencies:
     sdk: flutter
   moor_generator: ^4.4.1 # https://pub.dev/packages/moor_generator
   build_runner: ^2.0.6 # https://pub.dev/packages/build_runner
+  netcoresync_moor_generator: any
+
+dependency_overrides:
+  netcoresync_moor:
+    path: ../../../netcoresync_moor
   netcoresync_moor_generator:
     path: ../../../netcoresync_moor_generator
 

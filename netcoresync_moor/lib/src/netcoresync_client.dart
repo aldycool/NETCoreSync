@@ -5,30 +5,23 @@ import 'netcoresync_engine.dart';
 import 'data_access.dart';
 
 mixin NetCoreSyncClient on GeneratedDatabase {
-  static bool _initialized = false;
-  static late NetCoreSyncClient instance;
+  @internal
+  static NetCoreSyncClient? instance;
 
   @internal
   late DataAccess dataAccess;
 
   Future<void> netCoreSync_initializeImpl(
     NetCoreSyncEngine engine,
-    Map<Type, NetCoreSyncTableUser> tables,
   ) async {
-    if (_initialized)
-      throw NetCoreSyncException("Client is already initialized");
-    dataAccess = DataAccess(this, engine, tables);
+    dataAccess = DataAccess(this, engine);
     instance = this;
-    _initialized = true;
   }
 
-  Future<void> netCoreSync_testConcepts() async {
-    await dataAccess.testConcepts();
-  }
+  static bool get initialized => instance != null;
 
   @internal
   static void throwIfNotInitialized() {
-    if (!_initialized)
-      throw NetCoreSyncException("Client is not initialized yet");
+    if (!initialized) throw NetCoreSyncNotInitializedException();
   }
 }
