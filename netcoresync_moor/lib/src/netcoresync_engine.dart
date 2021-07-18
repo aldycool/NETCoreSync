@@ -1,5 +1,4 @@
 import 'package:moor/moor.dart';
-import 'package:netcoresync_moor/netcoresync_moor.dart';
 import 'netcoresync_annotations.dart';
 
 abstract class NetCoreSyncEngine {

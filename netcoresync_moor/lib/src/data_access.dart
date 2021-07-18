@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'package:moor/moor.dart';
-import 'netcoresync_client.dart';
 import 'netcoresync_engine.dart';
 import 'netcoresync_knowledges.dart';
 import 'netcoresync_exceptions.dart';
@@ -24,18 +23,24 @@ class DataAccess<G extends GeneratedDatabase> extends DatabaseAccessor<G> {
         .contains("Transaction");
   }
 
+  dynamic get resolvedEngine =>
+      Zone.current[#DatabaseConnectionUser] ?? database;
+
   Future<int> getNextTimeStamp() async {
-    NetCoreSyncKnowledge? localKnowledge = await (database.select(knowledges)
+    DatabaseConnectionUser activeDb = resolvedEngine as DatabaseConnectionUser;
+    NetCoreSyncKnowledge? localKnowledge = await (activeDb.select(knowledges)
           ..where((tbl) => tbl.local))
         .getSingleOrNull();
     if (localKnowledge == null) {
       NetCoreSyncKnowledge newLocalKnowledge = NetCoreSyncKnowledge();
       newLocalKnowledge.local = true;
-      localKnowledge =
-          await into(knowledges).insertReturning(newLocalKnowledge);
+      await activeDb.into(knowledges).insert(newLocalKnowledge);
+      localKnowledge = await (activeDb.select(knowledges)
+            ..where((tbl) => tbl.id.equals(newLocalKnowledge.id)))
+          .getSingle();
     }
     int nextTimeStamp = localKnowledge.maxTimeStamp + 1;
-    await (update(knowledges)
+    await (activeDb.update(knowledges)
           ..where((tbl) => tbl.id.equals(localKnowledge!.id)))
         .write(_NetCoreSyncKnowledgesCompanion(
       maxTimeStamp: Value(nextTimeStamp),
@@ -47,7 +52,6 @@ class DataAccess<G extends GeneratedDatabase> extends DatabaseAccessor<G> {
     Insertable<D> entity,
     Future<T> Function(dynamic syncEntity, int obtainedTimeStamp) action,
   ) async {
-    NetCoreSyncClient.throwIfNotInitialized();
     if (!inTransaction()) throw NetCoreSyncMustInsideTransactionException();
     if (!engine.tables.containsKey(D))
       throw NetCoreSyncTypeNotRegisteredException(D);
