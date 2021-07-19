@@ -3,6 +3,7 @@ import 'package:test/test.dart';
 import 'package:version/version.dart';
 import 'package:netcoresync_moor/netcoresync_moor.dart';
 import 'data/database.dart';
+import 'data/custom_objects.dart';
 import 'utils/helper.dart';
 
 void main() async {
@@ -468,6 +469,40 @@ void main() async {
             );
           }).toList();
           expect(joined3.length, equals(0));
+        });
+      },
+    );
+
+    test(
+      "Sync @UseRowClass Tests",
+      () async {
+        await database.transaction(() async {
+          CustomObject data = CustomObject();
+          data.fieldString = "A";
+          await database.syncInto(database.customObjects).syncInsert(data);
+          final ret1 = await (database.select(database.customObjects)
+                ..where((tbl) => tbl.fieldString.equals("A")))
+              .getSingle();
+          expect(ret1.fieldString, equals("A"));
+          expect(ret1.timeStamp, equals(1));
+          ret1.fieldString = "B";
+          await database.syncUpdate(database.customObjects).syncReplace(ret1);
+          final ret2 = await (database.select(database.customObjects)
+                ..where((tbl) => tbl.fieldString.equals("B")))
+              .getSingle();
+          expect(ret2.fieldString, equals("B"));
+          expect(ret2.timeStamp, equals(2));
+          await (database.syncDelete(database.customObjects)
+                ..where((tbl) => tbl.fieldString.equals("B")))
+              .go();
+          final col1 = await database.select(database.customObjects).get();
+          expect(col1.length, equals(1));
+          expect(col1[0].timeStamp, equals(3));
+          expect(col1[0].deleted, equals(true));
+          final col2 = await database
+              .select(database.syncTable(database.customObjects))
+              .get();
+          expect(col2.length, equals(0));
         });
       },
     );
