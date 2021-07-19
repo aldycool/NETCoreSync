@@ -31,7 +31,8 @@ class SyncUpdateStatement<T extends Table, D> extends UpdateStatement<T, D> {
     );
   }
 
-  Future<bool> replace(Insertable<D> entity, {bool dontExecute = false}) async {
+  Future<bool> syncReplace(Insertable<D> entity,
+      {bool dontExecute = false}) async {
     return _syncActionUpdate(
       entity,
       dontExecute: dontExecute,
