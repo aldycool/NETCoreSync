@@ -43,6 +43,11 @@ General Guide:
   flutter pub get
   flutter packages pub run build_runner build --delete-conflicting-outputs
   ```
+- Unit tests Code Coverage:
+  - ensure the `lcov` application is installed: `brew install lcov` (this installs the `genhtml` application).
+  - on the root folder: `flutter test --coverage`, this will create a folder `coverage` with a file `lcov.info` inside.
+  - on the root folder: `genhtml -o coverage/genhtml coverage/lcov.info`, this will generate test reports in html files, the starting html index file is in `coverage/genhtml/index.html`.
+  - NOTE: by default, the `coverage` folder is git-ignored.
 
 ## Dev Notes
 
