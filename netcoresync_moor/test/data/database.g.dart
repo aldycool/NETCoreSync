@@ -1698,7 +1698,7 @@ class _$NetCoreSyncEngineUser extends NetCoreSyncEngine {
 
 extension $NetCoreSyncClientExtension on Database {
   Future<void> netCoreSync_initialize() async {
-    await netCoreSync_initializeImpl(
+    await netCoreSync_initializeClient(
       _$NetCoreSyncEngineUser(
         {
           AreaData: NetCoreSyncTableUser(
@@ -1746,5 +1746,46 @@ extension $NetCoreSyncClientExtension on Database {
         },
       ),
     );
+    netCoreSync_initializeUser();
+  }
+}
+
+class $SyncAreasTable extends $AreasTable implements SyncBaseTable {
+  $SyncAreasTable(_$Database db) : super(db);
+  @override
+  Type get type => AreaData;
+  @override
+  String get entityName =>
+      "(SELECT * FROM ${super.entityName} WHERE ${super.syncDeleted.escapedName} = 0)";
+}
+
+class $SyncCustomObjectsTable extends $CustomObjectsTable
+    implements SyncBaseTable {
+  $SyncCustomObjectsTable(_$Database db) : super(db);
+  @override
+  Type get type => CustomObject;
+  @override
+  String get entityName =>
+      "(SELECT * FROM ${super.entityName} WHERE ${super.deleted.escapedName} = 0)";
+}
+
+class $SyncPersonsTable extends $PersonsTable implements SyncBaseTable {
+  $SyncPersonsTable(_$Database db) : super(db);
+  @override
+  Type get type => Person;
+  @override
+  String get entityName =>
+      "(SELECT * FROM ${super.entityName} WHERE ${super.deleted.escapedName} = 0)";
+}
+
+mixin NetCoreSyncClientUser on NetCoreSyncClient {
+  late $SyncAreasTable syncAreas;
+  late $SyncCustomObjectsTable syncCustomObjects;
+  late $SyncPersonsTable syncPersons;
+
+  void netCoreSync_initializeUser() {
+    syncAreas = $SyncAreasTable(resolvedEngine);
+    syncCustomObjects = $SyncCustomObjectsTable(resolvedEngine);
+    syncPersons = $SyncPersonsTable(resolvedEngine);
   }
 }

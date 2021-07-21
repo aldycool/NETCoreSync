@@ -202,7 +202,7 @@ class NetCoreSyncClientGenerator extends GeneratorForAnnotation<UseMoor> {
     // START METHOD: netCoreSync_initialize
     buffer.writeln();
     buffer.writeln("Future<void> netCoreSync_initialize() async {");
-    buffer.writeln("await netCoreSync_initializeImpl(");
+    buffer.writeln("await netCoreSync_initializeClient(");
     buffer.writeln("_\$NetCoreSyncEngineUser(");
     buffer.writeln("{");
     for (var jsonPart in jsonParts) {
@@ -220,11 +220,48 @@ class NetCoreSyncClientGenerator extends GeneratorForAnnotation<UseMoor> {
     buffer.writeln("},");
     buffer.writeln("),");
     buffer.writeln(");");
+    buffer.writeln("netCoreSync_initializeUser();");
     buffer.writeln("}");
     // END METHOD: netCoreSync_initialize
 
     buffer.writeln("}");
     // END EXTENSION: $NetCoreSyncClientExtension
+
+    // START CLASSES: Sync Tables
+    for (var jsonPart in jsonParts) {
+      Map<String, dynamic> part = jsonDecode(jsonPart);
+      buffer.writeln("");
+      buffer.writeln('''
+        class \$Sync${part["tableClassName"]}Table extends \$${part["tableClassName"]}Table implements SyncBaseTable {
+          \$Sync${part["tableClassName"]}Table(_\$${element.name} db) : super(db);
+          @override
+          Type get type => ${part["dataClassName"]};
+          @override
+          String get entityName => "(SELECT * FROM \${super.entityName} WHERE \${super.${part["netCoreSyncTable"]["deletedFieldName"]}.escapedName} = 0)";
+        }
+      ''');
+    }
+    // END CLASSES: Sync Tables
+
+    // START MIXIN: NetCoreSyncClientUser
+    buffer.writeln("");
+    buffer.writeln("mixin NetCoreSyncClientUser on NetCoreSyncClient {");
+    for (var jsonPart in jsonParts) {
+      Map<String, dynamic> part = jsonDecode(jsonPart);
+      buffer.writeln(
+          "late \$Sync${part["tableClassName"]}Table sync${part["tableClassName"]};");
+    }
+    buffer.writeln("");
+    buffer.writeln("void netCoreSync_initializeUser() {");
+    for (var jsonPart in jsonParts) {
+      Map<String, dynamic> part = jsonDecode(jsonPart);
+      buffer.writeln(
+          "sync${part["tableClassName"]} = \$Sync${part["tableClassName"]}Table(resolvedEngine);");
+    }
+    buffer.writeln("}");
+
+    buffer.writeln("}");
+    // END MIXIN: NetCoreSyncClientUser
 
     return buffer.toString();
   }

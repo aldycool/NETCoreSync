@@ -17,7 +17,8 @@ part 'database.g.dart';
     NetCoreSyncKnowledges,
   ],
 )
-class Database extends _$Database with NetCoreSyncClient {
+class Database extends _$Database
+    with NetCoreSyncClient, NetCoreSyncClientUser {
   Database(QueryExecutor queryExecutor) : super(queryExecutor);
 
   @override

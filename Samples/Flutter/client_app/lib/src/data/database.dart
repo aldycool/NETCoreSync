@@ -4,7 +4,6 @@ import 'package:uuid/uuid.dart';
 import 'employees.dart';
 import 'departments.dart';
 import 'configurations.dart';
-import 'users.dart';
 
 export 'database_shared.dart';
 
@@ -15,11 +14,11 @@ part 'database.g.dart';
     Employees,
     Departments,
     Configurations,
-    Users,
     NetCoreSyncKnowledges,
   ],
 )
-class Database extends _$Database with NetCoreSyncClient {
+class Database extends _$Database
+    with NetCoreSyncClient, NetCoreSyncClientUser {
   Database(QueryExecutor queryExecutor) : super(queryExecutor);
 
   static String get fileName => "client_app_data";
@@ -43,6 +42,7 @@ class Database extends _$Database with NetCoreSyncClient {
   Future<void> resetDatabase({bool includeConfiguration = false}) async {
     await delete(employees).go();
     await delete(departments).go();
+    await delete(netCoreSyncKnowledges).go();
     if (includeConfiguration) {
       await delete(configurations).go();
     }
@@ -74,15 +74,13 @@ class Database extends _$Database with NetCoreSyncClient {
   }
 
   Stream<List<Department>> getAllDepartments() {
-    return (select(departments)
-          ..where((w) => w.deleted.not())
+    return (syncSelect(syncDepartments)
           ..orderBy([(t) => OrderingTerm(expression: t.name)]))
         .watch();
   }
 
   Future<List<Department>> getAllDepartmentsForPicker() async {
-    List<Department> result = await (select(departments)
-          ..where((w) => w.deleted.not())
+    List<Department> result = await (syncSelect(syncDepartments)
           ..orderBy([(t) => OrderingTerm(expression: t.name)]))
         .get();
     result.insert(0, getEmptyDepartment());
@@ -99,46 +97,80 @@ class Database extends _$Database with NetCoreSyncClient {
   }
 
   Future<Department?> getDepartmentById(String id) {
-    return (select(departments)..where((w) => w.id.equals(id)))
+    return (syncSelect(syncDepartments)..where((w) => w.id.equals(id)))
         .getSingleOrNull();
   }
 
-  Future<int> insertDepartment(Insertable<Department> data) =>
-      into(departments).insert(data);
+  Future<int> insertDepartment(Insertable<Department> data) {
+    return transaction(() async {
+      final ret = await syncInto(departments).syncInsert(data);
+      return ret;
+    });
+  }
 
-  Future<bool> updateDepartment(Insertable<Department> data) =>
-      update(departments).replace(data);
+  Future<bool> updateDepartment(Insertable<Department> data) {
+    return transaction(() async {
+      final ret = await syncUpdate(departments).syncReplace(data);
+      return ret;
+    });
+  }
+
+  Future<int> deleteDepartment(String id) {
+    return transaction(() async {
+      final ret = await (syncDelete(departments)
+            ..where((tbl) => tbl.id.equals(id)))
+          .go();
+      return ret;
+    });
+  }
 
   Stream<List<EmployeeJoined>> getAllEmployees() {
-    final query = ((select(employees)..where((w) => w.deleted.not())).join([
+    final query = (syncSelect(syncEmployees).syncJoin([
       leftOuterJoin(
-          departments, departments.id.equalsExp(employees.departmentId)),
+          syncDepartments, departments.id.equalsExp(employees.departmentId)),
     ])
       ..orderBy([OrderingTerm(expression: employees.name)]));
 
     return query.watch().map((rows) {
       return rows.map((row) {
         return EmployeeJoined(
-          employee: row.readTable(employees),
-          department: row.readTableOrNull(departments),
+          employee: row.readTable(syncEmployees),
+          department: row.readTableOrNull((syncDepartments)),
         );
       }).toList();
     });
   }
 
   Future<Employee?> getEmployeeById(String id) {
-    return (select(employees)..where((w) => w.id.equals(id))).getSingleOrNull();
+    return (syncSelect(syncEmployees)..where((w) => w.id.equals(id)))
+        .getSingleOrNull();
   }
 
-  Future<int> insertEmployee(Insertable<Employee> data) =>
-      into(employees).insert(data);
+  Future<int> insertEmployee(Insertable<Employee> data) {
+    return transaction(() async {
+      final ret = await syncInto(employees).syncInsert(data);
+      return ret;
+    });
+  }
 
-  Future<bool> updateEmployee(Insertable<Employee> data) =>
-      update(employees).replace(data);
+  Future<bool> updateEmployee(Insertable<Employee> data) {
+    return transaction(() async {
+      final ret = await syncUpdate(employees).syncReplace(data);
+      return ret;
+    });
+  }
+
+  Future<int> deleteEmployee(String id) {
+    return transaction(() async {
+      final ret =
+          await (syncDelete(employees)..where((tbl) => tbl.id.equals(id))).go();
+      return ret;
+    });
+  }
 
   Future<bool> isDepartmentHasEmployees(String id) async {
-    return (await (select(employees)
-                  ..where((w) => w.deleted.not() & w.departmentId.equals(id)))
+    return (await (syncSelect(syncEmployees)
+                  ..where((w) => w.departmentId.equals(id)))
                 .get())
             .length >
         0;

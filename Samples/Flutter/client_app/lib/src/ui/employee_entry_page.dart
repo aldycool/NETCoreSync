@@ -99,10 +99,7 @@ class _EmployeeEntryPageState extends State<EmployeeEntryPage> {
       if (widget.dataId == null) {
         throw Exception("dataId is null");
       }
-      final deleteData = data.copyWith(
-        deleted: moor.Value(true),
-      );
-      await Global.instance.database.updateEmployee(deleteData);
+      await Global.instance.database.deleteEmployee(widget.dataId!);
     } catch (e) {
       await Utils.alert(
         buildContext: buildContext,

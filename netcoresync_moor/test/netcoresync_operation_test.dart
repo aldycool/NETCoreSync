@@ -40,7 +40,7 @@ void main() async {
       // should throw Exception if not initialized yet
       await expectLater(
         () async {
-          await database.select(database.syncTable(database.persons)).get();
+          await database.syncSelect(database.persons).get();
         },
         throwsA(isA<NetCoreSyncNotInitializedException>()),
       );
@@ -60,9 +60,7 @@ void main() async {
       await expectLater(
         () async {
           await database.transaction(() async {
-            await database
-                .select(database.syncTable(database.netCoreSyncKnowledges))
-                .get();
+            await database.syncSelect(database.netCoreSyncKnowledges).get();
           });
         },
         throwsA(isA<NetCoreSyncTypeNotRegisteredException>()),
@@ -366,22 +364,43 @@ void main() async {
       () async {
         await database.transaction(() async {
           await database.syncInto(database.persons).syncInsert(
-                PersonsCompanion(name: Value("A")),
+                PersonsCompanion(
+                  name: Value("A"),
+                  age: Value(10),
+                ),
               );
           await database.syncInto(database.persons).syncInsert(
-                PersonsCompanion(name: Value("B")),
+                PersonsCompanion(
+                  name: Value("B"),
+                  age: Value(20),
+                ),
               );
           await database.syncInto(database.persons).syncInsert(
-                PersonsCompanion(name: Value("C")),
+                PersonsCompanion(
+                  name: Value("C"),
+                  age: Value(30),
+                ),
               );
-          final col1 = await database.select(database.persons).get();
-          expect(col1.length, equals(3));
+
           await (database.syncDelete(database.persons)
-                ..where((tbl) => tbl.name.equals("A") | tbl.name.equals("B")))
+                ..where((tbl) => tbl.name.equals("B")))
               .go();
-          final col2 =
-              await database.select(database.syncTable(database.persons)).get();
-          expect(col2.length, equals(1));
+
+          final colRemaining1 =
+              await database.syncSelect(database.syncPersons).get();
+          expect(colRemaining1.length, equals(2));
+
+          final colRemaining2 = await (database.syncSelectOnly(
+                  database.syncPersons)
+                ..addColumns([
+                  database.persons.name,
+                  database.persons.age,
+                ])
+                ..orderBy([OrderingTerm(expression: database.persons.name)]))
+              .get();
+          expect(colRemaining2.length, equals(2));
+          expect(colRemaining2[0].read(database.persons.name), equals("A"));
+          expect(colRemaining2[1].read(database.persons.name), equals("C"));
         });
       },
     );
@@ -423,23 +442,24 @@ void main() async {
           expect(joined1[0].areaData!.city, equals("Jakarta"));
 
           // Now we SyncDelete the reference, it should not throw error because it's doing soft-delete.
-          // The join with syncTable should work too by returning null on the reference
+          // The join should work by returning null on the reference
           await expectLater(
             database.syncDelete(database.areas).go(),
             completion(equals(1)),
           );
           final deletedArea = await database.select(database.areas).getSingle();
           expect(deletedArea.syncDeleted, equals(true));
-          final joined2 = (await database.select(database.persons).join([
+          final joined2 =
+              (await database.syncSelect(database.syncPersons).syncJoin([
             leftOuterJoin(
-              database.syncTable(database.areas),
+              database.syncAreas,
               database.areas.pk.equalsExp(database.persons.vaccinationAreaPk),
             )
           ]).get())
-              .map((row) {
+                  .map((row) {
             return _PersonJoined(
-              person: row.readTable(database.persons),
-              areaData: row.readTableOrNull(database.areas),
+              person: row.readTable(database.syncPersons),
+              areaData: row.readTableOrNull(database.syncAreas),
             );
           }).toList();
           expect(joined2.length, equals(1));
@@ -454,18 +474,17 @@ void main() async {
           final deletedPerson =
               await database.select(database.persons).getSingle();
           expect(deletedPerson.deleted, equals(true));
-          final joined3 = (await database
-                  .select(database.syncTable(database.persons))
-                  .join([
+          final joined3 =
+              (await database.syncSelect(database.syncPersons).syncJoin([
             leftOuterJoin(
-              database.syncTable(database.areas),
+              database.syncAreas,
               database.areas.pk.equalsExp(database.persons.vaccinationAreaPk),
             )
           ]).get())
-              .map((row) {
+                  .map((row) {
             return _PersonJoined(
-              person: row.readTable(database.persons),
-              areaData: row.readTableOrNull(database.areas),
+              person: row.readTable(database.syncPersons),
+              areaData: row.readTableOrNull(database.syncAreas),
             );
           }).toList();
           expect(joined3.length, equals(0));
@@ -499,9 +518,8 @@ void main() async {
           expect(col1.length, equals(1));
           expect(col1[0].timeStamp, equals(3));
           expect(col1[0].deleted, equals(true));
-          final col2 = await database
-              .select(database.syncTable(database.customObjects))
-              .get();
+          final col2 =
+              await database.syncSelect(database.syncCustomObjects).get();
           expect(col2.length, equals(0));
         });
       },

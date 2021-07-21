@@ -61,10 +61,7 @@ class _DepartmentEntryPageState extends State<DepartmentEntryPage> {
           .isDepartmentHasEmployees(widget.dataId!)) {
         throw Exception("Department is already have Employees");
       }
-      final deleteData = data.copyWith(
-        deleted: moor.Value(true),
-      );
-      await Global.instance.database.updateDepartment(deleteData);
+      await Global.instance.database.deleteDepartment(widget.dataId!);
     } catch (e) {
       await Utils.alert(
         buildContext: buildContext,

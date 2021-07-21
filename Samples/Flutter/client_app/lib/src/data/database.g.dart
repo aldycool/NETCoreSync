@@ -1003,398 +1003,6 @@ class $ConfigurationsTable extends Configurations
   }
 }
 
-class UsersCompanion extends UpdateCompanion<User> {
-  final Value<String> id;
-  final Value<String> fieldString;
-  final Value<String?> fieldStringNullable;
-  final Value<int> fieldInt;
-  final Value<int?> fieldIntNullable;
-  final Value<bool> fieldBoolean;
-  final Value<bool?> fieldBooleanNullable;
-  final Value<DateTime> fieldDateTime;
-  final Value<DateTime?> fieldDateTimeNullable;
-  final Value<int> timeStamp;
-  final Value<bool> deleted;
-  final Value<String?> knowledgeId;
-  const UsersCompanion({
-    this.id = const Value.absent(),
-    this.fieldString = const Value.absent(),
-    this.fieldStringNullable = const Value.absent(),
-    this.fieldInt = const Value.absent(),
-    this.fieldIntNullable = const Value.absent(),
-    this.fieldBoolean = const Value.absent(),
-    this.fieldBooleanNullable = const Value.absent(),
-    this.fieldDateTime = const Value.absent(),
-    this.fieldDateTimeNullable = const Value.absent(),
-    this.timeStamp = const Value.absent(),
-    this.deleted = const Value.absent(),
-    this.knowledgeId = const Value.absent(),
-  });
-  UsersCompanion.insert({
-    required String id,
-    required String fieldString,
-    this.fieldStringNullable = const Value.absent(),
-    required int fieldInt,
-    this.fieldIntNullable = const Value.absent(),
-    required bool fieldBoolean,
-    this.fieldBooleanNullable = const Value.absent(),
-    required DateTime fieldDateTime,
-    this.fieldDateTimeNullable = const Value.absent(),
-    required int timeStamp,
-    required bool deleted,
-    this.knowledgeId = const Value.absent(),
-  })  : id = Value(id),
-        fieldString = Value(fieldString),
-        fieldInt = Value(fieldInt),
-        fieldBoolean = Value(fieldBoolean),
-        fieldDateTime = Value(fieldDateTime),
-        timeStamp = Value(timeStamp),
-        deleted = Value(deleted);
-  static Insertable<User> custom({
-    Expression<String>? id,
-    Expression<String>? fieldString,
-    Expression<String?>? fieldStringNullable,
-    Expression<int>? fieldInt,
-    Expression<int?>? fieldIntNullable,
-    Expression<bool>? fieldBoolean,
-    Expression<bool?>? fieldBooleanNullable,
-    Expression<DateTime>? fieldDateTime,
-    Expression<DateTime?>? fieldDateTimeNullable,
-    Expression<int>? timeStamp,
-    Expression<bool>? deleted,
-    Expression<String?>? knowledgeId,
-  }) {
-    return RawValuesInsertable({
-      if (id != null) 'id': id,
-      if (fieldString != null) 'field_string': fieldString,
-      if (fieldStringNullable != null)
-        'field_string_nullable': fieldStringNullable,
-      if (fieldInt != null) 'field_int': fieldInt,
-      if (fieldIntNullable != null) 'field_int_nullable': fieldIntNullable,
-      if (fieldBoolean != null) 'field_boolean': fieldBoolean,
-      if (fieldBooleanNullable != null)
-        'field_boolean_nullable': fieldBooleanNullable,
-      if (fieldDateTime != null) 'field_date_time': fieldDateTime,
-      if (fieldDateTimeNullable != null)
-        'field_date_time_nullable': fieldDateTimeNullable,
-      if (timeStamp != null) 'time_stamp': timeStamp,
-      if (deleted != null) 'deleted': deleted,
-      if (knowledgeId != null) 'knowledge_id': knowledgeId,
-    });
-  }
-
-  UsersCompanion copyWith(
-      {Value<String>? id,
-      Value<String>? fieldString,
-      Value<String?>? fieldStringNullable,
-      Value<int>? fieldInt,
-      Value<int?>? fieldIntNullable,
-      Value<bool>? fieldBoolean,
-      Value<bool?>? fieldBooleanNullable,
-      Value<DateTime>? fieldDateTime,
-      Value<DateTime?>? fieldDateTimeNullable,
-      Value<int>? timeStamp,
-      Value<bool>? deleted,
-      Value<String?>? knowledgeId}) {
-    return UsersCompanion(
-      id: id ?? this.id,
-      fieldString: fieldString ?? this.fieldString,
-      fieldStringNullable: fieldStringNullable ?? this.fieldStringNullable,
-      fieldInt: fieldInt ?? this.fieldInt,
-      fieldIntNullable: fieldIntNullable ?? this.fieldIntNullable,
-      fieldBoolean: fieldBoolean ?? this.fieldBoolean,
-      fieldBooleanNullable: fieldBooleanNullable ?? this.fieldBooleanNullable,
-      fieldDateTime: fieldDateTime ?? this.fieldDateTime,
-      fieldDateTimeNullable:
-          fieldDateTimeNullable ?? this.fieldDateTimeNullable,
-      timeStamp: timeStamp ?? this.timeStamp,
-      deleted: deleted ?? this.deleted,
-      knowledgeId: knowledgeId ?? this.knowledgeId,
-    );
-  }
-
-  @override
-  Map<String, Expression> toColumns(bool nullToAbsent) {
-    final map = <String, Expression>{};
-    if (id.present) {
-      map['id'] = Variable<String>(id.value);
-    }
-    if (fieldString.present) {
-      map['field_string'] = Variable<String>(fieldString.value);
-    }
-    if (fieldStringNullable.present) {
-      map['field_string_nullable'] =
-          Variable<String?>(fieldStringNullable.value);
-    }
-    if (fieldInt.present) {
-      map['field_int'] = Variable<int>(fieldInt.value);
-    }
-    if (fieldIntNullable.present) {
-      map['field_int_nullable'] = Variable<int?>(fieldIntNullable.value);
-    }
-    if (fieldBoolean.present) {
-      map['field_boolean'] = Variable<bool>(fieldBoolean.value);
-    }
-    if (fieldBooleanNullable.present) {
-      map['field_boolean_nullable'] =
-          Variable<bool?>(fieldBooleanNullable.value);
-    }
-    if (fieldDateTime.present) {
-      map['field_date_time'] = Variable<DateTime>(fieldDateTime.value);
-    }
-    if (fieldDateTimeNullable.present) {
-      map['field_date_time_nullable'] =
-          Variable<DateTime?>(fieldDateTimeNullable.value);
-    }
-    if (timeStamp.present) {
-      map['time_stamp'] = Variable<int>(timeStamp.value);
-    }
-    if (deleted.present) {
-      map['deleted'] = Variable<bool>(deleted.value);
-    }
-    if (knowledgeId.present) {
-      map['knowledge_id'] = Variable<String?>(knowledgeId.value);
-    }
-    return map;
-  }
-
-  @override
-  String toString() {
-    return (StringBuffer('UsersCompanion(')
-          ..write('id: $id, ')
-          ..write('fieldString: $fieldString, ')
-          ..write('fieldStringNullable: $fieldStringNullable, ')
-          ..write('fieldInt: $fieldInt, ')
-          ..write('fieldIntNullable: $fieldIntNullable, ')
-          ..write('fieldBoolean: $fieldBoolean, ')
-          ..write('fieldBooleanNullable: $fieldBooleanNullable, ')
-          ..write('fieldDateTime: $fieldDateTime, ')
-          ..write('fieldDateTimeNullable: $fieldDateTimeNullable, ')
-          ..write('timeStamp: $timeStamp, ')
-          ..write('deleted: $deleted, ')
-          ..write('knowledgeId: $knowledgeId')
-          ..write(')'))
-        .toString();
-  }
-}
-
-class $UsersTable extends Users with TableInfo<$UsersTable, User> {
-  final GeneratedDatabase _db;
-  final String? _alias;
-  $UsersTable(this._db, [this._alias]);
-  final VerificationMeta _idMeta = const VerificationMeta('id');
-  late final GeneratedColumn<String?> id = GeneratedColumn<String?>(
-      'id', aliasedName, false,
-      additionalChecks: GeneratedColumn.checkTextLength(maxTextLength: 36),
-      typeName: 'TEXT',
-      requiredDuringInsert: true);
-  final VerificationMeta _fieldStringMeta =
-      const VerificationMeta('fieldString');
-  late final GeneratedColumn<String?> fieldString = GeneratedColumn<String?>(
-      'field_string', aliasedName, false,
-      additionalChecks: GeneratedColumn.checkTextLength(maxTextLength: 255),
-      typeName: 'TEXT',
-      requiredDuringInsert: true);
-  final VerificationMeta _fieldStringNullableMeta =
-      const VerificationMeta('fieldStringNullable');
-  late final GeneratedColumn<String?> fieldStringNullable =
-      GeneratedColumn<String?>('field_string_nullable', aliasedName, true,
-          additionalChecks: GeneratedColumn.checkTextLength(maxTextLength: 255),
-          typeName: 'TEXT',
-          requiredDuringInsert: false);
-  final VerificationMeta _fieldIntMeta = const VerificationMeta('fieldInt');
-  late final GeneratedColumn<int?> fieldInt = GeneratedColumn<int?>(
-      'field_int', aliasedName, false,
-      typeName: 'INTEGER', requiredDuringInsert: true);
-  final VerificationMeta _fieldIntNullableMeta =
-      const VerificationMeta('fieldIntNullable');
-  late final GeneratedColumn<int?> fieldIntNullable = GeneratedColumn<int?>(
-      'field_int_nullable', aliasedName, true,
-      typeName: 'INTEGER', requiredDuringInsert: false);
-  final VerificationMeta _fieldBooleanMeta =
-      const VerificationMeta('fieldBoolean');
-  late final GeneratedColumn<bool?> fieldBoolean = GeneratedColumn<bool?>(
-      'field_boolean', aliasedName, false,
-      typeName: 'INTEGER',
-      requiredDuringInsert: true,
-      defaultConstraints: 'CHECK (field_boolean IN (0, 1))');
-  final VerificationMeta _fieldBooleanNullableMeta =
-      const VerificationMeta('fieldBooleanNullable');
-  late final GeneratedColumn<bool?> fieldBooleanNullable =
-      GeneratedColumn<bool?>('field_boolean_nullable', aliasedName, true,
-          typeName: 'INTEGER',
-          requiredDuringInsert: false,
-          defaultConstraints: 'CHECK (field_boolean_nullable IN (0, 1))');
-  final VerificationMeta _fieldDateTimeMeta =
-      const VerificationMeta('fieldDateTime');
-  late final GeneratedColumn<DateTime?> fieldDateTime =
-      GeneratedColumn<DateTime?>('field_date_time', aliasedName, false,
-          typeName: 'INTEGER', requiredDuringInsert: true);
-  final VerificationMeta _fieldDateTimeNullableMeta =
-      const VerificationMeta('fieldDateTimeNullable');
-  late final GeneratedColumn<DateTime?> fieldDateTimeNullable =
-      GeneratedColumn<DateTime?>('field_date_time_nullable', aliasedName, true,
-          typeName: 'INTEGER', requiredDuringInsert: false);
-  final VerificationMeta _timeStampMeta = const VerificationMeta('timeStamp');
-  late final GeneratedColumn<int?> timeStamp = GeneratedColumn<int?>(
-      'time_stamp', aliasedName, false,
-      typeName: 'INTEGER', requiredDuringInsert: true);
-  final VerificationMeta _deletedMeta = const VerificationMeta('deleted');
-  late final GeneratedColumn<bool?> deleted = GeneratedColumn<bool?>(
-      'deleted', aliasedName, false,
-      typeName: 'INTEGER',
-      requiredDuringInsert: true,
-      defaultConstraints: 'CHECK (deleted IN (0, 1))');
-  final VerificationMeta _knowledgeIdMeta =
-      const VerificationMeta('knowledgeId');
-  late final GeneratedColumn<String?> knowledgeId = GeneratedColumn<String?>(
-      'knowledge_id', aliasedName, true,
-      additionalChecks: GeneratedColumn.checkTextLength(maxTextLength: 36),
-      typeName: 'TEXT',
-      requiredDuringInsert: false);
-  @override
-  List<GeneratedColumn> get $columns => [
-        id,
-        fieldString,
-        fieldStringNullable,
-        fieldInt,
-        fieldIntNullable,
-        fieldBoolean,
-        fieldBooleanNullable,
-        fieldDateTime,
-        fieldDateTimeNullable,
-        timeStamp,
-        deleted,
-        knowledgeId
-      ];
-  @override
-  String get aliasedName => _alias ?? 'user';
-  @override
-  String get actualTableName => 'user';
-  @override
-  VerificationContext validateIntegrity(Insertable<User> instance,
-      {bool isInserting = false}) {
-    final context = VerificationContext();
-    final data = instance.toColumns(true);
-    if (data.containsKey('id')) {
-      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
-    } else if (isInserting) {
-      context.missing(_idMeta);
-    }
-    if (data.containsKey('field_string')) {
-      context.handle(
-          _fieldStringMeta,
-          fieldString.isAcceptableOrUnknown(
-              data['field_string']!, _fieldStringMeta));
-    } else if (isInserting) {
-      context.missing(_fieldStringMeta);
-    }
-    if (data.containsKey('field_string_nullable')) {
-      context.handle(
-          _fieldStringNullableMeta,
-          fieldStringNullable.isAcceptableOrUnknown(
-              data['field_string_nullable']!, _fieldStringNullableMeta));
-    }
-    if (data.containsKey('field_int')) {
-      context.handle(_fieldIntMeta,
-          fieldInt.isAcceptableOrUnknown(data['field_int']!, _fieldIntMeta));
-    } else if (isInserting) {
-      context.missing(_fieldIntMeta);
-    }
-    if (data.containsKey('field_int_nullable')) {
-      context.handle(
-          _fieldIntNullableMeta,
-          fieldIntNullable.isAcceptableOrUnknown(
-              data['field_int_nullable']!, _fieldIntNullableMeta));
-    }
-    if (data.containsKey('field_boolean')) {
-      context.handle(
-          _fieldBooleanMeta,
-          fieldBoolean.isAcceptableOrUnknown(
-              data['field_boolean']!, _fieldBooleanMeta));
-    } else if (isInserting) {
-      context.missing(_fieldBooleanMeta);
-    }
-    if (data.containsKey('field_boolean_nullable')) {
-      context.handle(
-          _fieldBooleanNullableMeta,
-          fieldBooleanNullable.isAcceptableOrUnknown(
-              data['field_boolean_nullable']!, _fieldBooleanNullableMeta));
-    }
-    if (data.containsKey('field_date_time')) {
-      context.handle(
-          _fieldDateTimeMeta,
-          fieldDateTime.isAcceptableOrUnknown(
-              data['field_date_time']!, _fieldDateTimeMeta));
-    } else if (isInserting) {
-      context.missing(_fieldDateTimeMeta);
-    }
-    if (data.containsKey('field_date_time_nullable')) {
-      context.handle(
-          _fieldDateTimeNullableMeta,
-          fieldDateTimeNullable.isAcceptableOrUnknown(
-              data['field_date_time_nullable']!, _fieldDateTimeNullableMeta));
-    }
-    if (data.containsKey('time_stamp')) {
-      context.handle(_timeStampMeta,
-          timeStamp.isAcceptableOrUnknown(data['time_stamp']!, _timeStampMeta));
-    } else if (isInserting) {
-      context.missing(_timeStampMeta);
-    }
-    if (data.containsKey('deleted')) {
-      context.handle(_deletedMeta,
-          deleted.isAcceptableOrUnknown(data['deleted']!, _deletedMeta));
-    } else if (isInserting) {
-      context.missing(_deletedMeta);
-    }
-    if (data.containsKey('knowledge_id')) {
-      context.handle(
-          _knowledgeIdMeta,
-          knowledgeId.isAcceptableOrUnknown(
-              data['knowledge_id']!, _knowledgeIdMeta));
-    }
-    return context;
-  }
-
-  @override
-  Set<GeneratedColumn> get $primaryKey => {id};
-  @override
-  User map(Map<String, dynamic> data, {String? tablePrefix}) {
-    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
-    return User.fromDb(
-      id: const StringType()
-          .mapFromDatabaseResponse(data['${effectivePrefix}id'])!,
-      fieldString: const StringType()
-          .mapFromDatabaseResponse(data['${effectivePrefix}field_string'])!,
-      fieldStringNullable: const StringType().mapFromDatabaseResponse(
-          data['${effectivePrefix}field_string_nullable']),
-      fieldInt: const IntType()
-          .mapFromDatabaseResponse(data['${effectivePrefix}field_int'])!,
-      fieldIntNullable: const IntType().mapFromDatabaseResponse(
-          data['${effectivePrefix}field_int_nullable']),
-      fieldBoolean: const BoolType()
-          .mapFromDatabaseResponse(data['${effectivePrefix}field_boolean'])!,
-      fieldBooleanNullable: const BoolType().mapFromDatabaseResponse(
-          data['${effectivePrefix}field_boolean_nullable']),
-      fieldDateTime: const DateTimeType()
-          .mapFromDatabaseResponse(data['${effectivePrefix}field_date_time'])!,
-      fieldDateTimeNullable: const DateTimeType().mapFromDatabaseResponse(
-          data['${effectivePrefix}field_date_time_nullable']),
-      timeStamp: const IntType()
-          .mapFromDatabaseResponse(data['${effectivePrefix}time_stamp'])!,
-      deleted: const BoolType()
-          .mapFromDatabaseResponse(data['${effectivePrefix}deleted'])!,
-      knowledgeId: const StringType()
-          .mapFromDatabaseResponse(data['${effectivePrefix}knowledge_id']),
-    );
-  }
-
-  @override
-  $UsersTable createAlias(String alias) {
-    return $UsersTable(_db, alias);
-  }
-}
-
 class NetCoreSyncKnowledgesCompanion
     extends UpdateCompanion<NetCoreSyncKnowledge> {
   final Value<String> id;
@@ -1541,14 +1149,13 @@ abstract class _$Database extends GeneratedDatabase {
   late final $EmployeesTable employees = $EmployeesTable(this);
   late final $DepartmentsTable departments = $DepartmentsTable(this);
   late final $ConfigurationsTable configurations = $ConfigurationsTable(this);
-  late final $UsersTable users = $UsersTable(this);
   late final $NetCoreSyncKnowledgesTable netCoreSyncKnowledges =
       $NetCoreSyncKnowledgesTable(this);
   @override
   Iterable<TableInfo> get allTables => allSchemaEntities.whereType<TableInfo>();
   @override
   List<DatabaseSchemaEntity> get allSchemaEntities =>
-      [employees, departments, configurations, users, netCoreSyncKnowledges];
+      [employees, departments, configurations, netCoreSyncKnowledges];
 }
 
 // **************************************************************************
@@ -1558,7 +1165,6 @@ abstract class _$Database extends GeneratedDatabase {
 // NOTE: Obtained from @NetCoreSyncTable annotations:
 // Employees: {"tableClassName":"Employees","dataClassName":"Employee","useRowClass":false,"netCoreSyncTable":{"mapToClassName":"SyncEmployee","idFieldName":"id","timeStampFieldName":"timeStamp","deletedFieldName":"deleted","knowledgeIdFieldName":"knowledgeId"}}
 // Departments: {"tableClassName":"Departments","dataClassName":"Department","useRowClass":false,"netCoreSyncTable":{"mapToClassName":"SyncDepartment","idFieldName":"id","timeStampFieldName":"timeStamp","deletedFieldName":"deleted","knowledgeIdFieldName":"knowledgeId"}}
-// Users: {"tableClassName":"Users","dataClassName":"User","useRowClass":true,"netCoreSyncTable":{"mapToClassName":"SyncUser","idFieldName":"id","timeStampFieldName":"timeStamp","deletedFieldName":"deleted","knowledgeIdFieldName":"knowledgeId"}}
 
 class _$NetCoreSyncEngineUser extends NetCoreSyncEngine {
   _$NetCoreSyncEngineUser(Map<Type, NetCoreSyncTableUser> tables)
@@ -1608,26 +1214,6 @@ class _$NetCoreSyncEngineUser extends NetCoreSyncEngine {
                 : (entity as DepartmentsCompanion).knowledgeId.value;
         }
       }
-      if (D == User) {
-        switch (fieldName) {
-          case "id":
-            return (entity as UsersCompanion).id == Value.absent()
-                ? null
-                : (entity as UsersCompanion).id.value;
-          case "timeStamp":
-            return (entity as UsersCompanion).timeStamp == Value.absent()
-                ? null
-                : (entity as UsersCompanion).timeStamp.value;
-          case "deleted":
-            return (entity as UsersCompanion).deleted == Value.absent()
-                ? null
-                : (entity as UsersCompanion).deleted.value;
-          case "knowledgeId":
-            return (entity as UsersCompanion).knowledgeId == Value.absent()
-                ? null
-                : (entity as UsersCompanion).knowledgeId.value;
-        }
-      }
     } else {
       if (entity is Employee) {
         switch (fieldName) {
@@ -1651,18 +1237,6 @@ class _$NetCoreSyncEngineUser extends NetCoreSyncEngine {
             return (entity as Department).deleted;
           case "knowledgeId":
             return (entity as Department).knowledgeId;
-        }
-      }
-      if (entity is User) {
-        switch (fieldName) {
-          case "id":
-            return (entity as User).id;
-          case "timeStamp":
-            return (entity as User).timeStamp;
-          case "deleted":
-            return (entity as User).deleted;
-          case "knowledgeId":
-            return (entity as User).knowledgeId;
         }
       }
     }
@@ -1697,13 +1271,6 @@ class _$NetCoreSyncEngineUser extends NetCoreSyncEngine {
           deleted: deleted != null ? Value(deleted) : Value.absent(),
         ) as Insertable<D>;
       }
-      if (D == User) {
-        return (entity as UsersCompanion).copyWith(
-          timeStamp: Value(timeStamp),
-          knowledgeId: Value(null),
-          deleted: deleted != null ? Value(deleted) : Value.absent(),
-        ) as Insertable<D>;
-      }
     } else if (entity is DataClass) {
       if (entity is Employee) {
         return (entity as Employee).copyWith(
@@ -1719,21 +1286,14 @@ class _$NetCoreSyncEngineUser extends NetCoreSyncEngine {
           deleted: deleted,
         ) as Insertable<D>;
       }
-    } else {
-      if (entity is User) {
-        (entity as User).timeStamp = timeStamp;
-        (entity as User).knowledgeId = null;
-        if (deleted != null) (entity as User).deleted = deleted;
-        return entity;
-      }
-    }
+    } else {}
     throw NetCoreSyncException("Unexpected entity Type: $entity");
   }
 }
 
 extension $NetCoreSyncClientExtension on Database {
   Future<void> netCoreSync_initialize() async {
-    await netCoreSync_initializeImpl(
+    await netCoreSync_initializeClient(
       _$NetCoreSyncEngineUser(
         {
           Employee: NetCoreSyncTableUser(
@@ -1764,22 +1324,37 @@ extension $NetCoreSyncClientExtension on Database {
             departments.deleted.escapedName,
             departments.knowledgeId.escapedName,
           ),
-          User: NetCoreSyncTableUser(
-            users,
-            NetCoreSyncTable.fromJson({
-              "mapToClassName": "SyncUser",
-              "idFieldName": "id",
-              "timeStampFieldName": "timeStamp",
-              "deletedFieldName": "deleted",
-              "knowledgeIdFieldName": "knowledgeId"
-            }),
-            users.id.escapedName,
-            users.timeStamp.escapedName,
-            users.deleted.escapedName,
-            users.knowledgeId.escapedName,
-          ),
         },
       ),
     );
+    netCoreSync_initializeUser();
+  }
+}
+
+class $SyncEmployeesTable extends $EmployeesTable implements SyncBaseTable {
+  $SyncEmployeesTable(_$Database db) : super(db);
+  @override
+  Type get type => Employee;
+  @override
+  String get entityName =>
+      "(SELECT * FROM ${super.entityName} WHERE ${super.deleted.escapedName} = 0)";
+}
+
+class $SyncDepartmentsTable extends $DepartmentsTable implements SyncBaseTable {
+  $SyncDepartmentsTable(_$Database db) : super(db);
+  @override
+  Type get type => Department;
+  @override
+  String get entityName =>
+      "(SELECT * FROM ${super.entityName} WHERE ${super.deleted.escapedName} = 0)";
+}
+
+mixin NetCoreSyncClientUser on NetCoreSyncClient {
+  late $SyncEmployeesTable syncEmployees;
+  late $SyncDepartmentsTable syncDepartments;
+
+  void netCoreSync_initializeUser() {
+    syncEmployees = $SyncEmployeesTable(resolvedEngine);
+    syncDepartments = $SyncDepartmentsTable(resolvedEngine);
   }
 }

@@ -3,6 +3,10 @@ import 'package:moor/moor.dart';
 import 'netcoresync_exceptions.dart';
 import 'data_access.dart';
 
+abstract class SyncBaseTable {
+  Type get type;
+}
+
 @sealed
 abstract class SyncUpsertClause<T extends Table, D> {
   UpsertClause<T, D> resolve(int obtainedTimeStamp, DataAccess dataAccess);

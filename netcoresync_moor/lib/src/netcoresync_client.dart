@@ -19,25 +19,60 @@ mixin NetCoreSyncClient on GeneratedDatabase {
     return _dataAccess!;
   }
 
-  Future<void> netCoreSync_initializeImpl(
+  Future<void> netCoreSync_initializeClient(
     NetCoreSyncEngine engine,
   ) async {
-    _dataAccess = DataAccess(this, engine);
+    _dataAccess = DataAccess(
+      this,
+      engine,
+    );
   }
 
-  SyncResultSetImplementation<T, R> syncTable<T extends HasResultSet, R>(
-          ResultSetImplementation<T, R> table) =>
-      SyncResultSetImplementation(dataAccess, table);
+  dynamic get resolvedEngine => dataAccess.resolvedEngine;
+
+  SyncSimpleSelectStatement<T, R> syncSelect<T extends HasResultSet, R>(
+    ResultSetImplementation<T, R> table, {
+    bool distinct = false,
+  }) =>
+      SyncSimpleSelectStatement(
+        dataAccess,
+        table,
+        distinct: distinct,
+      );
+
+  SyncJoinedSelectStatement<T, R> syncSelectOnly<T extends HasResultSet, R>(
+    ResultSetImplementation<T, R> table, {
+    bool distinct = false,
+  }) =>
+      SyncJoinedSelectStatement<T, R>(
+        dataAccess,
+        table,
+        [],
+        distinct,
+        false,
+      );
 
   SyncInsertStatement<T, D> syncInto<T extends Table, D>(
-          TableInfo<T, D> table) =>
-      SyncInsertStatement<T, D>(dataAccess, table);
+    TableInfo<T, D> table,
+  ) =>
+      SyncInsertStatement<T, D>(
+        dataAccess,
+        table,
+      );
 
   SyncUpdateStatement<T, D> syncUpdate<T extends Table, D>(
-          TableInfo<T, D> table) =>
-      SyncUpdateStatement<T, D>(dataAccess, table);
+    TableInfo<T, D> table,
+  ) =>
+      SyncUpdateStatement<T, D>(
+        dataAccess,
+        table,
+      );
 
   SyncDeleteStatement<T, D> syncDelete<T extends Table, D>(
-          TableInfo<T, D> table) =>
-      SyncDeleteStatement<T, D>(dataAccess, table);
+    TableInfo<T, D> table,
+  ) =>
+      SyncDeleteStatement<T, D>(
+        dataAccess,
+        table,
+      );
 }
