@@ -1,4 +1,4 @@
-﻿@model ServerApp.Models.SyncEmployee
+﻿@model ServerApp.Models.SyncPerson
 
 @{
     ViewData["Title"] = "Create";
@@ -6,7 +6,7 @@
 
 <h2>Create</h2>
 
-<h4>SyncEmployee</h4>
+<h4>SyncPerson</h4>
 <hr />
 <div class="row">
     <div class="col-md-4">
@@ -28,25 +28,42 @@
                 <span asp-validation-for="Birthday" class="text-danger"></span>
             </div>
             <div class="form-group">
-                <label asp-for="NumberOfComputers" class="control-label"></label>
-                <input asp-for="NumberOfComputers" class="form-control" />
-                <span asp-validation-for="NumberOfComputers" class="text-danger"></span>
-            </div>
-            <div class="form-group">
-                <label asp-for="SavingAmount" class="control-label"></label>
-                <input asp-for="SavingAmount" class="form-control" />
-                <span asp-validation-for="SavingAmount" class="text-danger"></span>
+                <label asp-for="Age" class="control-label"></label>
+                <input asp-for="Age" class="form-control" />
+                <span asp-validation-for="Age" class="text-danger"></span>
             </div>
             <div class="form-group">
                 <div class="checkbox">
                     <label>
-                        <input asp-for="IsActive" /> @Html.DisplayNameFor(model => model.IsActive)
+                        <input asp-for="IsForeigner" /> @Html.DisplayNameFor(model => model.IsForeigner)
                     </label>
                 </div>
             </div>
             <div class="form-group">
-                <label asp-for="DepartmentID" class="control-label"></label>
-                <select asp-for="DepartmentID" class ="form-control" asp-items="ViewBag.DepartmentID"></select>
+                <div class="checkbox">
+                    <label>
+                        <input asp-for="IsVaccinated" /> @Html.DisplayNameFor(model => model.IsVaccinated)
+                    </label>
+                </div>
+            </div>
+            <div class="form-group">
+                <label asp-for="VaccineName" class="control-label"></label>
+                <input asp-for="VaccineName" class="form-control" />
+                <span asp-validation-for="VaccineName" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="VaccinationDate" class="control-label"></label>
+                <input asp-for="VaccinationDate" class="form-control" />
+                <span asp-validation-for="VaccinationDate" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="VaccinePhase" class="control-label"></label>
+                <input asp-for="VaccinePhase" class="form-control" />
+                <span asp-validation-for="VaccinePhase" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="VaccinationAreaID" class="control-label"></label>
+                <select asp-for="VaccinationAreaID" class ="form-control" asp-items="ViewBag.VaccinationAreaID"></select>
             </div>
             <div class="form-group">
                 <input type="submit" value="Create" class="btn btn-default" />

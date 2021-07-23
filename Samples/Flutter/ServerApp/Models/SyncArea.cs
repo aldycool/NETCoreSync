@@ -1,12 +1,15 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using Microsoft.EntityFrameworkCore;
 using NETCoreSync;
 
 namespace ServerApp.Models
 {
-    [SyncSchema(MapToClassName = "Employee")]
-    public class SyncEmployee
+    [Index(nameof(SynchronizationID), nameof(City), nameof(District), IsUnique = true)]
+    [SyncSchema(MapToClassName = "AreaData")]
+    public class SyncArea
     {
         [Key]
         [DatabaseGenerated(DatabaseGeneratedOption.None)]
@@ -15,19 +18,15 @@ namespace ServerApp.Models
 
         public string SynchronizationID { get; set; }
 
+        public string City { get; set; }
+
         [SyncFriendlyId]
-        public string Name { get; set; }
+        public string District { get; set; }
 
-        public DateTime Birthday { get; set; }
+        public string CityDistrict { get { return $"{City} - {District}"; } }
 
-        public int NumberOfComputers { get; set; }
-
-        public decimal SavingAmount { get; set; }
-
-        public bool IsActive { get; set; }
-
-        public Guid? DepartmentID { get; set; }
-        public SyncDepartment Department { get; set; }
+        [ForeignKey("VaccinationAreaID")]
+        public ICollection<SyncPerson> Persons { get; set; }
 
         [SyncProperty(PropertyIndicator = SyncPropertyAttribute.PropertyIndicatorEnum.LastUpdated)]
         public long LastUpdated { get; set; }

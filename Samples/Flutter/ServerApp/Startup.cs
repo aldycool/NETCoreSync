@@ -31,7 +31,7 @@ namespace ServerApp
                 options.UseNpgsql("Host=localhost;Database=NETCoreSyncServerAppDB;Username=NETCoreSyncServerApp_User;Password=NETCoreSyncServerApp_Password");
             });
 
-            List<Type> syncTypes = new List<Type>() { typeof(SyncDepartment), typeof(SyncEmployee) };
+            List<Type> syncTypes = new List<Type>() { typeof(SyncArea), typeof(SyncPerson), typeof(SyncCustomObject) };
             SyncConfiguration syncConfiguration = new SyncConfiguration(syncTypes.ToArray(), SyncConfiguration.TimeStampStrategyEnum.DatabaseTimeStamp);
             services.AddSingleton(syncConfiguration);
 

@@ -1,4 +1,4 @@
-﻿@model IEnumerable<ServerApp.Models.SyncDepartment>
+﻿@model IEnumerable<ServerApp.Models.SyncArea>
 
 @{
     ViewData["Title"] = "Index";
@@ -16,7 +16,10 @@
                 @Html.DisplayNameFor(model => model.SynchronizationID)
             </th>
             <th>
-                @Html.DisplayNameFor(model => model.Name)
+                @Html.DisplayNameFor(model => model.City)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.District)
             </th>
             <th>
                 @Html.DisplayNameFor(model => model.LastUpdated)
@@ -37,7 +40,10 @@
                 @Html.DisplayFor(modelItem => item.SynchronizationID)
             </td>
             <td>
-                @Html.DisplayFor(modelItem => item.Name)
+                @Html.DisplayFor(modelItem => item.City)
+            </td>
+            <td>
+                @Html.DisplayFor(modelItem => item.District)
             </td>
             <td>
                 @Html.DisplayFor(modelItem => item.LastUpdated)

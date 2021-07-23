@@ -1,0 +1,78 @@
+﻿@model ServerApp.Models.SyncCustomObject
+
+@{
+    ViewData["Title"] = "Edit";
+}
+
+<h2>Edit</h2>
+
+<h4>SyncCustomObject</h4>
+<hr />
+<div class="row">
+    <div class="col-md-4">
+        <form asp-action="Edit">
+            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+            <input type="hidden" asp-for="ID" />
+            <div class="form-group">
+                <label asp-for="SynchronizationID" class="control-label"></label>
+                <input asp-for="SynchronizationID" class="form-control" />
+                <span asp-validation-for="SynchronizationID" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="FieldString" class="control-label"></label>
+                <input asp-for="FieldString" class="form-control" />
+                <span asp-validation-for="FieldString" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="FieldStringNullable" class="control-label"></label>
+                <input asp-for="FieldStringNullable" class="form-control" />
+                <span asp-validation-for="FieldStringNullable" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="FieldInt" class="control-label"></label>
+                <input asp-for="FieldInt" class="form-control" />
+                <span asp-validation-for="FieldInt" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="FieldIntNullable" class="control-label"></label>
+                <input asp-for="FieldIntNullable" class="form-control" />
+                <span asp-validation-for="FieldIntNullable" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <div class="checkbox">
+                    <label>
+                        <input asp-for="FieldBoolean" /> @Html.DisplayNameFor(model => model.FieldBoolean)
+                    </label>
+                </div>
+            </div>
+            <div class="form-group">
+                <div class="checkbox">
+                    <label>
+                        <input asp-for="FieldBooleanNullable" /> @Html.DisplayNameFor(model => model.FieldBooleanNullable)
+                    </label>
+                </div>
+            </div>
+            <div class="form-group">
+                <label asp-for="FieldDateTime" class="control-label"></label>
+                <input asp-for="FieldDateTime" class="form-control" />
+                <span asp-validation-for="FieldDateTime" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="FieldDateTimeNullable" class="control-label"></label>
+                <input asp-for="FieldDateTimeNullable" class="form-control" />
+                <span asp-validation-for="FieldDateTimeNullable" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <input type="submit" value="Save" class="btn btn-default" />
+            </div>
+        </form>
+    </div>
+</div>
+
+<div>
+    <a asp-action="Index">Back to List</a>
+</div>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+}

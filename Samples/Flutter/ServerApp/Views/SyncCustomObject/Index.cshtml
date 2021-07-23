@@ -1,0 +1,101 @@
+﻿@model IEnumerable<ServerApp.Models.SyncCustomObject>
+
+@{
+    ViewData["Title"] = "Index";
+}
+
+<h2>Index</h2>
+
+<p>
+    <a asp-action="Create">Create New</a>
+</p>
+<table class="table">
+    <thead>
+        <tr>
+            <th>
+                @Html.DisplayNameFor(model => model.SynchronizationID)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.FieldString)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.FieldStringNullable)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.FieldInt)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.FieldIntNullable)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.FieldBoolean)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.FieldBooleanNullable)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.FieldDateTime)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.FieldDateTimeNullable)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.LastUpdated)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.Deleted)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.DatabaseInstanceId)
+            </th>
+            <th></th>
+        </tr>
+    </thead>
+    <tbody>
+@foreach (var item in Model) {
+        <tr>
+            <td>
+                @Html.DisplayFor(modelItem => item.SynchronizationID)
+            </td>
+            <td>
+                @Html.DisplayFor(modelItem => item.FieldString)
+            </td>
+            <td>
+                @Html.DisplayFor(modelItem => item.FieldStringNullable)
+            </td>
+            <td>
+                @Html.DisplayFor(modelItem => item.FieldInt)
+            </td>
+            <td>
+                @Html.DisplayFor(modelItem => item.FieldIntNullable)
+            </td>
+            <td>
+                @Html.DisplayFor(modelItem => item.FieldBoolean)
+            </td>
+            <td>
+                @Html.DisplayFor(modelItem => item.FieldBooleanNullable)
+            </td>
+            <td>
+                @Html.DisplayFor(modelItem => item.FieldDateTime)
+            </td>
+            <td>
+                @Html.DisplayFor(modelItem => item.FieldDateTimeNullable)
+            </td>
+            <td>
+                @Html.DisplayFor(modelItem => item.LastUpdated)
+            </td>
+            <td>
+                @Html.DisplayFor(modelItem => item.Deleted)
+            </td>
+            <td>
+                @Html.DisplayFor(modelItem => item.DatabaseInstanceId)
+            </td>
+            <td>
+                <a asp-action="Edit" asp-route-id="@item.ID">Edit</a> |
+                <a asp-action="Details" asp-route-id="@item.ID">Details</a> |
+                <a asp-action="Delete" asp-route-id="@item.ID">Delete</a>
+            </td>
+        </tr>
+}
+    </tbody>
+</table>

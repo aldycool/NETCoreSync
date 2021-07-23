@@ -90,8 +90,9 @@ namespace ServerApp.Models
 
         public override IQueryable GetQueryable(Type classType, object transaction, OperationType operationType, string synchronizationId, Dictionary<string, object> customInfo)
         {
-            if (classType == typeof(SyncDepartment)) return databaseContext.Departments.Where(w => w.SynchronizationID == synchronizationId).AsQueryable();
-            if (classType == typeof(SyncEmployee)) return databaseContext.Employees.Where(w => w.SynchronizationID == synchronizationId).AsQueryable();
+            if (classType == typeof(SyncArea)) return databaseContext.Areas.Where(w => w.SynchronizationID == synchronizationId).AsQueryable();
+            if (classType == typeof(SyncPerson)) return databaseContext.Persons.Where(w => w.SynchronizationID == synchronizationId).AsQueryable();
+            if (classType == typeof(SyncCustomObject)) return databaseContext.CustomObjects.Where(w => w.SynchronizationID == synchronizationId).AsQueryable();
             throw new NotImplementedException();
         }
 
@@ -99,8 +100,8 @@ namespace ServerApp.Models
         {
             List<string> ignoreProperties = new List<string>();
             ignoreProperties.Add("SynchronizationID");
-            if (classType == typeof(SyncDepartment)) ignoreProperties.Add("Employees");
-            if (classType == typeof(SyncEmployee)) ignoreProperties.Add("Department");
+            if (classType == typeof(SyncArea)) ignoreProperties.Add(nameof(SyncArea.Persons));
+            if (classType == typeof(SyncPerson)) ignoreProperties.Add(nameof(SyncPerson.VaccinationArea));
             if (!customContractResolvers.ContainsKey(classType)) customContractResolvers.Add(classType, new CustomContractResolver(null, ignoreProperties));
             CustomContractResolver customContractResolver = customContractResolvers[classType];
             string json = JsonConvert.SerializeObject(data, new JsonSerializerSettings() { ContractResolver = customContractResolver });
@@ -135,7 +136,7 @@ namespace ServerApp.Models
 
         private void ConvertClientObjectToLocal(Type classType, JObject jObject, object data)
         {
-            if (classType == typeof(SyncEmployee))
+            if (classType == typeof(SyncPerson))
             {
                 JObject objDepartment = jObject.Value<JObject>("Department");
                 string departmentId = objDepartment == null ? null : objDepartment.Value<string>("Id");
@@ -167,15 +168,15 @@ namespace ServerApp.Models
 
         public override void PostEventDelete(Type classType, object id, string synchronizationId, Dictionary<string, object> customInfo)
         {
-            if (classType == typeof(SyncDepartment))
+            if (classType == typeof(SyncArea))
             {
                 Guid guidId = (Guid)id;
-                List<SyncEmployee> dependentEmployees = databaseContext.Employees.Where(w => w.SynchronizationID == synchronizationId && w.DepartmentID == guidId).ToList();
-                for (int i = 0; i < dependentEmployees.Count; i++)
+                List<SyncPerson> dependentPersons = databaseContext.Persons.Where(w => w.SynchronizationID == synchronizationId && w.VaccinationAreaID == guidId).ToList();
+                for (int i = 0; i < dependentPersons.Count; i++)
                 {
-                    dependentEmployees[i].Department = null;
-                    dependentEmployees[i].DepartmentID = null;
-                    databaseContext.Update(dependentEmployees[i]);
+                    dependentPersons[i].VaccinationArea = null;
+                    dependentPersons[i].VaccinationAreaID = null;
+                    databaseContext.Update(dependentPersons[i]);
                 }
                 databaseContext.SaveChanges();
             }

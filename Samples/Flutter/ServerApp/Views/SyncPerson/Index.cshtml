@@ -1,4 +1,4 @@
-﻿@model IEnumerable<ServerApp.Models.SyncEmployee>
+﻿@model IEnumerable<ServerApp.Models.SyncPerson>
 
 @{
     ViewData["Title"] = "Index";
@@ -22,16 +22,25 @@
                 @Html.DisplayNameFor(model => model.Birthday)
             </th>
             <th>
-                @Html.DisplayNameFor(model => model.NumberOfComputers)
+                @Html.DisplayNameFor(model => model.Age)
             </th>
             <th>
-                @Html.DisplayNameFor(model => model.SavingAmount)
+                @Html.DisplayNameFor(model => model.IsForeigner)
             </th>
             <th>
-                @Html.DisplayNameFor(model => model.IsActive)
+                @Html.DisplayNameFor(model => model.IsVaccinated)
             </th>
             <th>
-                @Html.DisplayNameFor(model => model.Department)
+                @Html.DisplayNameFor(model => model.VaccineName)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.VaccinationDate)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.VaccinePhase)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.VaccinationArea)
             </th>
             <th>
                 @Html.DisplayNameFor(model => model.LastUpdated)
@@ -58,16 +67,25 @@
                 @Html.DisplayFor(modelItem => item.Birthday)
             </td>
             <td>
-                @Html.DisplayFor(modelItem => item.NumberOfComputers)
+                @Html.DisplayFor(modelItem => item.Age)
             </td>
             <td>
-                @Html.DisplayFor(modelItem => item.SavingAmount)
+                @Html.DisplayFor(modelItem => item.IsForeigner)
             </td>
             <td>
-                @Html.DisplayFor(modelItem => item.IsActive)
+                @Html.DisplayFor(modelItem => item.IsVaccinated)
             </td>
             <td>
-                @Html.DisplayFor(modelItem => item.Department.Name)
+                @Html.DisplayFor(modelItem => item.VaccineName)
+            </td>
+            <td>
+                @Html.DisplayFor(modelItem => item.VaccinationDate)
+            </td>
+            <td>
+                @Html.DisplayFor(modelItem => item.VaccinePhase)
+            </td>
+            <td>
+                @Html.DisplayFor(modelItem => item.VaccinationArea.CityDistrict)
             </td>
             <td>
                 @Html.DisplayFor(modelItem => item.LastUpdated)

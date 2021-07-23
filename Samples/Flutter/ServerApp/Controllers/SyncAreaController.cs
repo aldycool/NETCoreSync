@@ -10,24 +10,24 @@ using NETCoreSync;
 
 namespace ServerApp.Controllers
 {
-    public class SyncDepartmentController : Controller
+    public class SyncAreaController : Controller
     {
         private readonly DatabaseContext _context;
         private SyncConfiguration syncConfiguration;
 
-        public SyncDepartmentController(DatabaseContext context, SyncConfiguration syncConfiguration)
+        public SyncAreaController(DatabaseContext context, SyncConfiguration syncConfiguration)
         {
             _context = context;
             this.syncConfiguration = syncConfiguration;
         }
 
-        // GET: SyncDepartment
+        // GET: SyncArea
         public async Task<IActionResult> Index()
         {
             return View(await GetDatas().ToListAsync());
         }
 
-        // GET: SyncDepartment/Details/5
+        // GET: SyncArea/Details/5
         public async Task<IActionResult> Details(Guid? id)
         {
             if (id == null)
@@ -35,30 +35,30 @@ namespace ServerApp.Controllers
                 return NotFound();
             }
 
-            var syncDepartment = await GetDatas()
+            var SyncArea = await GetDatas()
                 .FirstOrDefaultAsync(m => m.ID == id);
-            if (syncDepartment == null)
+            if (SyncArea == null)
             {
                 return NotFound();
             }
 
-            return View(syncDepartment);
+            return View(SyncArea);
         }
 
-        // GET: SyncDepartment/Create
+        // GET: SyncArea/Create
         public IActionResult Create()
         {
             return View();
         }
 
-        // POST: SyncDepartment/Create
+        // POST: SyncArea/Create
         // To protect from overposting attacks, please enable the specific properties you want to bind to, for 
         // more details see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create([Bind("SynchronizationID,Name")] SyncDepartment syncDepartment)
+        public async Task<IActionResult> Create([Bind("SynchronizationID,City,District")] SyncArea SyncArea)
         {
-            if (string.IsNullOrEmpty(syncDepartment.SynchronizationID)) ModelState.AddModelError("SynchronizationID", "SynchronizationID cannot be empty");
+            if (string.IsNullOrEmpty(SyncArea.SynchronizationID)) ModelState.AddModelError("SynchronizationID", "SynchronizationID cannot be empty");
 
             if (ModelState.IsValid)
             {
@@ -66,10 +66,10 @@ namespace ServerApp.Controllers
                 {
                     try
                     {
-                        syncDepartment.ID = Guid.NewGuid();
+                        SyncArea.ID = Guid.NewGuid();
                         CustomSyncEngine customSyncEngine = new CustomSyncEngine(_context, syncConfiguration);
-                        customSyncEngine.HookPreInsertOrUpdateDatabaseTimeStamp(syncDepartment, transaction, syncDepartment.SynchronizationID, null);
-                        _context.Add(syncDepartment);
+                        customSyncEngine.HookPreInsertOrUpdateDatabaseTimeStamp(SyncArea, transaction, SyncArea.SynchronizationID, null);
+                        _context.Add(SyncArea);
                         await _context.SaveChangesAsync();
                         transaction.Commit();
                     }
@@ -81,10 +81,10 @@ namespace ServerApp.Controllers
                 }
                 return RedirectToAction(nameof(Index));
             }
-            return View(syncDepartment);
+            return View(SyncArea);
         }
 
-        // GET: SyncDepartment/Edit/5
+        // GET: SyncArea/Edit/5
         public async Task<IActionResult> Edit(Guid? id)
         {
             if (id == null)
@@ -92,27 +92,27 @@ namespace ServerApp.Controllers
                 return NotFound();
             }
 
-            var syncDepartment = await GetDatas().FirstOrDefaultAsync(m => m.ID == id);
-            if (syncDepartment == null)
+            var SyncArea = await GetDatas().FirstOrDefaultAsync(m => m.ID == id);
+            if (SyncArea == null)
             {
                 return NotFound();
             }
-            return View(syncDepartment);
+            return View(SyncArea);
         }
 
-        // POST: SyncDepartment/Edit/5
+        // POST: SyncArea/Edit/5
         // To protect from overposting attacks, please enable the specific properties you want to bind to, for 
         // more details see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(Guid id, [Bind("ID,SynchronizationID,Name")] SyncDepartment syncDepartment)
+        public async Task<IActionResult> Edit(Guid id, [Bind("ID,SynchronizationID,City,District")] SyncArea SyncArea)
         {
-            if (id != syncDepartment.ID)
+            if (id != SyncArea.ID)
             {
                 return NotFound();
             }
 
-            if (string.IsNullOrEmpty(syncDepartment.SynchronizationID)) ModelState.AddModelError("SynchronizationID", "SynchronizationID cannot be empty");
+            if (string.IsNullOrEmpty(SyncArea.SynchronizationID)) ModelState.AddModelError("SynchronizationID", "SynchronizationID cannot be empty");
 
             if (ModelState.IsValid)
             {
@@ -121,8 +121,8 @@ namespace ServerApp.Controllers
                     try
                     {
                         CustomSyncEngine customSyncEngine = new CustomSyncEngine(_context, syncConfiguration);
-                        customSyncEngine.HookPreInsertOrUpdateDatabaseTimeStamp(syncDepartment, transaction, syncDepartment.SynchronizationID, null);
-                        _context.Update(syncDepartment);
+                        customSyncEngine.HookPreInsertOrUpdateDatabaseTimeStamp(SyncArea, transaction, SyncArea.SynchronizationID, null);
+                        _context.Update(SyncArea);
                         await _context.SaveChangesAsync();
                         transaction.Commit();
                     }
@@ -134,10 +134,10 @@ namespace ServerApp.Controllers
                 }
                 return RedirectToAction(nameof(Index));
             }
-            return View(syncDepartment);
+            return View(SyncArea);
         }
 
-        // GET: SyncDepartment/Delete/5
+        // GET: SyncArea/Delete/5
         public async Task<IActionResult> Delete(Guid? id)
         {
             if (id == null)
@@ -145,37 +145,37 @@ namespace ServerApp.Controllers
                 return NotFound();
             }
 
-            var syncDepartment = await GetDatas()
+            var SyncArea = await GetDatas()
                 .FirstOrDefaultAsync(m => m.ID == id);
-            if (syncDepartment == null)
+            if (SyncArea == null)
             {
                 return NotFound();
             }
 
-            return View(syncDepartment);
+            return View(SyncArea);
         }
 
-        // POST: SyncDepartment/Delete/5
+        // POST: SyncArea/Delete/5
         [HttpPost, ActionName("Delete")]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> DeleteConfirmed(Guid id)
         {
-            var syncEmployeeController = new SyncEmployeeController(_context, syncConfiguration);
-            var dependentEmployee = await syncEmployeeController.GetDatas().Where(w => w.DepartmentID == id).FirstOrDefaultAsync();
-            if (dependentEmployee != null) throw new Exception($"The data is already used by Employee Name: {dependentEmployee.Name}");
+            var syncPersonController = new SyncPersonController(_context, syncConfiguration);
+            var dependentPerson = await syncPersonController.GetDatas().Where(w => w.VaccinationAreaID == id).FirstOrDefaultAsync();
+            if (dependentPerson != null) throw new Exception($"The data is already used by Person Name: {dependentPerson.Name}");
 
-            var syncDepartment = await GetDatas().FirstAsync(m => m.ID == id);
+            var SyncArea = await GetDatas().FirstAsync(m => m.ID == id);
 
-            if (string.IsNullOrEmpty(syncDepartment.SynchronizationID)) throw new Exception("SynchronizationID cannot be empty");
+            if (string.IsNullOrEmpty(SyncArea.SynchronizationID)) throw new Exception("SynchronizationID cannot be empty");
 
             using (var transaction = _context.Database.BeginTransaction())
             {
                 try
                 {
                     CustomSyncEngine customSyncEngine = new CustomSyncEngine(_context, syncConfiguration);
-                    customSyncEngine.HookPreDeleteDatabaseTimeStamp(syncDepartment, transaction, syncDepartment.SynchronizationID, null);
-                    _context.Update(syncDepartment);
-                    //_context.Departments.Remove(syncDepartment);
+                    customSyncEngine.HookPreDeleteDatabaseTimeStamp(SyncArea, transaction, SyncArea.SynchronizationID, null);
+                    _context.Update(SyncArea);
+                    //_context.Areas.Remove(SyncArea);
                     await _context.SaveChangesAsync();
                     transaction.Commit();
                 }
@@ -188,9 +188,9 @@ namespace ServerApp.Controllers
             return RedirectToAction(nameof(Index));
         }
 
-        public IQueryable<SyncDepartment> GetDatas()
+        public IQueryable<SyncArea> GetDatas()
         {
-            return _context.Departments.Where(w => !w.Deleted);
+            return _context.Areas.Where(w => !w.Deleted);
         }
     }
 }

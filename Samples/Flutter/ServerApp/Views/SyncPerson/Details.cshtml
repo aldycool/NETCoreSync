@@ -1,4 +1,4 @@
-﻿@model ServerApp.Models.SyncEmployee
+﻿@model ServerApp.Models.SyncPerson
 
 @{
     ViewData["Title"] = "Details";
@@ -7,7 +7,7 @@
 <h2>Details</h2>
 
 <div>
-    <h4>SyncEmployee</h4>
+    <h4>SyncPerson</h4>
     <hr />
     <dl class="dl-horizontal">
         <dt>
@@ -29,28 +29,46 @@
             @Html.DisplayFor(model => model.Birthday)
         </dd>
         <dt>
-            @Html.DisplayNameFor(model => model.NumberOfComputers)
+            @Html.DisplayNameFor(model => model.Age)
         </dt>
         <dd>
-            @Html.DisplayFor(model => model.NumberOfComputers)
+            @Html.DisplayFor(model => model.Age)
         </dd>
         <dt>
-            @Html.DisplayNameFor(model => model.SavingAmount)
+            @Html.DisplayNameFor(model => model.IsForeigner)
         </dt>
         <dd>
-            @Html.DisplayFor(model => model.SavingAmount)
+            @Html.DisplayFor(model => model.IsForeigner)
         </dd>
         <dt>
-            @Html.DisplayNameFor(model => model.IsActive)
+            @Html.DisplayNameFor(model => model.IsVaccinated)
         </dt>
         <dd>
-            @Html.DisplayFor(model => model.IsActive)
+            @Html.DisplayFor(model => model.IsVaccinated)
         </dd>
         <dt>
-            @Html.DisplayNameFor(model => model.Department)
+            @Html.DisplayNameFor(model => model.VaccineName)
         </dt>
         <dd>
-            @Html.DisplayFor(model => model.Department.Name)
+            @Html.DisplayFor(model => model.VaccineName)
+        </dd>
+        <dt>
+            @Html.DisplayNameFor(model => model.VaccinationDate)
+        </dt>
+        <dd>
+            @Html.DisplayFor(model => model.VaccinationDate)
+        </dd>
+        <dt>
+            @Html.DisplayNameFor(model => model.VaccinePhase)
+        </dt>
+        <dd>
+            @Html.DisplayFor(model => model.VaccinePhase)
+        </dd>
+        <dt>
+            @Html.DisplayNameFor(model => model.VaccinationArea)
+        </dt>
+        <dd>
+            @Html.DisplayFor(model => model.VaccinationArea.CityDistrict)
         </dd>
         <dt>
             @Html.DisplayNameFor(model => model.LastUpdated)

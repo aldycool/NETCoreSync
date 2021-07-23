@@ -9,8 +9,9 @@ namespace ServerApp.Models
         }
 
         public DbSet<Knowledge> Knowledges { get; set; }
-        public DbSet<SyncDepartment> Departments { get; set; }
-        public DbSet<SyncEmployee> Employees { get; set; }
+        public DbSet<SyncArea> Areas { get; set; }
+        public DbSet<SyncPerson> Persons { get; set; }
+        public DbSet<SyncCustomObject> CustomObjects { get; set; }
 
         public DbSet<CustomSyncEngine.DbQueryTimeStampResult> DbQueryTimeStampResults { get; set; }
 

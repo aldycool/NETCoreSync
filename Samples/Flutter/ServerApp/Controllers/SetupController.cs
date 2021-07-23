@@ -24,8 +24,8 @@ namespace ServerApp.Controllers
 
         public IActionResult ResetDatabase()
         {
-            databaseContext.Employees.RemoveRange(databaseContext.Employees);
-            databaseContext.Departments.RemoveRange(databaseContext.Departments);
+            databaseContext.Persons.RemoveRange(databaseContext.Persons);
+            databaseContext.Areas.RemoveRange(databaseContext.Areas);
             databaseContext.Knowledges.RemoveRange(databaseContext.Knowledges);
             databaseContext.SaveChanges();
 
