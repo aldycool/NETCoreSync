@@ -30,6 +30,11 @@ mixin NetCoreSyncClient on GeneratedDatabase {
 
   dynamic get resolvedEngine => dataAccess.resolvedEngine;
 
+  Future<void> netCoreSync_synchronize() async {
+    List<String> logs = await dataAccess.ensureAllTableTimeStampsAreValid();
+    print(logs);
+  }
+
   SyncSimpleSelectStatement<T, R> syncSelect<T extends HasResultSet, R>(
     ResultSetImplementation<T, R> table, {
     bool distinct = false,

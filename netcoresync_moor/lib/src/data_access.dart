@@ -60,6 +60,30 @@ class DataAccess<G extends GeneratedDatabase> extends DatabaseAccessor<G> {
         engine.updateSyncColumns(entity, timeStamp: timeStamp);
     return action(syncEntity, timeStamp);
   }
+
+  Future<List<String>> ensureAllTableTimeStampsAreValid() async {
+    if (!inTransaction()) throw NetCoreSyncMustInsideTransactionException();
+    DatabaseConnectionUser activeDb = resolvedEngine as DatabaseConnectionUser;
+    int maxTimeStamp = 0;
+    NetCoreSyncKnowledge? localKnowledge = await (activeDb.select(knowledges)
+          ..where((tbl) => tbl.local))
+        .getSingleOrNull();
+    if (localKnowledge != null) {
+      maxTimeStamp = localKnowledge.maxTimeStamp;
+    } else {
+      maxTimeStamp = await getNextTimeStamp();
+    }
+    List<String> logs = [];
+    for (Type type in engine.tables.keys) {
+      final tableUser = engine.tables[type]!;
+      int rowsAffected = await activeDb.customUpdate(
+        "UPDATE ${tableUser.tableInfo.entityName} SET ${tableUser.timeStampEscapedName} = $maxTimeStamp WHERE ${tableUser.knowledgeIdEscapedName} IS NULL AND (${tableUser.timeStampEscapedName} = 0 OR ${tableUser.timeStampEscapedName} > $maxTimeStamp)",
+        updateKind: UpdateKind.update,
+      );
+      logs.add("$type: $rowsAffected row(s) affected.");
+    }
+    return logs;
+  }
 }
 
 // The following classes were copied from Moor's generated @UseMoor class (with several modifications such as making class names private with underscore + removing unused constructors)

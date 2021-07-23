@@ -85,6 +85,15 @@ void main() async {
       await Helper.tearDownDatabase(database);
     });
 
+    test("Test Concepts", () async {
+      await database.transaction(() async {
+        await database
+            .into(database.persons)
+            .insert(PersonsCompanion(name: Value("A")));
+        await database.netCoreSync_synchronize();
+      });
+    });
+
     test(
       "Sync Insert",
       () async {
