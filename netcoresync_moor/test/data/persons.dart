@@ -4,6 +4,7 @@ import 'package:netcoresync_moor/netcoresync_moor.dart';
 
 @NetCoreSyncTable(
   mapToClassName: "SyncPerson",
+  order: 2,
 )
 class Persons extends Table {
   TextColumn get id =>

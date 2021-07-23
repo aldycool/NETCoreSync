@@ -8,6 +8,7 @@ import 'package:netcoresync_moor/netcoresync_moor.dart';
   timeStampFieldName: "syncTimeStamp",
   deletedFieldName: "syncDeleted",
   knowledgeIdFieldName: "syncKnowledgeId",
+  order: 1,
 )
 @DataClassName("AreaData")
 class Areas extends Table {

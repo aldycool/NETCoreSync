@@ -22,6 +22,7 @@ class TableGenerator extends GeneratorForAnnotation<NetCoreSyncTable> {
       timeStampFieldName: annotation.read("timeStampFieldName").stringValue,
       deletedFieldName: annotation.read("deletedFieldName").stringValue,
       knowledgeIdFieldName: annotation.read("knowledgeIdFieldName").stringValue,
+      order: annotation.read("order").intValue,
     );
 
     _ModelVisitor visitor = _ModelVisitor();

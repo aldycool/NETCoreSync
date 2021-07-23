@@ -5,6 +5,7 @@ import 'database.dart';
 
 @NetCoreSyncTable(
   mapToClassName: "SyncCustomObject",
+  order: 3,
 )
 @UseRowClass(CustomObject, constructor: "fromDb")
 class CustomObjects extends Table {

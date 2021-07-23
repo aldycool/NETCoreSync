@@ -1163,12 +1163,13 @@ abstract class _$Database extends GeneratedDatabase {
 // **************************************************************************
 
 // NOTE: Obtained from @NetCoreSyncTable annotations:
-// Employees: {"tableClassName":"Employees","dataClassName":"Employee","useRowClass":false,"netCoreSyncTable":{"mapToClassName":"SyncEmployee","idFieldName":"id","timeStampFieldName":"timeStamp","deletedFieldName":"deleted","knowledgeIdFieldName":"knowledgeId"}}
-// Departments: {"tableClassName":"Departments","dataClassName":"Department","useRowClass":false,"netCoreSyncTable":{"mapToClassName":"SyncDepartment","idFieldName":"id","timeStampFieldName":"timeStamp","deletedFieldName":"deleted","knowledgeIdFieldName":"knowledgeId"}}
+// Employees: {"tableClassName":"Employees","dataClassName":"Employee","useRowClass":false,"netCoreSyncTable":{"mapToClassName":"SyncEmployee","idFieldName":"id","timeStampFieldName":"timeStamp","deletedFieldName":"deleted","knowledgeIdFieldName":"knowledgeId","order":0}}
+// Departments: {"tableClassName":"Departments","dataClassName":"Department","useRowClass":false,"netCoreSyncTable":{"mapToClassName":"SyncDepartment","idFieldName":"id","timeStampFieldName":"timeStamp","deletedFieldName":"deleted","knowledgeIdFieldName":"knowledgeId","order":0}}
 
 class _$NetCoreSyncEngineUser extends NetCoreSyncEngine {
-  _$NetCoreSyncEngineUser(Map<Type, NetCoreSyncTableUser> tables)
-      : super(tables);
+  _$NetCoreSyncEngineUser(
+      List<Type> orderedTypes, Map<Type, NetCoreSyncTableUser> tables)
+      : super(orderedTypes, tables);
 
   @override
   Object? getSyncColumnValue<D>(Insertable<D> entity, String fieldName) {
@@ -1295,6 +1296,10 @@ extension $NetCoreSyncClientExtension on Database {
   Future<void> netCoreSync_initialize() async {
     await netCoreSync_initializeClient(
       _$NetCoreSyncEngineUser(
+        [
+          Employee,
+          Department,
+        ],
         {
           Employee: NetCoreSyncTableUser(
             employees,
@@ -1303,7 +1308,8 @@ extension $NetCoreSyncClientExtension on Database {
               "idFieldName": "id",
               "timeStampFieldName": "timeStamp",
               "deletedFieldName": "deleted",
-              "knowledgeIdFieldName": "knowledgeId"
+              "knowledgeIdFieldName": "knowledgeId",
+              "order": 0
             }),
             employees.id.escapedName,
             employees.timeStamp.escapedName,
@@ -1317,7 +1323,8 @@ extension $NetCoreSyncClientExtension on Database {
               "idFieldName": "id",
               "timeStampFieldName": "timeStamp",
               "deletedFieldName": "deleted",
-              "knowledgeIdFieldName": "knowledgeId"
+              "knowledgeIdFieldName": "knowledgeId",
+              "order": 0
             }),
             departments.id.escapedName,
             departments.timeStamp.escapedName,

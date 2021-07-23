@@ -61,6 +61,14 @@ class NetCoreSyncClientGenerator extends GeneratorForAnnotation<UseMoor> {
       return buffer.toString();
     }
 
+    jsonParts.sort((a, b) {
+      Map<String, dynamic> partA = jsonDecode(a);
+      Map<String, dynamic> partB = jsonDecode(b);
+      int orderA = partA["netCoreSyncTable"]["order"];
+      int orderB = partB["netCoreSyncTable"]["order"];
+      return orderA.compareTo(orderB);
+    });
+
     buffer.writeln();
     buffer.writeln("// NOTE: Obtained from @NetCoreSyncTable annotations:");
     for (var jsonPart in jsonParts) {
@@ -73,7 +81,7 @@ class NetCoreSyncClientGenerator extends GeneratorForAnnotation<UseMoor> {
     buffer
         .writeln("class _\$NetCoreSyncEngineUser extends NetCoreSyncEngine {");
     buffer.writeln(
-        "_\$NetCoreSyncEngineUser(Map<Type, NetCoreSyncTableUser> tables) : super(tables);");
+        "_\$NetCoreSyncEngineUser(List<Type> orderedTypes, Map<Type, NetCoreSyncTableUser> tables) : super(orderedTypes, tables);");
 
     // START METHOD: getSyncColumnValue
     buffer.writeln();
@@ -204,6 +212,12 @@ class NetCoreSyncClientGenerator extends GeneratorForAnnotation<UseMoor> {
     buffer.writeln("Future<void> netCoreSync_initialize() async {");
     buffer.writeln("await netCoreSync_initializeClient(");
     buffer.writeln("_\$NetCoreSyncEngineUser(");
+    buffer.writeln("[");
+    for (var jsonPart in jsonParts) {
+      Map<String, dynamic> part = jsonDecode(jsonPart);
+      buffer.writeln("${part["dataClassName"]},");
+    }
+    buffer.writeln("],");
     buffer.writeln("{");
     for (var jsonPart in jsonParts) {
       Map<String, dynamic> part = jsonDecode(jsonPart);

@@ -4,6 +4,7 @@ class NetCoreSyncTable {
   final String timeStampFieldName;
   final String deletedFieldName;
   final String knowledgeIdFieldName;
+  final int order;
 
   const NetCoreSyncTable({
     this.mapToClassName = "",
@@ -11,6 +12,7 @@ class NetCoreSyncTable {
     this.timeStampFieldName = "timeStamp",
     this.deletedFieldName = "deleted",
     this.knowledgeIdFieldName = "knowledgeId",
+    this.order = 0,
   });
 
   factory NetCoreSyncTable.fromJson(Map<String, dynamic> json) {
@@ -20,6 +22,7 @@ class NetCoreSyncTable {
       timeStampFieldName: json["timeStampFieldName"],
       deletedFieldName: json["deletedFieldName"],
       knowledgeIdFieldName: json["knowledgeIdFieldName"],
+      order: json["order"],
     );
   }
 
@@ -30,6 +33,7 @@ class NetCoreSyncTable {
       "timeStampFieldName": timeStampFieldName,
       "deletedFieldName": deletedFieldName,
       "knowledgeIdFieldName": knowledgeIdFieldName,
+      "order": order,
     };
   }
 }

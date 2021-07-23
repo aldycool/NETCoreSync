@@ -1520,13 +1520,14 @@ abstract class _$Database extends GeneratedDatabase {
 // **************************************************************************
 
 // NOTE: Obtained from @NetCoreSyncTable annotations:
-// Areas: {"tableClassName":"Areas","dataClassName":"AreaData","useRowClass":false,"netCoreSyncTable":{"mapToClassName":"SyncArea","idFieldName":"pk","timeStampFieldName":"syncTimeStamp","deletedFieldName":"syncDeleted","knowledgeIdFieldName":"syncKnowledgeId"}}
-// CustomObjects: {"tableClassName":"CustomObjects","dataClassName":"CustomObject","useRowClass":true,"netCoreSyncTable":{"mapToClassName":"SyncCustomObject","idFieldName":"id","timeStampFieldName":"timeStamp","deletedFieldName":"deleted","knowledgeIdFieldName":"knowledgeId"}}
-// Persons: {"tableClassName":"Persons","dataClassName":"Person","useRowClass":false,"netCoreSyncTable":{"mapToClassName":"SyncPerson","idFieldName":"id","timeStampFieldName":"timeStamp","deletedFieldName":"deleted","knowledgeIdFieldName":"knowledgeId"}}
+// Areas: {"tableClassName":"Areas","dataClassName":"AreaData","useRowClass":false,"netCoreSyncTable":{"mapToClassName":"SyncArea","idFieldName":"pk","timeStampFieldName":"syncTimeStamp","deletedFieldName":"syncDeleted","knowledgeIdFieldName":"syncKnowledgeId","order":1}}
+// Persons: {"tableClassName":"Persons","dataClassName":"Person","useRowClass":false,"netCoreSyncTable":{"mapToClassName":"SyncPerson","idFieldName":"id","timeStampFieldName":"timeStamp","deletedFieldName":"deleted","knowledgeIdFieldName":"knowledgeId","order":2}}
+// CustomObjects: {"tableClassName":"CustomObjects","dataClassName":"CustomObject","useRowClass":true,"netCoreSyncTable":{"mapToClassName":"SyncCustomObject","idFieldName":"id","timeStampFieldName":"timeStamp","deletedFieldName":"deleted","knowledgeIdFieldName":"knowledgeId","order":3}}
 
 class _$NetCoreSyncEngineUser extends NetCoreSyncEngine {
-  _$NetCoreSyncEngineUser(Map<Type, NetCoreSyncTableUser> tables)
-      : super(tables);
+  _$NetCoreSyncEngineUser(
+      List<Type> orderedTypes, Map<Type, NetCoreSyncTableUser> tables)
+      : super(orderedTypes, tables);
 
   @override
   Object? getSyncColumnValue<D>(Insertable<D> entity, String fieldName) {
@@ -1551,6 +1552,26 @@ class _$NetCoreSyncEngineUser extends NetCoreSyncEngine {
                 : (entity as AreasCompanion).syncKnowledgeId.value;
         }
       }
+      if (D == Person) {
+        switch (fieldName) {
+          case "id":
+            return (entity as PersonsCompanion).id == Value.absent()
+                ? null
+                : (entity as PersonsCompanion).id.value;
+          case "timeStamp":
+            return (entity as PersonsCompanion).timeStamp == Value.absent()
+                ? null
+                : (entity as PersonsCompanion).timeStamp.value;
+          case "deleted":
+            return (entity as PersonsCompanion).deleted == Value.absent()
+                ? null
+                : (entity as PersonsCompanion).deleted.value;
+          case "knowledgeId":
+            return (entity as PersonsCompanion).knowledgeId == Value.absent()
+                ? null
+                : (entity as PersonsCompanion).knowledgeId.value;
+        }
+      }
       if (D == CustomObject) {
         switch (fieldName) {
           case "id":
@@ -1573,26 +1594,6 @@ class _$NetCoreSyncEngineUser extends NetCoreSyncEngine {
                 : (entity as CustomObjectsCompanion).knowledgeId.value;
         }
       }
-      if (D == Person) {
-        switch (fieldName) {
-          case "id":
-            return (entity as PersonsCompanion).id == Value.absent()
-                ? null
-                : (entity as PersonsCompanion).id.value;
-          case "timeStamp":
-            return (entity as PersonsCompanion).timeStamp == Value.absent()
-                ? null
-                : (entity as PersonsCompanion).timeStamp.value;
-          case "deleted":
-            return (entity as PersonsCompanion).deleted == Value.absent()
-                ? null
-                : (entity as PersonsCompanion).deleted.value;
-          case "knowledgeId":
-            return (entity as PersonsCompanion).knowledgeId == Value.absent()
-                ? null
-                : (entity as PersonsCompanion).knowledgeId.value;
-        }
-      }
     } else {
       if (entity is AreaData) {
         switch (fieldName) {
@@ -1606,18 +1607,6 @@ class _$NetCoreSyncEngineUser extends NetCoreSyncEngine {
             return (entity as AreaData).syncKnowledgeId;
         }
       }
-      if (entity is CustomObject) {
-        switch (fieldName) {
-          case "id":
-            return (entity as CustomObject).id;
-          case "timeStamp":
-            return (entity as CustomObject).timeStamp;
-          case "deleted":
-            return (entity as CustomObject).deleted;
-          case "knowledgeId":
-            return (entity as CustomObject).knowledgeId;
-        }
-      }
       if (entity is Person) {
         switch (fieldName) {
           case "id":
@@ -1628,6 +1617,18 @@ class _$NetCoreSyncEngineUser extends NetCoreSyncEngine {
             return (entity as Person).deleted;
           case "knowledgeId":
             return (entity as Person).knowledgeId;
+        }
+      }
+      if (entity is CustomObject) {
+        switch (fieldName) {
+          case "id":
+            return (entity as CustomObject).id;
+          case "timeStamp":
+            return (entity as CustomObject).timeStamp;
+          case "deleted":
+            return (entity as CustomObject).deleted;
+          case "knowledgeId":
+            return (entity as CustomObject).knowledgeId;
         }
       }
     }
@@ -1655,15 +1656,15 @@ class _$NetCoreSyncEngineUser extends NetCoreSyncEngine {
           syncDeleted: deleted != null ? Value(deleted) : Value.absent(),
         ) as Insertable<D>;
       }
-      if (D == CustomObject) {
-        return (entity as CustomObjectsCompanion).copyWith(
+      if (D == Person) {
+        return (entity as PersonsCompanion).copyWith(
           timeStamp: Value(timeStamp),
           knowledgeId: Value(null),
           deleted: deleted != null ? Value(deleted) : Value.absent(),
         ) as Insertable<D>;
       }
-      if (D == Person) {
-        return (entity as PersonsCompanion).copyWith(
+      if (D == CustomObject) {
+        return (entity as CustomObjectsCompanion).copyWith(
           timeStamp: Value(timeStamp),
           knowledgeId: Value(null),
           deleted: deleted != null ? Value(deleted) : Value.absent(),
@@ -1700,6 +1701,11 @@ extension $NetCoreSyncClientExtension on Database {
   Future<void> netCoreSync_initialize() async {
     await netCoreSync_initializeClient(
       _$NetCoreSyncEngineUser(
+        [
+          AreaData,
+          Person,
+          CustomObject,
+        ],
         {
           AreaData: NetCoreSyncTableUser(
             areas,
@@ -1708,26 +1714,13 @@ extension $NetCoreSyncClientExtension on Database {
               "idFieldName": "pk",
               "timeStampFieldName": "syncTimeStamp",
               "deletedFieldName": "syncDeleted",
-              "knowledgeIdFieldName": "syncKnowledgeId"
+              "knowledgeIdFieldName": "syncKnowledgeId",
+              "order": 1
             }),
             areas.pk.escapedName,
             areas.syncTimeStamp.escapedName,
             areas.syncDeleted.escapedName,
             areas.syncKnowledgeId.escapedName,
-          ),
-          CustomObject: NetCoreSyncTableUser(
-            customObjects,
-            NetCoreSyncTable.fromJson({
-              "mapToClassName": "SyncCustomObject",
-              "idFieldName": "id",
-              "timeStampFieldName": "timeStamp",
-              "deletedFieldName": "deleted",
-              "knowledgeIdFieldName": "knowledgeId"
-            }),
-            customObjects.id.escapedName,
-            customObjects.timeStamp.escapedName,
-            customObjects.deleted.escapedName,
-            customObjects.knowledgeId.escapedName,
           ),
           Person: NetCoreSyncTableUser(
             persons,
@@ -1736,12 +1729,28 @@ extension $NetCoreSyncClientExtension on Database {
               "idFieldName": "id",
               "timeStampFieldName": "timeStamp",
               "deletedFieldName": "deleted",
-              "knowledgeIdFieldName": "knowledgeId"
+              "knowledgeIdFieldName": "knowledgeId",
+              "order": 2
             }),
             persons.id.escapedName,
             persons.timeStamp.escapedName,
             persons.deleted.escapedName,
             persons.knowledgeId.escapedName,
+          ),
+          CustomObject: NetCoreSyncTableUser(
+            customObjects,
+            NetCoreSyncTable.fromJson({
+              "mapToClassName": "SyncCustomObject",
+              "idFieldName": "id",
+              "timeStampFieldName": "timeStamp",
+              "deletedFieldName": "deleted",
+              "knowledgeIdFieldName": "knowledgeId",
+              "order": 3
+            }),
+            customObjects.id.escapedName,
+            customObjects.timeStamp.escapedName,
+            customObjects.deleted.escapedName,
+            customObjects.knowledgeId.escapedName,
           ),
         },
       ),
@@ -1759,6 +1768,15 @@ class $SyncAreasTable extends $AreasTable implements SyncBaseTable {
       "(SELECT * FROM ${super.entityName} WHERE ${super.syncDeleted.escapedName} = 0)";
 }
 
+class $SyncPersonsTable extends $PersonsTable implements SyncBaseTable {
+  $SyncPersonsTable(_$Database db) : super(db);
+  @override
+  Type get type => Person;
+  @override
+  String get entityName =>
+      "(SELECT * FROM ${super.entityName} WHERE ${super.deleted.escapedName} = 0)";
+}
+
 class $SyncCustomObjectsTable extends $CustomObjectsTable
     implements SyncBaseTable {
   $SyncCustomObjectsTable(_$Database db) : super(db);
@@ -1769,23 +1787,14 @@ class $SyncCustomObjectsTable extends $CustomObjectsTable
       "(SELECT * FROM ${super.entityName} WHERE ${super.deleted.escapedName} = 0)";
 }
 
-class $SyncPersonsTable extends $PersonsTable implements SyncBaseTable {
-  $SyncPersonsTable(_$Database db) : super(db);
-  @override
-  Type get type => Person;
-  @override
-  String get entityName =>
-      "(SELECT * FROM ${super.entityName} WHERE ${super.deleted.escapedName} = 0)";
-}
-
 mixin NetCoreSyncClientUser on NetCoreSyncClient {
   late $SyncAreasTable syncAreas;
-  late $SyncCustomObjectsTable syncCustomObjects;
   late $SyncPersonsTable syncPersons;
+  late $SyncCustomObjectsTable syncCustomObjects;
 
   void netCoreSync_initializeUser() {
     syncAreas = $SyncAreasTable(resolvedEngine);
-    syncCustomObjects = $SyncCustomObjectsTable(resolvedEngine);
     syncPersons = $SyncPersonsTable(resolvedEngine);
+    syncCustomObjects = $SyncCustomObjectsTable(resolvedEngine);
   }
 }

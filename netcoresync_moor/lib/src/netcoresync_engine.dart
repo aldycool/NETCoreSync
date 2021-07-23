@@ -2,9 +2,10 @@ import 'package:moor/moor.dart';
 import 'netcoresync_annotations.dart';
 
 abstract class NetCoreSyncEngine {
+  late List<Type> orderedTypes;
   late Map<Type, NetCoreSyncTableUser> tables;
 
-  NetCoreSyncEngine(this.tables);
+  NetCoreSyncEngine(this.orderedTypes, this.tables);
 
   Object? getSyncColumnValue<D>(Insertable<D> entity, String fieldName);
 
