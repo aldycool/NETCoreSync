@@ -18,6 +18,7 @@ dependencies:
   netcoresync_moor: any
   
 dev_dependencies:
+  lints: ^1.0.1 # https://pub.dev/packages/lints
   build_runner: ^2.0.6 # https://pub.dev/packages/build_runner
 
 dependency_overrides:

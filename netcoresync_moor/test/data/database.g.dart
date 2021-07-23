@@ -241,6 +241,7 @@ class $AreasTable extends Areas with TableInfo<$AreasTable, AreaData> {
   final String? _alias;
   $AreasTable(this._db, [this._alias]);
   final VerificationMeta _pkMeta = const VerificationMeta('pk');
+  @override
   late final GeneratedColumn<String?> pk = GeneratedColumn<String?>(
       'pk', aliasedName, false,
       additionalChecks: GeneratedColumn.checkTextLength(maxTextLength: 36),
@@ -248,6 +249,7 @@ class $AreasTable extends Areas with TableInfo<$AreasTable, AreaData> {
       requiredDuringInsert: false,
       clientDefault: () => Uuid().v4());
   final VerificationMeta _cityMeta = const VerificationMeta('city');
+  @override
   late final GeneratedColumn<String?> city = GeneratedColumn<String?>(
       'city', aliasedName, false,
       additionalChecks: GeneratedColumn.checkTextLength(maxTextLength: 255),
@@ -255,6 +257,7 @@ class $AreasTable extends Areas with TableInfo<$AreasTable, AreaData> {
       requiredDuringInsert: false,
       defaultValue: Constant(""));
   final VerificationMeta _districtMeta = const VerificationMeta('district');
+  @override
   late final GeneratedColumn<String?> district = GeneratedColumn<String?>(
       'district', aliasedName, false,
       additionalChecks: GeneratedColumn.checkTextLength(maxTextLength: 255),
@@ -263,6 +266,7 @@ class $AreasTable extends Areas with TableInfo<$AreasTable, AreaData> {
       defaultValue: Constant(""));
   final VerificationMeta _syncTimeStampMeta =
       const VerificationMeta('syncTimeStamp');
+  @override
   late final GeneratedColumn<int?> syncTimeStamp = GeneratedColumn<int?>(
       'sync_time_stamp', aliasedName, false,
       typeName: 'INTEGER',
@@ -270,6 +274,7 @@ class $AreasTable extends Areas with TableInfo<$AreasTable, AreaData> {
       defaultValue: const Constant(0));
   final VerificationMeta _syncDeletedMeta =
       const VerificationMeta('syncDeleted');
+  @override
   late final GeneratedColumn<bool?> syncDeleted = GeneratedColumn<bool?>(
       'sync_deleted', aliasedName, false,
       typeName: 'INTEGER',
@@ -278,6 +283,7 @@ class $AreasTable extends Areas with TableInfo<$AreasTable, AreaData> {
       defaultValue: const Constant(false));
   final VerificationMeta _syncKnowledgeIdMeta =
       const VerificationMeta('syncKnowledgeId');
+  @override
   late final GeneratedColumn<String?> syncKnowledgeId =
       GeneratedColumn<String?>('sync_knowledge_id', aliasedName, true,
           additionalChecks: GeneratedColumn.checkTextLength(maxTextLength: 255),
@@ -775,6 +781,7 @@ class $PersonsTable extends Persons with TableInfo<$PersonsTable, Person> {
   final String? _alias;
   $PersonsTable(this._db, [this._alias]);
   final VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
   late final GeneratedColumn<String?> id = GeneratedColumn<String?>(
       'id', aliasedName, false,
       additionalChecks: GeneratedColumn.checkTextLength(maxTextLength: 36),
@@ -782,6 +789,7 @@ class $PersonsTable extends Persons with TableInfo<$PersonsTable, Person> {
       requiredDuringInsert: false,
       clientDefault: () => Uuid().v4());
   final VerificationMeta _nameMeta = const VerificationMeta('name');
+  @override
   late final GeneratedColumn<String?> name = GeneratedColumn<String?>(
       'name', aliasedName, false,
       additionalChecks: GeneratedColumn.checkTextLength(maxTextLength: 255),
@@ -790,12 +798,14 @@ class $PersonsTable extends Persons with TableInfo<$PersonsTable, Person> {
       $customConstraints: 'NOT NULL DEFAULT \'\' UNIQUE',
       defaultValue: Constant(""));
   final VerificationMeta _birthdayMeta = const VerificationMeta('birthday');
+  @override
   late final GeneratedColumn<DateTime?> birthday = GeneratedColumn<DateTime?>(
       'birthday', aliasedName, false,
       typeName: 'INTEGER',
       requiredDuringInsert: false,
       clientDefault: () => DateTime.now());
   final VerificationMeta _ageMeta = const VerificationMeta('age');
+  @override
   late final GeneratedColumn<int?> age = GeneratedColumn<int?>(
       'age', aliasedName, false,
       typeName: 'INTEGER',
@@ -803,6 +813,7 @@ class $PersonsTable extends Persons with TableInfo<$PersonsTable, Person> {
       defaultValue: const Constant(0));
   final VerificationMeta _isForeignerMeta =
       const VerificationMeta('isForeigner');
+  @override
   late final GeneratedColumn<bool?> isForeigner = GeneratedColumn<bool?>(
       'is_foreigner', aliasedName, false,
       typeName: 'INTEGER',
@@ -811,6 +822,7 @@ class $PersonsTable extends Persons with TableInfo<$PersonsTable, Person> {
       defaultValue: const Constant(false));
   final VerificationMeta _isVaccinatedMeta =
       const VerificationMeta('isVaccinated');
+  @override
   late final GeneratedColumn<bool?> isVaccinated = GeneratedColumn<bool?>(
       'is_vaccinated', aliasedName, true,
       typeName: 'INTEGER',
@@ -818,6 +830,7 @@ class $PersonsTable extends Persons with TableInfo<$PersonsTable, Person> {
       defaultConstraints: 'CHECK (is_vaccinated IN (0, 1))');
   final VerificationMeta _vaccineNameMeta =
       const VerificationMeta('vaccineName');
+  @override
   late final GeneratedColumn<String?> vaccineName = GeneratedColumn<String?>(
       'vaccine_name', aliasedName, true,
       additionalChecks: GeneratedColumn.checkTextLength(maxTextLength: 255),
@@ -825,28 +838,33 @@ class $PersonsTable extends Persons with TableInfo<$PersonsTable, Person> {
       requiredDuringInsert: false);
   final VerificationMeta _vaccinationDateMeta =
       const VerificationMeta('vaccinationDate');
+  @override
   late final GeneratedColumn<DateTime?> vaccinationDate =
       GeneratedColumn<DateTime?>('vaccination_date', aliasedName, true,
           typeName: 'INTEGER', requiredDuringInsert: false);
   final VerificationMeta _vaccinePhaseMeta =
       const VerificationMeta('vaccinePhase');
+  @override
   late final GeneratedColumn<int?> vaccinePhase = GeneratedColumn<int?>(
       'vaccine_phase', aliasedName, true,
       typeName: 'INTEGER', requiredDuringInsert: false);
   final VerificationMeta _vaccinationAreaPkMeta =
       const VerificationMeta('vaccinationAreaPk');
+  @override
   late final GeneratedColumn<String?> vaccinationAreaPk =
       GeneratedColumn<String?>('vaccination_area_pk', aliasedName, true,
           typeName: 'TEXT',
           requiredDuringInsert: false,
           $customConstraints: 'NULLABLE REFERENCES area(pk)');
   final VerificationMeta _timeStampMeta = const VerificationMeta('timeStamp');
+  @override
   late final GeneratedColumn<int?> timeStamp = GeneratedColumn<int?>(
       'time_stamp', aliasedName, false,
       typeName: 'INTEGER',
       requiredDuringInsert: false,
       defaultValue: const Constant(0));
   final VerificationMeta _deletedMeta = const VerificationMeta('deleted');
+  @override
   late final GeneratedColumn<bool?> deleted = GeneratedColumn<bool?>(
       'deleted', aliasedName, false,
       typeName: 'INTEGER',
@@ -855,6 +873,7 @@ class $PersonsTable extends Persons with TableInfo<$PersonsTable, Person> {
       defaultValue: const Constant(false));
   final VerificationMeta _knowledgeIdMeta =
       const VerificationMeta('knowledgeId');
+  @override
   late final GeneratedColumn<String?> knowledgeId = GeneratedColumn<String?>(
       'knowledge_id', aliasedName, true,
       additionalChecks: GeneratedColumn.checkTextLength(maxTextLength: 255),
@@ -1148,6 +1167,7 @@ class $CustomObjectsTable extends CustomObjects
   final String? _alias;
   $CustomObjectsTable(this._db, [this._alias]);
   final VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
   late final GeneratedColumn<String?> id = GeneratedColumn<String?>(
       'id', aliasedName, false,
       additionalChecks: GeneratedColumn.checkTextLength(maxTextLength: 36),
@@ -1155,6 +1175,7 @@ class $CustomObjectsTable extends CustomObjects
       requiredDuringInsert: true);
   final VerificationMeta _fieldStringMeta =
       const VerificationMeta('fieldString');
+  @override
   late final GeneratedColumn<String?> fieldString = GeneratedColumn<String?>(
       'field_string', aliasedName, false,
       additionalChecks: GeneratedColumn.checkTextLength(maxTextLength: 255),
@@ -1162,22 +1183,26 @@ class $CustomObjectsTable extends CustomObjects
       requiredDuringInsert: true);
   final VerificationMeta _fieldStringNullableMeta =
       const VerificationMeta('fieldStringNullable');
+  @override
   late final GeneratedColumn<String?> fieldStringNullable =
       GeneratedColumn<String?>('field_string_nullable', aliasedName, true,
           additionalChecks: GeneratedColumn.checkTextLength(maxTextLength: 255),
           typeName: 'TEXT',
           requiredDuringInsert: false);
   final VerificationMeta _fieldIntMeta = const VerificationMeta('fieldInt');
+  @override
   late final GeneratedColumn<int?> fieldInt = GeneratedColumn<int?>(
       'field_int', aliasedName, false,
       typeName: 'INTEGER', requiredDuringInsert: true);
   final VerificationMeta _fieldIntNullableMeta =
       const VerificationMeta('fieldIntNullable');
+  @override
   late final GeneratedColumn<int?> fieldIntNullable = GeneratedColumn<int?>(
       'field_int_nullable', aliasedName, true,
       typeName: 'INTEGER', requiredDuringInsert: false);
   final VerificationMeta _fieldBooleanMeta =
       const VerificationMeta('fieldBoolean');
+  @override
   late final GeneratedColumn<bool?> fieldBoolean = GeneratedColumn<bool?>(
       'field_boolean', aliasedName, false,
       typeName: 'INTEGER',
@@ -1185,6 +1210,7 @@ class $CustomObjectsTable extends CustomObjects
       defaultConstraints: 'CHECK (field_boolean IN (0, 1))');
   final VerificationMeta _fieldBooleanNullableMeta =
       const VerificationMeta('fieldBooleanNullable');
+  @override
   late final GeneratedColumn<bool?> fieldBooleanNullable =
       GeneratedColumn<bool?>('field_boolean_nullable', aliasedName, true,
           typeName: 'INTEGER',
@@ -1192,19 +1218,23 @@ class $CustomObjectsTable extends CustomObjects
           defaultConstraints: 'CHECK (field_boolean_nullable IN (0, 1))');
   final VerificationMeta _fieldDateTimeMeta =
       const VerificationMeta('fieldDateTime');
+  @override
   late final GeneratedColumn<DateTime?> fieldDateTime =
       GeneratedColumn<DateTime?>('field_date_time', aliasedName, false,
           typeName: 'INTEGER', requiredDuringInsert: true);
   final VerificationMeta _fieldDateTimeNullableMeta =
       const VerificationMeta('fieldDateTimeNullable');
+  @override
   late final GeneratedColumn<DateTime?> fieldDateTimeNullable =
       GeneratedColumn<DateTime?>('field_date_time_nullable', aliasedName, true,
           typeName: 'INTEGER', requiredDuringInsert: false);
   final VerificationMeta _timeStampMeta = const VerificationMeta('timeStamp');
+  @override
   late final GeneratedColumn<int?> timeStamp = GeneratedColumn<int?>(
       'time_stamp', aliasedName, false,
       typeName: 'INTEGER', requiredDuringInsert: true);
   final VerificationMeta _deletedMeta = const VerificationMeta('deleted');
+  @override
   late final GeneratedColumn<bool?> deleted = GeneratedColumn<bool?>(
       'deleted', aliasedName, false,
       typeName: 'INTEGER',
@@ -1212,6 +1242,7 @@ class $CustomObjectsTable extends CustomObjects
       defaultConstraints: 'CHECK (deleted IN (0, 1))');
   final VerificationMeta _knowledgeIdMeta =
       const VerificationMeta('knowledgeId');
+  @override
   late final GeneratedColumn<String?> knowledgeId = GeneratedColumn<String?>(
       'knowledge_id', aliasedName, true,
       additionalChecks: GeneratedColumn.checkTextLength(maxTextLength: 36),
@@ -1430,12 +1461,14 @@ class $NetCoreSyncKnowledgesTable extends NetCoreSyncKnowledges
   final String? _alias;
   $NetCoreSyncKnowledgesTable(this._db, [this._alias]);
   final VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
   late final GeneratedColumn<String?> id = GeneratedColumn<String?>(
       'id', aliasedName, false,
       additionalChecks: GeneratedColumn.checkTextLength(maxTextLength: 36),
       typeName: 'TEXT',
       requiredDuringInsert: true);
   final VerificationMeta _localMeta = const VerificationMeta('local');
+  @override
   late final GeneratedColumn<bool?> local = GeneratedColumn<bool?>(
       'local', aliasedName, false,
       typeName: 'INTEGER',
@@ -1443,6 +1476,7 @@ class $NetCoreSyncKnowledgesTable extends NetCoreSyncKnowledges
       defaultConstraints: 'CHECK (local IN (0, 1))');
   final VerificationMeta _maxTimeStampMeta =
       const VerificationMeta('maxTimeStamp');
+  @override
   late final GeneratedColumn<int?> maxTimeStamp = GeneratedColumn<int?>(
       'max_time_stamp', aliasedName, false,
       typeName: 'INTEGER', requiredDuringInsert: true);
@@ -1645,8 +1679,9 @@ class _$NetCoreSyncEngineUser extends NetCoreSyncEngine {
     if (entity is RawValuesInsertable<D>) {
       entity.data[tables[D]!.timeStampEscapedName] = Constant(timeStamp);
       entity.data[tables[D]!.knowledgeIdEscapedName] = Constant(null);
-      if (deleted != null)
+      if (deleted != null) {
         entity.data[tables[D]!.deletedEscapedName] = Constant(deleted);
+      }
       return entity;
     } else if (entity is UpdateCompanion<D>) {
       if (D == AreaData) {
@@ -1698,8 +1733,8 @@ class _$NetCoreSyncEngineUser extends NetCoreSyncEngine {
 }
 
 extension $NetCoreSyncClientExtension on Database {
-  Future<void> netCoreSync_initialize() async {
-    await netCoreSync_initializeClient(
+  Future<void> netCoreSyncInitialize() async {
+    await netCoreSyncInitializeClient(
       _$NetCoreSyncEngineUser(
         [
           AreaData,
@@ -1755,7 +1790,7 @@ extension $NetCoreSyncClientExtension on Database {
         },
       ),
     );
-    netCoreSync_initializeUser();
+    netCoreSyncInitializeUser();
   }
 }
 
@@ -1792,7 +1827,7 @@ mixin NetCoreSyncClientUser on NetCoreSyncClient {
   late $SyncPersonsTable syncPersons;
   late $SyncCustomObjectsTable syncCustomObjects;
 
-  void netCoreSync_initializeUser() {
+  void netCoreSyncInitializeUser() {
     syncAreas = $SyncAreasTable(resolvedEngine);
     syncPersons = $SyncPersonsTable(resolvedEngine);
     syncCustomObjects = $SyncCustomObjectsTable(resolvedEngine);

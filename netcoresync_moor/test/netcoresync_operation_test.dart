@@ -45,7 +45,7 @@ void main() async {
         throwsA(isA<NetCoreSyncNotInitializedException>()),
       );
 
-      database.netCoreSync_initialize();
+      database.netCoreSyncInitialize();
 
       // should throw Exception if insert / update / delete operations is not wrapped inside Transaction
       await expectLater(
@@ -78,7 +78,7 @@ void main() async {
         useInMemoryDatabase: useInMemoryDatabase,
         logSqlStatements: logSqlStatements,
       );
-      database.netCoreSync_initialize();
+      database.netCoreSyncInitialize();
     });
 
     tearDown(() async {
@@ -90,7 +90,7 @@ void main() async {
         await database
             .into(database.persons)
             .insert(PersonsCompanion(name: Value("A")));
-        await database.netCoreSync_synchronize();
+        await database.netCoreSyncSynchronize();
       });
     });
 

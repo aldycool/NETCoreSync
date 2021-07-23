@@ -15,6 +15,7 @@ dependencies:
   uuid: ^3.0.4 # https://pub.dev/packages/uuid
 
 dev_dependencies:
+  lints: ^1.0.1 # https://pub.dev/packages/lints
   test: ^1.17.10 # https://pub.dev/packages/test
   build_runner: ^2.0.6 # https://pub.dev/packages/build_runner
   moor_generator: ^4.4.1 # https://pub.dev/packages/moor_generator

@@ -12,8 +12,9 @@ class SyncInsertStatement<T extends Table, D> extends InsertStatement<T, D> {
     this.dataAccess,
     TableInfo<T, D> table,
   ) : super(dataAccess.resolvedEngine, table) {
-    if (!dataAccess.engine.tables.containsKey(D))
+    if (!dataAccess.engine.tables.containsKey(D)) {
       throw NetCoreSyncTypeNotRegisteredException(D);
+    }
   }
 
   Future<int> syncInsert(
@@ -83,9 +84,10 @@ class SyncInsertStatement<T extends Table, D> extends InsertStatement<T, D> {
         implementation,
   }) async {
     if (mode != null &&
-        (mode == InsertMode.replace || mode == InsertMode.insertOrReplace))
+        (mode == InsertMode.replace || mode == InsertMode.insertOrReplace)) {
       throw NetCoreSyncException(
           "Unsupported mode: $mode. This mode is disabled because it may physically delete an existing already-synchronized row.");
+    }
 
     return dataAccess.syncAction(
       entity,

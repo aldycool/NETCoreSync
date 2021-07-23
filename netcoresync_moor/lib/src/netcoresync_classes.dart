@@ -22,19 +22,23 @@ class SyncDoUpdate<T extends Table, D> extends SyncUpsertClause<T, D> {
   @internal
   @override
   DoUpdate<T, D> resolve(int obtainedTimeStamp, DataAccess dataAccess) {
-    Insertable<D> Function(T old) wrap = (old) {
-      Insertable<D> result = _creator(old);
-      if (!dataAccess.engine.tables.containsKey(D))
-        throw NetCoreSyncTypeNotRegisteredException(D);
-      if ((result as RawValuesInsertable<D>).data.containsKey(
-          dataAccess.engine.tables[D]!.tableAnnotation.idFieldName))
-        throw NetCoreSyncException(
-            "Changing the 'id' (as primary key) value is prohibited. This error is raised because your 'DoUpdate' contains actions that have altered your 'id' field: ${dataAccess.engine.tables[D]!.tableAnnotation.idFieldName}");
-      Insertable<D> syncResult = dataAccess.engine
-          .updateSyncColumns(result, timeStamp: obtainedTimeStamp);
-      return syncResult;
-    };
-    return DoUpdate(wrap, target: target);
+    return DoUpdate(
+      (T old) {
+        Insertable<D> result = _creator(old);
+        if (!dataAccess.engine.tables.containsKey(D)) {
+          throw NetCoreSyncTypeNotRegisteredException(D);
+        }
+        if ((result as RawValuesInsertable<D>).data.containsKey(
+            dataAccess.engine.tables[D]!.tableAnnotation.idFieldName)) {
+          throw NetCoreSyncException(
+              "Changing the 'id' (as primary key) value is prohibited. This error is raised because your 'DoUpdate' contains actions that have altered your 'id' field: ${dataAccess.engine.tables[D]!.tableAnnotation.idFieldName}");
+        }
+        Insertable<D> syncResult = dataAccess.engine
+            .updateSyncColumns(result, timeStamp: obtainedTimeStamp);
+        return syncResult;
+      },
+      target: target,
+    );
   }
 }
 
@@ -47,9 +51,9 @@ class SyncUpsertMultiple<T extends Table, D> extends SyncUpsertClause<T, D> {
   @override
   UpsertMultiple<T, D> resolve(int obtainedTimeStamp, DataAccess dataAccess) {
     List<DoUpdate<T, D>> syncClauses = [];
-    clauses.forEach((element) {
+    for (var element in clauses) {
       syncClauses.add(element.resolve(obtainedTimeStamp, dataAccess));
-    });
+    }
     return UpsertMultiple(syncClauses);
   }
 }

@@ -11,9 +11,10 @@ Future<Database> constructDatabase({
   bool logStatements = false,
   bool inMemory = true,
 }) async {
-  if (inMemory)
+  if (inMemory) {
     throw Exception(
         "At per writing, In-Memory Database is only supported on Android, iOS, and MacOS");
+  }
 
   String storageType = databaseFileLocation.split("|")[0];
   String fileName = databaseFileLocation.split("|")[1];

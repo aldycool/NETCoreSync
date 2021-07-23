@@ -11,8 +11,9 @@ class SyncUpdateStatement<T extends Table, D> extends UpdateStatement<T, D> {
     this.dataAccess,
     TableInfo<T, D> table,
   ) : super(dataAccess.resolvedEngine, table) {
-    if (!dataAccess.engine.tables.containsKey(D))
+    if (!dataAccess.engine.tables.containsKey(D)) {
       throw NetCoreSyncTypeNotRegisteredException(D);
+    }
   }
 
   Future<int> syncWrite(Insertable<D> entity,

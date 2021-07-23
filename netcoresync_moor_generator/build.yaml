@@ -1,14 +1,14 @@
 builders:
   table_generator_builder:
     import: 'package:netcoresync_moor_generator/netcoresync_moor_generator.dart'
-    builder_factories: ['TableGeneratorBuilder']
+    builder_factories: ['tableGeneratorBuilder']
     runs_before: ['netcoresync_moor_generator|client_generator_builder']
     auto_apply: dependents
     build_extensions: { ".dart": [".netcoresync_moor_table.part"] }
     build_to: cache
   client_generator_builder:
     import: 'package:netcoresync_moor_generator/netcoresync_moor_generator.dart'
-    builder_factories: ['ClientGeneratorBuilder']
+    builder_factories: ['clientGeneratorBuilder']
     required_inputs: ['.netcoresync_moor_table.part']
     auto_apply: dependents
     build_extensions: { ".dart": [".netcoresync_moor_client.part"] }

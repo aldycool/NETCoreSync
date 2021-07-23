@@ -7,7 +7,7 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await openSqlite();
   Database database = await constructDatabase(logStatements: true);
-  await database.netCoreSync_initialize();
+  await database.netCoreSyncInitialize();
   Global.instance.setDatabase(database);
   runApp(MyApp());
 }

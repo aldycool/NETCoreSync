@@ -9,7 +9,7 @@ import 'client_update.dart';
 import 'client_delete.dart';
 
 mixin NetCoreSyncClient on GeneratedDatabase {
-  DataAccess? _dataAccess = null;
+  DataAccess? _dataAccess;
 
   bool get initialized => _dataAccess != null;
 
@@ -19,7 +19,7 @@ mixin NetCoreSyncClient on GeneratedDatabase {
     return _dataAccess!;
   }
 
-  Future<void> netCoreSync_initializeClient(
+  Future<void> netCoreSyncInitializeClient(
     NetCoreSyncEngine engine,
   ) async {
     _dataAccess = DataAccess(
@@ -30,7 +30,7 @@ mixin NetCoreSyncClient on GeneratedDatabase {
 
   dynamic get resolvedEngine => dataAccess.resolvedEngine;
 
-  Future<void> netCoreSync_synchronize() async {
+  Future<void> netCoreSyncSynchronize() async {
     List<String> logs = await dataAccess.ensureAllTableTimeStampsAreValid();
     print(logs);
   }

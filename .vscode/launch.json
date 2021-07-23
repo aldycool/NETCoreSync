@@ -32,7 +32,7 @@
         },
         {
             "name": "NetCoreSyncMoorGeneratorDebug",
-            "cwd": "${workspaceFolder}/Samples/Flutter/client_app",
+            "cwd": "${workspaceFolder}/netcoresync_moor",
             "request": "launch",
             "type": "dart",
             "program": ".dart_tool/build/entrypoint/build.dart",

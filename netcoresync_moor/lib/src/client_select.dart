@@ -20,8 +20,9 @@ class SyncSimpleSelectStatement<T extends HasResultSet, D>
           table,
           distinct: distinct,
         ) {
-    if (!dataAccess.engine.tables.containsKey(D))
+    if (!dataAccess.engine.tables.containsKey(D)) {
       throw NetCoreSyncTypeNotRegisteredException(D);
+    }
   }
 
   SyncJoinedSelectStatement syncJoin(List<Join> joins) {
@@ -80,8 +81,9 @@ class SyncJoinedSelectStatement<T extends HasResultSet, D>
           distinct,
           includeMainTableInResult,
         ) {
-    if (!dataAccess.engine.tables.containsKey(D))
+    if (!dataAccess.engine.tables.containsKey(D)) {
       throw NetCoreSyncTypeNotRegisteredException(D);
+    }
   }
 
   @override

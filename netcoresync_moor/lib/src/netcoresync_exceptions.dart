@@ -1,6 +1,7 @@
 class NetCoreSyncException implements Exception {
   final String message;
   const NetCoreSyncException([this.message = ""]);
+  @override
   String toString() => "NetCoreSyncException: $message";
 }
 
@@ -16,5 +17,5 @@ class NetCoreSyncMustInsideTransactionException extends NetCoreSyncException {
 class NetCoreSyncTypeNotRegisteredException extends NetCoreSyncException {
   NetCoreSyncTypeNotRegisteredException(Type type)
       : super(
-            "The type: ${type} is not registered correctly in NetCoreSync. Please check your @NetCoreSyncTable annotation on its Table class.");
+            "The type: $type is not registered correctly in NetCoreSync. Please check your @NetCoreSyncTable annotation on its Table class.");
 }

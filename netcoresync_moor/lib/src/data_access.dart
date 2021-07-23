@@ -53,8 +53,9 @@ class DataAccess<G extends GeneratedDatabase> extends DatabaseAccessor<G> {
     Future<T> Function(dynamic syncEntity, int obtainedTimeStamp) action,
   ) async {
     if (!inTransaction()) throw NetCoreSyncMustInsideTransactionException();
-    if (!engine.tables.containsKey(D))
+    if (!engine.tables.containsKey(D)) {
       throw NetCoreSyncTypeNotRegisteredException(D);
+    }
     int timeStamp = await getNextTimeStamp();
     Insertable<D> syncEntity =
         engine.updateSyncColumns(entity, timeStamp: timeStamp);
@@ -140,12 +141,14 @@ class _NetCoreSyncKnowledgesTable extends NetCoreSyncKnowledges
   final String? _alias;
   _NetCoreSyncKnowledgesTable(this._db, [this._alias]);
   final VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
   late final GeneratedColumn<String?> id = GeneratedColumn<String?>(
       'id', aliasedName, false,
       additionalChecks: GeneratedColumn.checkTextLength(maxTextLength: 36),
       typeName: 'TEXT',
       requiredDuringInsert: true);
   final VerificationMeta _localMeta = const VerificationMeta('local');
+  @override
   late final GeneratedColumn<bool?> local = GeneratedColumn<bool?>(
       'local', aliasedName, false,
       typeName: 'INTEGER',
@@ -153,6 +156,7 @@ class _NetCoreSyncKnowledgesTable extends NetCoreSyncKnowledges
       defaultConstraints: 'CHECK (local IN (0, 1))');
   final VerificationMeta _maxTimeStampMeta =
       const VerificationMeta('maxTimeStamp');
+  @override
   late final GeneratedColumn<int?> maxTimeStamp = GeneratedColumn<int?>(
       'max_time_stamp', aliasedName, false,
       typeName: 'INTEGER', requiredDuringInsert: true);

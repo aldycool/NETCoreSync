@@ -354,7 +354,9 @@ void main() async {
           await database.delete(database.persons).go();
           throw Exception("deliberate error to cancel transaction");
         });
-      } catch (e) {}
+      } catch (e) {
+        assert(e is Exception);
+      }
 
       final col2 = await database.select(database.persons).get();
       expect(col2.length, equals(1));

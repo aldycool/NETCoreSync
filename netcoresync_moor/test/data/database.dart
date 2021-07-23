@@ -27,7 +27,7 @@ class Database extends _$Database
   @override
   MigrationStrategy get migration => MigrationStrategy(
         beforeOpen: (openingDetails) async {
-          await this.customStatement("PRAGMA foreign_keys = ON");
+          await customStatement("PRAGMA foreign_keys = ON");
         },
         onCreate: (Migrator m) {
           return m.createAll();

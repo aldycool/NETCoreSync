@@ -12,9 +12,10 @@ class TableGenerator extends GeneratorForAnnotation<NetCoreSyncTable> {
   @override
   String generateForAnnotatedElement(
       Element element, ConstantReader annotation, BuildStep buildStep) {
-    if (element is! ClassElement)
+    if (element is! ClassElement) {
       throw NetCoreSyncMoorGeneratorException(
           "Element that is annotated with @NetCoreSyncTable is expected to be a Class");
+    }
 
     final netCoreSyncTable = NetCoreSyncTable(
       mapToClassName: annotation.read("mapToClassName").stringValue,
@@ -66,7 +67,7 @@ class TableGenerator extends GeneratorForAnnotation<NetCoreSyncTable> {
     if (checkFieldError != null) throw checkFieldError;
 
     String tableClassName = element.name;
-    String? dataClassName = null;
+    String? dataClassName;
     bool useRowClass = false;
     ElementAnnotation? elementAnnotation =
         _getElementAnnotation(element, "UseRowClass");
@@ -87,9 +88,10 @@ class TableGenerator extends GeneratorForAnnotation<NetCoreSyncTable> {
           .firstOrNull;
       if (methodToJson == null ||
           methodToJson.returnType.getDisplayString(withNullability: false) !=
-              "Map<String, dynamic>")
+              "Map<String, dynamic>") {
         throw NetCoreSyncMoorGeneratorException(
             "The $dataClassName class must have an instance method called 'toJson()' that returns 'Map<String, dynamic>'. It is required for the Dart's 'jsonEncode()' function later. Please take a look at the 'json_serializable' package on how to do this properly.");
+      }
       ConstructorElement? constructorFromJson = (elementAnnotation
               .computeConstantValue()!
               .getField("type")!
@@ -98,12 +100,13 @@ class TableGenerator extends GeneratorForAnnotation<NetCoreSyncTable> {
           .where((w) => w.name == "fromJson")
           .firstOrNull;
       if (constructorFromJson == null ||
-          constructorFromJson.parameters.length < 1 ||
+          constructorFromJson.parameters.isEmpty ||
           constructorFromJson.parameters[0].type
                   .getDisplayString(withNullability: false) !=
-              "Map<String, dynamic>")
+              "Map<String, dynamic>") {
         throw NetCoreSyncMoorGeneratorException(
             "The $dataClassName class must have a constructor method called 'fromJson()' with type 'Map<String, dynamic>' on its first parameter. It is required for the Dart's 'jsonDecode()' function later. Please take a look at the 'json_serializable' package on how to do this properly.");
+      }
     } else {
       dataClassName = tableClassName.substring(0, tableClassName.length - 1);
       elementAnnotation = _getElementAnnotation(element, "DataClassName");

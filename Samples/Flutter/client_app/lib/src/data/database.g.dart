@@ -1254,8 +1254,9 @@ class _$NetCoreSyncEngineUser extends NetCoreSyncEngine {
     if (entity is RawValuesInsertable<D>) {
       entity.data[tables[D]!.timeStampEscapedName] = Constant(timeStamp);
       entity.data[tables[D]!.knowledgeIdEscapedName] = Constant(null);
-      if (deleted != null)
+      if (deleted != null) {
         entity.data[tables[D]!.deletedEscapedName] = Constant(deleted);
+      }
       return entity;
     } else if (entity is UpdateCompanion<D>) {
       if (D == Employee) {
@@ -1293,8 +1294,8 @@ class _$NetCoreSyncEngineUser extends NetCoreSyncEngine {
 }
 
 extension $NetCoreSyncClientExtension on Database {
-  Future<void> netCoreSync_initialize() async {
-    await netCoreSync_initializeClient(
+  Future<void> netCoreSyncInitialize() async {
+    await netCoreSyncInitializeClient(
       _$NetCoreSyncEngineUser(
         [
           Employee,
@@ -1334,7 +1335,7 @@ extension $NetCoreSyncClientExtension on Database {
         },
       ),
     );
-    netCoreSync_initializeUser();
+    netCoreSyncInitializeUser();
   }
 }
 
@@ -1360,7 +1361,7 @@ mixin NetCoreSyncClientUser on NetCoreSyncClient {
   late $SyncEmployeesTable syncEmployees;
   late $SyncDepartmentsTable syncDepartments;
 
-  void netCoreSync_initializeUser() {
+  void netCoreSyncInitializeUser() {
     syncEmployees = $SyncEmployeesTable(resolvedEngine);
     syncDepartments = $SyncDepartmentsTable(resolvedEngine);
   }

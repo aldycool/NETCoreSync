@@ -8,36 +8,37 @@ import 'package:moor/moor.dart';
 import 'exceptions.dart';
 
 class NetCoreSyncClientGenerator extends GeneratorForAnnotation<UseMoor> {
-  static const String NAME_CLASS_CLIENT = "NetCoreSyncClient";
-  static const String NAME_CLASS_KNOWLEDGE = "NetCoreSyncKnowledges";
+  static const String nameClassClient = "NetCoreSyncClient";
+  static const String nameClassKnowledge = "NetCoreSyncKnowledges";
 
   @override
   Future<String> generateForAnnotatedElement(
       Element element, ConstantReader annotation, BuildStep buildStep) async {
     // Pre-check some conditions
-    if (element is! ClassElement)
+    if (element is! ClassElement) {
       throw NetCoreSyncMoorGeneratorException(
           "Element that is annotated with @UseMoor is expected to be a Class");
+    }
     if (element.mixins
-            .where((w) =>
-                w.getDisplayString(withNullability: true) == NAME_CLASS_CLIENT)
-            .length ==
-        0)
+        .where(
+            (w) => w.getDisplayString(withNullability: true) == nameClassClient)
+        .isEmpty) {
       throw NetCoreSyncMoorGeneratorException(
-          "The database class (${element.name}) is expected to be 'mixin' with $NAME_CLASS_CLIENT (for example: 'class Database extends _\$Database with $NAME_CLASS_CLIENT')");
+          "The database class (${element.name}) is expected to be 'mixin' with $nameClassClient (for example: 'class Database extends _\$Database with $nameClassClient')");
+    }
     if (annotation
-            .read("tables")
-            .listValue
-            .where((w) =>
-                w
-                    .toTypeValue()
-                    ?.getDisplayString(withNullability: true)
-                    .contains(NAME_CLASS_KNOWLEDGE) ??
-                false)
-            .length ==
-        0)
+        .read("tables")
+        .listValue
+        .where((w) =>
+            w
+                .toTypeValue()
+                ?.getDisplayString(withNullability: true)
+                .contains(nameClassKnowledge) ??
+            false)
+        .isEmpty) {
       throw NetCoreSyncMoorGeneratorException(
-          "The $NAME_CLASS_KNOWLEDGE table must be included in UseMoor's tables");
+          "The $nameClassKnowledge table must be included in UseMoor's tables");
+    }
 
     // Collect NetCoreSyncTable's parts
     final assetIds = await buildStep
@@ -55,7 +56,7 @@ class NetCoreSyncClientGenerator extends GeneratorForAnnotation<UseMoor> {
     // Perform code generation
     StringBuffer buffer = StringBuffer();
 
-    if (jsonParts.length == 0) {
+    if (jsonParts.isEmpty) {
       buffer.writeln(
           "// NOTE: NetCoreSyncExtension does not generate any codes because classes annotated with @NetCoreSyncTable were not found");
       return buffer.toString();
@@ -145,7 +146,7 @@ class NetCoreSyncClientGenerator extends GeneratorForAnnotation<UseMoor> {
     buffer.writeln(
         "entity.data[tables[D]!.knowledgeIdEscapedName] = Constant(null);");
     buffer.writeln(
-        "if (deleted != null) entity.data[tables[D]!.deletedEscapedName] = Constant(deleted);");
+        "if (deleted != null) { entity.data[tables[D]!.deletedEscapedName] = Constant(deleted); }");
     buffer.writeln("return entity;");
     buffer.writeln("} else if (entity is UpdateCompanion<D>) {");
     for (var jsonPart in jsonParts) {
@@ -209,8 +210,8 @@ class NetCoreSyncClientGenerator extends GeneratorForAnnotation<UseMoor> {
 
     // START METHOD: netCoreSync_initialize
     buffer.writeln();
-    buffer.writeln("Future<void> netCoreSync_initialize() async {");
-    buffer.writeln("await netCoreSync_initializeClient(");
+    buffer.writeln("Future<void> netCoreSyncInitialize() async {");
+    buffer.writeln("await netCoreSyncInitializeClient(");
     buffer.writeln("_\$NetCoreSyncEngineUser(");
     buffer.writeln("[");
     for (var jsonPart in jsonParts) {
@@ -234,7 +235,7 @@ class NetCoreSyncClientGenerator extends GeneratorForAnnotation<UseMoor> {
     buffer.writeln("},");
     buffer.writeln("),");
     buffer.writeln(");");
-    buffer.writeln("netCoreSync_initializeUser();");
+    buffer.writeln("netCoreSyncInitializeUser();");
     buffer.writeln("}");
     // END METHOD: netCoreSync_initialize
 
@@ -266,7 +267,7 @@ class NetCoreSyncClientGenerator extends GeneratorForAnnotation<UseMoor> {
           "late \$Sync${part["tableClassName"]}Table sync${part["tableClassName"]};");
     }
     buffer.writeln("");
-    buffer.writeln("void netCoreSync_initializeUser() {");
+    buffer.writeln("void netCoreSyncInitializeUser() {");
     for (var jsonPart in jsonParts) {
       Map<String, dynamic> part = jsonDecode(jsonPart);
       buffer.writeln(
