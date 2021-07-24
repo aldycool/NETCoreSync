@@ -6,6 +6,8 @@
 
   <ItemGroup>
     <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="5.0.7" />
+    <!-- DEV-WARNING: This is needed because it turns out that since .NET 5.0, the default serialization output when using Json() method in MVC controllers is different. The symptoms are the serialized values always resolve to empty arrays. It seems that the default System.Text.Json requires public property with getter and setter to work properly. -->
+    <PackageReference Include="Microsoft.AspNetCore.Mvc.NewtonsoftJson" Version="5.0.8" />
   </ItemGroup>
 
   <ItemGroup>

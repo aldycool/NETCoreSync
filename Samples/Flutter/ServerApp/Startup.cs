@@ -35,7 +35,8 @@ namespace ServerApp
             SyncConfiguration syncConfiguration = new SyncConfiguration(syncTypes.ToArray(), SyncConfiguration.TimeStampStrategyEnum.DatabaseTimeStamp);
             services.AddSingleton(syncConfiguration);
 
-            services.AddControllersWithViews();
+            // DEV-WARNING: The AddNewtonsoftJson() is needed because it turns out that since .NET 5.0, the default serialization output when using Json() method in MVC controllers is different. The symptoms are the serialized values always resolve to empty arrays. It seems that the default System.Text.Json requires public property with getter and setter to work properly.
+            services.AddControllersWithViews().AddNewtonsoftJson();
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
