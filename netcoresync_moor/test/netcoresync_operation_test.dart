@@ -90,8 +90,11 @@ void main() async {
         await database
             .into(database.persons)
             .insert(PersonsCompanion(name: Value("A")));
-        await database.netCoreSyncSynchronize();
       });
+      await database.netCoreSyncSynchronize(
+        synchronizationId: "abc",
+        url: "https://localhost:5001/Sync",
+      );
     });
 
     test(

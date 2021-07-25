@@ -1,5 +1,6 @@
 import 'package:meta/meta.dart';
 import 'package:moor/moor.dart';
+import 'package:netcoresync_moor/netcoresync_moor.dart';
 import 'netcoresync_exceptions.dart';
 import 'netcoresync_engine.dart';
 import 'data_access.dart';
@@ -7,6 +8,12 @@ import 'client_select.dart';
 import 'client_insert.dart';
 import 'client_update.dart';
 import 'client_delete.dart';
+import 'sync_handler.dart';
+
+enum SynchronizeDirection {
+  pushThenPull,
+  pullThenPush,
+}
 
 mixin NetCoreSyncClient on GeneratedDatabase {
   DataAccess? _dataAccess;
@@ -30,9 +37,20 @@ mixin NetCoreSyncClient on GeneratedDatabase {
 
   dynamic get resolvedEngine => dataAccess.resolvedEngine;
 
-  Future<void> netCoreSyncSynchronize() async {
-    List<String> logs = await dataAccess.ensureAllTableTimeStampsAreValid();
-    print(logs);
+  Future<void> netCoreSyncSynchronize({
+    required String synchronizationId,
+    required String url,
+    SynchronizeDirection synchronizeDirection =
+        SynchronizeDirection.pushThenPull,
+    Map<String, dynamic> customInfo = const {},
+  }) async {
+    final syncHandler = SyncHandler(dataAccess);
+    await syncHandler.synchronize(
+      synchronizationId: synchronizationId,
+      url: url,
+      synchronizeDirection: synchronizeDirection,
+      customInfo: customInfo,
+    );
   }
 
   SyncSimpleSelectStatement<T, R> syncSelect<T extends HasResultSet, R>(

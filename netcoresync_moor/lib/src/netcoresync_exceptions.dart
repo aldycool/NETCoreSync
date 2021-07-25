@@ -14,6 +14,12 @@ class NetCoreSyncMustInsideTransactionException extends NetCoreSyncException {
       : super("Sync methods must be wrapped inside Transaction");
 }
 
+class NetCoreSyncMustNotInsideTransactionException
+    extends NetCoreSyncException {
+  NetCoreSyncMustNotInsideTransactionException()
+      : super("This method call must NOT be wrapped inside Transaction");
+}
+
 class NetCoreSyncTypeNotRegisteredException extends NetCoreSyncException {
   NetCoreSyncTypeNotRegisteredException(Type type)
       : super(

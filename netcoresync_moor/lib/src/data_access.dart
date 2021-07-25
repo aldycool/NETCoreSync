@@ -75,15 +75,23 @@ class DataAccess<G extends GeneratedDatabase> extends DatabaseAccessor<G> {
       maxTimeStamp = await getNextTimeStamp();
     }
     List<String> logs = [];
-    for (Type type in engine.tables.keys) {
+    logs.add(
+        "Ensure all table's timeStamp are valid, table count: ${engine.tables.keys.length}");
+    for (var i = 0; i < engine.orderedTypes.length; i++) {
+      Type type = engine.orderedTypes[i];
       final tableUser = engine.tables[type]!;
       int rowsAffected = await activeDb.customUpdate(
         "UPDATE ${tableUser.tableInfo.entityName} SET ${tableUser.timeStampEscapedName} = $maxTimeStamp WHERE ${tableUser.knowledgeIdEscapedName} IS NULL AND (${tableUser.timeStampEscapedName} = 0 OR ${tableUser.timeStampEscapedName} > $maxTimeStamp)",
         updateKind: UpdateKind.update,
       );
-      logs.add("$type: $rowsAffected row(s) affected.");
+      logs.add("${i + 1}. $type: $rowsAffected row(s) affected.");
     }
     return logs;
+  }
+
+  Future<List<NetCoreSyncKnowledge>> getKnowledges() async {
+    DatabaseConnectionUser activeDb = resolvedEngine as DatabaseConnectionUser;
+    return await activeDb.select(knowledges).get();
   }
 }
 

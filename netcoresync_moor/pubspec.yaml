@@ -13,6 +13,8 @@ dependencies:
   meta: ^1.3.0 # https://pub.dev/packages/meta # ...Because every version of flutter_test from sdk depends on meta 1.3.0...
   moor: ^4.4.1 # https://pub.dev/packages/moor
   uuid: ^3.0.4 # https://pub.dev/packages/uuid
+  http: ^0.13.3 # https://pub.dev/packages/http
+  archive: ^3.1.2 # https://pub.dev/packages/archive
 
 dev_dependencies:
   lints: ^1.0.1 # https://pub.dev/packages/lints
