@@ -5,6 +5,26 @@
     "version": "0.2.0",
     "configurations": [
         {
+            "name": "ServerTimeStamp-Server",
+            "type": "coreclr",
+            "request": "launch",
+            "preLaunchTask": "buildServerTimeStamp",
+            "program": "${workspaceFolder}/Samples/ServerTimeStamp/WebSample/bin/Debug/net5.0/WebSample.dll",
+            "args": [],
+            "cwd": "${workspaceFolder}/Samples/ServerTimeStamp/WebSample",
+            "stopAtEntry": false,
+            "serverReadyAction": {
+                "action": "openExternally",
+                "pattern": "\\bNow listening on:\\s+(https?://\\S+)"
+            },
+            "env": {
+                "ASPNETCORE_ENVIRONMENT": "Development"
+            },
+            "sourceFileMap": {
+                "/Views": "${workspaceFolder}/Views"
+            }
+        },
+        {
             "name": "Flutter-ServerApp",
             "type": "coreclr",
             "request": "launch",
