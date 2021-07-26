@@ -9,9 +9,11 @@ import 'package:netcoresync_moor/netcoresync_moor.dart';
 class Persons extends Table {
   TextColumn get id =>
       text().withLength(max: 36).clientDefault(() => Uuid().v4())();
+  TextColumn get syncId =>
+      text().withLength(max: 255).withDefault(Constant(""))();
   TextColumn get name =>
       text().withLength(max: 255).withDefault(Constant("")).customConstraint(
-          "NOT NULL DEFAULT '' UNIQUE")(); // If using customConstraints, we have to repeat all attached constraints in SQL language
+          "NOT NULL DEFAULT ''")(); // If using customConstraints, we have to repeat all attached constraints in SQL language
   DateTimeColumn get birthday =>
       dateTime().clientDefault(() => DateTime.now())();
   IntColumn get age => integer().withDefault(const Constant(0))();
@@ -30,6 +32,11 @@ class Persons extends Table {
 
   @override
   Set<Column> get primaryKey => {id};
+
+  @override
+  List<String> get customConstraints => [
+        "UNIQUE(sync_id, name)",
+      ];
 
   @override
   String? get tableName => "person";

@@ -102,18 +102,24 @@ class _NetCoreSyncKnowledgesCompanion
   final Value<String> id;
   final Value<bool> local;
   final Value<int> maxTimeStamp;
+  final Value<String> syncId;
   const _NetCoreSyncKnowledgesCompanion({
     this.id = const Value.absent(),
     this.local = const Value.absent(),
     this.maxTimeStamp = const Value.absent(),
+    this.syncId = const Value.absent(),
   });
 
   _NetCoreSyncKnowledgesCompanion copyWith(
-      {Value<String>? id, Value<bool>? local, Value<int>? maxTimeStamp}) {
+      {Value<String>? id,
+      Value<bool>? local,
+      Value<int>? maxTimeStamp,
+      Value<String>? syncId}) {
     return _NetCoreSyncKnowledgesCompanion(
       id: id ?? this.id,
       local: local ?? this.local,
       maxTimeStamp: maxTimeStamp ?? this.maxTimeStamp,
+      syncId: syncId ?? this.syncId,
     );
   }
 
@@ -129,15 +135,19 @@ class _NetCoreSyncKnowledgesCompanion
     if (maxTimeStamp.present) {
       map['max_time_stamp'] = Variable<int>(maxTimeStamp.value);
     }
+    if (syncId.present) {
+      map['sync_id'] = Variable<String>(syncId.value);
+    }
     return map;
   }
 
   @override
   String toString() {
-    return (StringBuffer('_NetCoreSyncKnowledgesCompanion(')
+    return (StringBuffer('NetCoreSyncKnowledgesCompanion(')
           ..write('id: $id, ')
           ..write('local: $local, ')
-          ..write('maxTimeStamp: $maxTimeStamp')
+          ..write('maxTimeStamp: $maxTimeStamp, ')
+          ..write('syncId: $syncId')
           ..write(')'))
         .toString();
   }
@@ -168,8 +178,15 @@ class _NetCoreSyncKnowledgesTable extends NetCoreSyncKnowledges
   late final GeneratedColumn<int?> maxTimeStamp = GeneratedColumn<int?>(
       'max_time_stamp', aliasedName, false,
       typeName: 'INTEGER', requiredDuringInsert: true);
+  final VerificationMeta _syncIdMeta = const VerificationMeta('syncId');
   @override
-  List<GeneratedColumn> get $columns => [id, local, maxTimeStamp];
+  late final GeneratedColumn<String?> syncId = GeneratedColumn<String?>(
+      'sync_id', aliasedName, false,
+      additionalChecks: GeneratedColumn.checkTextLength(maxTextLength: 255),
+      typeName: 'TEXT',
+      requiredDuringInsert: true);
+  @override
+  List<GeneratedColumn> get $columns => [id, local, maxTimeStamp, syncId];
   @override
   String get aliasedName => _alias ?? 'netcoresync_knowledges';
   @override
@@ -199,6 +216,12 @@ class _NetCoreSyncKnowledgesTable extends NetCoreSyncKnowledges
     } else if (isInserting) {
       context.missing(_maxTimeStampMeta);
     }
+    if (data.containsKey('sync_id')) {
+      context.handle(_syncIdMeta,
+          syncId.isAcceptableOrUnknown(data['sync_id']!, _syncIdMeta));
+    } else if (isInserting) {
+      context.missing(_syncIdMeta);
+    }
     return context;
   }
 
@@ -214,6 +237,8 @@ class _NetCoreSyncKnowledgesTable extends NetCoreSyncKnowledges
           .mapFromDatabaseResponse(data['${effectivePrefix}local'])!,
       maxTimeStamp: const IntType()
           .mapFromDatabaseResponse(data['${effectivePrefix}max_time_stamp'])!,
+      syncId: const StringType()
+          .mapFromDatabaseResponse(data['${effectivePrefix}sync_id'])!,
     );
   }
 
@@ -222,3 +247,158 @@ class _NetCoreSyncKnowledgesTable extends NetCoreSyncKnowledges
     return _NetCoreSyncKnowledgesTable(_db, alias);
   }
 }
+
+// class _NetCoreSyncKnowledgesCompanion
+//     extends UpdateCompanion<NetCoreSyncKnowledge> {
+//   final Value<String> id;
+//   final Value<bool> local;
+//   final Value<int> maxTimeStamp;
+//   final Value<String> synchronizationId;
+//   const _NetCoreSyncKnowledgesCompanion({
+//     this.id = const Value.absent(),
+//     this.local = const Value.absent(),
+//     this.maxTimeStamp = const Value.absent(),
+//     this.synchronizationId = const Value.absent(),
+//   });
+
+//   _NetCoreSyncKnowledgesCompanion copyWith(
+//       {Value<String>? id,
+//       Value<bool>? local,
+//       Value<int>? maxTimeStamp,
+//       Value<String>? synchronizationId}) {
+//     return _NetCoreSyncKnowledgesCompanion(
+//       id: id ?? this.id,
+//       local: local ?? this.local,
+//       maxTimeStamp: maxTimeStamp ?? this.maxTimeStamp,
+//       synchronizationId: synchronizationId ?? this.synchronizationId,
+//     );
+//   }
+
+//   @override
+//   Map<String, Expression> toColumns(bool nullToAbsent) {
+//     final map = <String, Expression>{};
+//     if (id.present) {
+//       map['id'] = Variable<String>(id.value);
+//     }
+//     if (local.present) {
+//       map['local'] = Variable<bool>(local.value);
+//     }
+//     if (maxTimeStamp.present) {
+//       map['max_time_stamp'] = Variable<int>(maxTimeStamp.value);
+//     }
+//     if (synchronizationId.present) {
+//       map['synchronization_id'] = Variable<String>(synchronizationId.value);
+//     }
+//     return map;
+//   }
+
+//   @override
+//   String toString() {
+//     return (StringBuffer('NetCoreSyncKnowledgesCompanion(')
+//           ..write('id: $id, ')
+//           ..write('local: $local, ')
+//           ..write('maxTimeStamp: $maxTimeStamp, ')
+//           ..write('synchronizationId: $synchronizationId')
+//           ..write(')'))
+//         .toString();
+//   }
+// }
+
+// class _NetCoreSyncKnowledgesTable extends NetCoreSyncKnowledges
+//     with TableInfo<_NetCoreSyncKnowledgesTable, NetCoreSyncKnowledge> {
+//   final GeneratedDatabase _db;
+//   final String? _alias;
+//   _NetCoreSyncKnowledgesTable(this._db, [this._alias]);
+//   final VerificationMeta _idMeta = const VerificationMeta('id');
+//   @override
+//   late final GeneratedColumn<String?> id = GeneratedColumn<String?>(
+//       'id', aliasedName, false,
+//       additionalChecks: GeneratedColumn.checkTextLength(maxTextLength: 36),
+//       typeName: 'TEXT',
+//       requiredDuringInsert: true);
+//   final VerificationMeta _localMeta = const VerificationMeta('local');
+//   @override
+//   late final GeneratedColumn<bool?> local = GeneratedColumn<bool?>(
+//       'local', aliasedName, false,
+//       typeName: 'INTEGER',
+//       requiredDuringInsert: true,
+//       defaultConstraints: 'CHECK (local IN (0, 1))');
+//   final VerificationMeta _maxTimeStampMeta =
+//       const VerificationMeta('maxTimeStamp');
+//   @override
+//   late final GeneratedColumn<int?> maxTimeStamp = GeneratedColumn<int?>(
+//       'max_time_stamp', aliasedName, false,
+//       typeName: 'INTEGER', requiredDuringInsert: true);
+//   final VerificationMeta _synchronizationIdMeta =
+//       const VerificationMeta('synchronizationId');
+//   @override
+//   late final GeneratedColumn<String?> synchronizationId =
+//       GeneratedColumn<String?>('synchronization_id', aliasedName, false,
+//           additionalChecks: GeneratedColumn.checkTextLength(maxTextLength: 255),
+//           typeName: 'TEXT',
+//           requiredDuringInsert: true);
+//   @override
+//   List<GeneratedColumn> get $columns =>
+//       [id, local, maxTimeStamp, synchronizationId];
+//   @override
+//   String get aliasedName => _alias ?? 'netcoresync_knowledges';
+//   @override
+//   String get actualTableName => 'netcoresync_knowledges';
+//   @override
+//   VerificationContext validateIntegrity(
+//       Insertable<NetCoreSyncKnowledge> instance,
+//       {bool isInserting = false}) {
+//     final context = VerificationContext();
+//     final data = instance.toColumns(true);
+//     if (data.containsKey('id')) {
+//       context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+//     } else if (isInserting) {
+//       context.missing(_idMeta);
+//     }
+//     if (data.containsKey('local')) {
+//       context.handle(
+//           _localMeta, local.isAcceptableOrUnknown(data['local']!, _localMeta));
+//     } else if (isInserting) {
+//       context.missing(_localMeta);
+//     }
+//     if (data.containsKey('max_time_stamp')) {
+//       context.handle(
+//           _maxTimeStampMeta,
+//           maxTimeStamp.isAcceptableOrUnknown(
+//               data['max_time_stamp']!, _maxTimeStampMeta));
+//     } else if (isInserting) {
+//       context.missing(_maxTimeStampMeta);
+//     }
+//     if (data.containsKey('synchronization_id')) {
+//       context.handle(
+//           _synchronizationIdMeta,
+//           synchronizationId.isAcceptableOrUnknown(
+//               data['synchronization_id']!, _synchronizationIdMeta));
+//     } else if (isInserting) {
+//       context.missing(_synchronizationIdMeta);
+//     }
+//     return context;
+//   }
+
+//   @override
+//   Set<GeneratedColumn> get $primaryKey => {id};
+//   @override
+//   NetCoreSyncKnowledge map(Map<String, dynamic> data, {String? tablePrefix}) {
+//     final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+//     return NetCoreSyncKnowledge.fromDb(
+//       id: const StringType()
+//           .mapFromDatabaseResponse(data['${effectivePrefix}id'])!,
+//       local: const BoolType()
+//           .mapFromDatabaseResponse(data['${effectivePrefix}local'])!,
+//       maxTimeStamp: const IntType()
+//           .mapFromDatabaseResponse(data['${effectivePrefix}max_time_stamp'])!,
+//       syncId: const StringType().mapFromDatabaseResponse(
+//           data['${effectivePrefix}synchronization_id'])!,
+//     );
+//   }
+
+//   @override
+//   _NetCoreSyncKnowledgesTable createAlias(String alias) {
+//     return _NetCoreSyncKnowledgesTable(_db, alias);
+//   }
+// }

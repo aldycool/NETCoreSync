@@ -5,6 +5,7 @@ import 'package:netcoresync_moor/netcoresync_moor.dart';
 @NetCoreSyncTable(
   mapToClassName: "SyncArea",
   idFieldName: "pk",
+  syncIdFieldName: "syncSyncId",
   timeStampFieldName: "syncTimeStamp",
   deletedFieldName: "syncDeleted",
   knowledgeIdFieldName: "syncKnowledgeId",
@@ -14,6 +15,8 @@ import 'package:netcoresync_moor/netcoresync_moor.dart';
 class Areas extends Table {
   TextColumn get pk =>
       text().withLength(max: 36).clientDefault(() => Uuid().v4())();
+  TextColumn get syncSyncId =>
+      text().withLength(max: 255).withDefault(Constant(""))();
   TextColumn get city =>
       text().withLength(max: 255).withDefault(Constant(""))();
   TextColumn get district =>
@@ -28,7 +31,7 @@ class Areas extends Table {
 
   @override
   List<String> get customConstraints => [
-        "UNIQUE(city, district)",
+        "UNIQUE(sync_sync_id, city, district)",
       ];
 
   @override

@@ -227,6 +227,7 @@ class NetCoreSyncClientGenerator extends GeneratorForAnnotation<UseMoor> {
         ${ReCase(part["tableClassName"]).camelCase},
         NetCoreSyncTable.fromJson(${jsonEncode(part["netCoreSyncTable"])}),
         ${ReCase(part["tableClassName"]).camelCase}.${part["netCoreSyncTable"]["idFieldName"]}.escapedName,
+        ${ReCase(part["tableClassName"]).camelCase}.${part["netCoreSyncTable"]["syncIdFieldName"]}.escapedName,
         ${ReCase(part["tableClassName"]).camelCase}.${part["netCoreSyncTable"]["timeStampFieldName"]}.escapedName,
         ${ReCase(part["tableClassName"]).camelCase}.${part["netCoreSyncTable"]["deletedFieldName"]}.escapedName,
         ${ReCase(part["tableClassName"]).camelCase}.${part["netCoreSyncTable"]["knowledgeIdFieldName"]}.escapedName,

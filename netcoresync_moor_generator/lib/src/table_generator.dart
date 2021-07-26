@@ -20,6 +20,7 @@ class TableGenerator extends GeneratorForAnnotation<NetCoreSyncTable> {
     final netCoreSyncTable = NetCoreSyncTable(
       mapToClassName: annotation.read("mapToClassName").stringValue,
       idFieldName: annotation.read("idFieldName").stringValue,
+      syncIdFieldName: annotation.read("syncIdFieldName").stringValue,
       timeStampFieldName: annotation.read("timeStampFieldName").stringValue,
       deletedFieldName: annotation.read("deletedFieldName").stringValue,
       knowledgeIdFieldName: annotation.read("knowledgeIdFieldName").stringValue,
@@ -34,6 +35,15 @@ class TableGenerator extends GeneratorForAnnotation<NetCoreSyncTable> {
       visitor.fields,
       netCoreSyncTable.idFieldName,
       "idFieldName",
+      "Column<String?>",
+      "TextColumn",
+    );
+    if (checkFieldError != null) throw checkFieldError;
+    checkFieldError = _checkFields(
+      element.name,
+      visitor.fields,
+      netCoreSyncTable.syncIdFieldName,
+      "syncIdFieldName",
       "Column<String?>",
       "TextColumn",
     );

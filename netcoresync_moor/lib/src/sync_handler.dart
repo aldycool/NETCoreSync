@@ -6,7 +6,6 @@ import 'package:http/http.dart' as http;
 import 'package:archive/archive.dart';
 import 'netcoresync_client.dart';
 import 'netcoresync_exceptions.dart';
-import 'netcoresync_knowledges.dart';
 import 'data_access.dart';
 
 class SyncHandler {
@@ -32,9 +31,6 @@ class SyncHandler {
           await dataAccess.ensureAllTableTimeStampsAreValid();
       logs.addAll(ensureLogs);
     });
-
-    List<NetCoreSyncKnowledge> sourceKnowledges =
-        await dataAccess.getKnowledges();
 
     var httpClient = http.Client();
     try {

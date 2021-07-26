@@ -9,6 +9,7 @@ part of 'database.dart';
 // ignore_for_file: unnecessary_brace_in_string_interps, unnecessary_this
 class AreaData extends DataClass implements Insertable<AreaData> {
   final String pk;
+  final String syncSyncId;
   final String city;
   final String district;
   final int syncTimeStamp;
@@ -16,6 +17,7 @@ class AreaData extends DataClass implements Insertable<AreaData> {
   final String? syncKnowledgeId;
   AreaData(
       {required this.pk,
+      required this.syncSyncId,
       required this.city,
       required this.district,
       required this.syncTimeStamp,
@@ -27,6 +29,8 @@ class AreaData extends DataClass implements Insertable<AreaData> {
     return AreaData(
       pk: const StringType()
           .mapFromDatabaseResponse(data['${effectivePrefix}pk'])!,
+      syncSyncId: const StringType()
+          .mapFromDatabaseResponse(data['${effectivePrefix}sync_sync_id'])!,
       city: const StringType()
           .mapFromDatabaseResponse(data['${effectivePrefix}city'])!,
       district: const StringType()
@@ -43,6 +47,7 @@ class AreaData extends DataClass implements Insertable<AreaData> {
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
     map['pk'] = Variable<String>(pk);
+    map['sync_sync_id'] = Variable<String>(syncSyncId);
     map['city'] = Variable<String>(city);
     map['district'] = Variable<String>(district);
     map['sync_time_stamp'] = Variable<int>(syncTimeStamp);
@@ -56,6 +61,7 @@ class AreaData extends DataClass implements Insertable<AreaData> {
   AreasCompanion toCompanion(bool nullToAbsent) {
     return AreasCompanion(
       pk: Value(pk),
+      syncSyncId: Value(syncSyncId),
       city: Value(city),
       district: Value(district),
       syncTimeStamp: Value(syncTimeStamp),
@@ -71,6 +77,7 @@ class AreaData extends DataClass implements Insertable<AreaData> {
     serializer ??= moorRuntimeOptions.defaultSerializer;
     return AreaData(
       pk: serializer.fromJson<String>(json['pk']),
+      syncSyncId: serializer.fromJson<String>(json['syncSyncId']),
       city: serializer.fromJson<String>(json['city']),
       district: serializer.fromJson<String>(json['district']),
       syncTimeStamp: serializer.fromJson<int>(json['syncTimeStamp']),
@@ -83,6 +90,7 @@ class AreaData extends DataClass implements Insertable<AreaData> {
     serializer ??= moorRuntimeOptions.defaultSerializer;
     return <String, dynamic>{
       'pk': serializer.toJson<String>(pk),
+      'syncSyncId': serializer.toJson<String>(syncSyncId),
       'city': serializer.toJson<String>(city),
       'district': serializer.toJson<String>(district),
       'syncTimeStamp': serializer.toJson<int>(syncTimeStamp),
@@ -93,6 +101,7 @@ class AreaData extends DataClass implements Insertable<AreaData> {
 
   AreaData copyWith(
           {String? pk,
+          String? syncSyncId,
           String? city,
           String? district,
           int? syncTimeStamp,
@@ -100,6 +109,7 @@ class AreaData extends DataClass implements Insertable<AreaData> {
           String? syncKnowledgeId}) =>
       AreaData(
         pk: pk ?? this.pk,
+        syncSyncId: syncSyncId ?? this.syncSyncId,
         city: city ?? this.city,
         district: district ?? this.district,
         syncTimeStamp: syncTimeStamp ?? this.syncTimeStamp,
@@ -110,6 +120,7 @@ class AreaData extends DataClass implements Insertable<AreaData> {
   String toString() {
     return (StringBuffer('AreaData(')
           ..write('pk: $pk, ')
+          ..write('syncSyncId: $syncSyncId, ')
           ..write('city: $city, ')
           ..write('district: $district, ')
           ..write('syncTimeStamp: $syncTimeStamp, ')
@@ -123,16 +134,21 @@ class AreaData extends DataClass implements Insertable<AreaData> {
   int get hashCode => $mrjf($mrjc(
       pk.hashCode,
       $mrjc(
-          city.hashCode,
+          syncSyncId.hashCode,
           $mrjc(
-              district.hashCode,
-              $mrjc(syncTimeStamp.hashCode,
-                  $mrjc(syncDeleted.hashCode, syncKnowledgeId.hashCode))))));
+              city.hashCode,
+              $mrjc(
+                  district.hashCode,
+                  $mrjc(
+                      syncTimeStamp.hashCode,
+                      $mrjc(
+                          syncDeleted.hashCode, syncKnowledgeId.hashCode)))))));
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
       (other is AreaData &&
           other.pk == this.pk &&
+          other.syncSyncId == this.syncSyncId &&
           other.city == this.city &&
           other.district == this.district &&
           other.syncTimeStamp == this.syncTimeStamp &&
@@ -142,6 +158,7 @@ class AreaData extends DataClass implements Insertable<AreaData> {
 
 class AreasCompanion extends UpdateCompanion<AreaData> {
   final Value<String> pk;
+  final Value<String> syncSyncId;
   final Value<String> city;
   final Value<String> district;
   final Value<int> syncTimeStamp;
@@ -149,6 +166,7 @@ class AreasCompanion extends UpdateCompanion<AreaData> {
   final Value<String?> syncKnowledgeId;
   const AreasCompanion({
     this.pk = const Value.absent(),
+    this.syncSyncId = const Value.absent(),
     this.city = const Value.absent(),
     this.district = const Value.absent(),
     this.syncTimeStamp = const Value.absent(),
@@ -157,6 +175,7 @@ class AreasCompanion extends UpdateCompanion<AreaData> {
   });
   AreasCompanion.insert({
     this.pk = const Value.absent(),
+    this.syncSyncId = const Value.absent(),
     this.city = const Value.absent(),
     this.district = const Value.absent(),
     this.syncTimeStamp = const Value.absent(),
@@ -165,6 +184,7 @@ class AreasCompanion extends UpdateCompanion<AreaData> {
   });
   static Insertable<AreaData> custom({
     Expression<String>? pk,
+    Expression<String>? syncSyncId,
     Expression<String>? city,
     Expression<String>? district,
     Expression<int>? syncTimeStamp,
@@ -173,6 +193,7 @@ class AreasCompanion extends UpdateCompanion<AreaData> {
   }) {
     return RawValuesInsertable({
       if (pk != null) 'pk': pk,
+      if (syncSyncId != null) 'sync_sync_id': syncSyncId,
       if (city != null) 'city': city,
       if (district != null) 'district': district,
       if (syncTimeStamp != null) 'sync_time_stamp': syncTimeStamp,
@@ -183,6 +204,7 @@ class AreasCompanion extends UpdateCompanion<AreaData> {
 
   AreasCompanion copyWith(
       {Value<String>? pk,
+      Value<String>? syncSyncId,
       Value<String>? city,
       Value<String>? district,
       Value<int>? syncTimeStamp,
@@ -190,6 +212,7 @@ class AreasCompanion extends UpdateCompanion<AreaData> {
       Value<String?>? syncKnowledgeId}) {
     return AreasCompanion(
       pk: pk ?? this.pk,
+      syncSyncId: syncSyncId ?? this.syncSyncId,
       city: city ?? this.city,
       district: district ?? this.district,
       syncTimeStamp: syncTimeStamp ?? this.syncTimeStamp,
@@ -203,6 +226,9 @@ class AreasCompanion extends UpdateCompanion<AreaData> {
     final map = <String, Expression>{};
     if (pk.present) {
       map['pk'] = Variable<String>(pk.value);
+    }
+    if (syncSyncId.present) {
+      map['sync_sync_id'] = Variable<String>(syncSyncId.value);
     }
     if (city.present) {
       map['city'] = Variable<String>(city.value);
@@ -226,6 +252,7 @@ class AreasCompanion extends UpdateCompanion<AreaData> {
   String toString() {
     return (StringBuffer('AreasCompanion(')
           ..write('pk: $pk, ')
+          ..write('syncSyncId: $syncSyncId, ')
           ..write('city: $city, ')
           ..write('district: $district, ')
           ..write('syncTimeStamp: $syncTimeStamp, ')
@@ -248,6 +275,14 @@ class $AreasTable extends Areas with TableInfo<$AreasTable, AreaData> {
       typeName: 'TEXT',
       requiredDuringInsert: false,
       clientDefault: () => Uuid().v4());
+  final VerificationMeta _syncSyncIdMeta = const VerificationMeta('syncSyncId');
+  @override
+  late final GeneratedColumn<String?> syncSyncId = GeneratedColumn<String?>(
+      'sync_sync_id', aliasedName, false,
+      additionalChecks: GeneratedColumn.checkTextLength(maxTextLength: 255),
+      typeName: 'TEXT',
+      requiredDuringInsert: false,
+      defaultValue: Constant(""));
   final VerificationMeta _cityMeta = const VerificationMeta('city');
   @override
   late final GeneratedColumn<String?> city = GeneratedColumn<String?>(
@@ -290,8 +325,15 @@ class $AreasTable extends Areas with TableInfo<$AreasTable, AreaData> {
           typeName: 'TEXT',
           requiredDuringInsert: false);
   @override
-  List<GeneratedColumn> get $columns =>
-      [pk, city, district, syncTimeStamp, syncDeleted, syncKnowledgeId];
+  List<GeneratedColumn> get $columns => [
+        pk,
+        syncSyncId,
+        city,
+        district,
+        syncTimeStamp,
+        syncDeleted,
+        syncKnowledgeId
+      ];
   @override
   String get aliasedName => _alias ?? 'area';
   @override
@@ -303,6 +345,12 @@ class $AreasTable extends Areas with TableInfo<$AreasTable, AreaData> {
     final data = instance.toColumns(true);
     if (data.containsKey('pk')) {
       context.handle(_pkMeta, pk.isAcceptableOrUnknown(data['pk']!, _pkMeta));
+    }
+    if (data.containsKey('sync_sync_id')) {
+      context.handle(
+          _syncSyncIdMeta,
+          syncSyncId.isAcceptableOrUnknown(
+              data['sync_sync_id']!, _syncSyncIdMeta));
     }
     if (data.containsKey('city')) {
       context.handle(
@@ -349,6 +397,7 @@ class $AreasTable extends Areas with TableInfo<$AreasTable, AreaData> {
 
 class Person extends DataClass implements Insertable<Person> {
   final String id;
+  final String syncId;
   final String name;
   final DateTime birthday;
   final int age;
@@ -363,6 +412,7 @@ class Person extends DataClass implements Insertable<Person> {
   final String? knowledgeId;
   Person(
       {required this.id,
+      required this.syncId,
       required this.name,
       required this.birthday,
       required this.age,
@@ -381,6 +431,8 @@ class Person extends DataClass implements Insertable<Person> {
     return Person(
       id: const StringType()
           .mapFromDatabaseResponse(data['${effectivePrefix}id'])!,
+      syncId: const StringType()
+          .mapFromDatabaseResponse(data['${effectivePrefix}sync_id'])!,
       name: const StringType()
           .mapFromDatabaseResponse(data['${effectivePrefix}name'])!,
       birthday: const DateTimeType()
@@ -411,6 +463,7 @@ class Person extends DataClass implements Insertable<Person> {
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
     map['id'] = Variable<String>(id);
+    map['sync_id'] = Variable<String>(syncId);
     map['name'] = Variable<String>(name);
     map['birthday'] = Variable<DateTime>(birthday);
     map['age'] = Variable<int>(age);
@@ -441,6 +494,7 @@ class Person extends DataClass implements Insertable<Person> {
   PersonsCompanion toCompanion(bool nullToAbsent) {
     return PersonsCompanion(
       id: Value(id),
+      syncId: Value(syncId),
       name: Value(name),
       birthday: Value(birthday),
       age: Value(age),
@@ -473,6 +527,7 @@ class Person extends DataClass implements Insertable<Person> {
     serializer ??= moorRuntimeOptions.defaultSerializer;
     return Person(
       id: serializer.fromJson<String>(json['id']),
+      syncId: serializer.fromJson<String>(json['syncId']),
       name: serializer.fromJson<String>(json['name']),
       birthday: serializer.fromJson<DateTime>(json['birthday']),
       age: serializer.fromJson<int>(json['age']),
@@ -493,6 +548,7 @@ class Person extends DataClass implements Insertable<Person> {
     serializer ??= moorRuntimeOptions.defaultSerializer;
     return <String, dynamic>{
       'id': serializer.toJson<String>(id),
+      'syncId': serializer.toJson<String>(syncId),
       'name': serializer.toJson<String>(name),
       'birthday': serializer.toJson<DateTime>(birthday),
       'age': serializer.toJson<int>(age),
@@ -510,6 +566,7 @@ class Person extends DataClass implements Insertable<Person> {
 
   Person copyWith(
           {String? id,
+          String? syncId,
           String? name,
           DateTime? birthday,
           int? age,
@@ -524,6 +581,7 @@ class Person extends DataClass implements Insertable<Person> {
           String? knowledgeId}) =>
       Person(
         id: id ?? this.id,
+        syncId: syncId ?? this.syncId,
         name: name ?? this.name,
         birthday: birthday ?? this.birthday,
         age: age ?? this.age,
@@ -541,6 +599,7 @@ class Person extends DataClass implements Insertable<Person> {
   String toString() {
     return (StringBuffer('Person(')
           ..write('id: $id, ')
+          ..write('syncId: $syncId, ')
           ..write('name: $name, ')
           ..write('birthday: $birthday, ')
           ..write('age: $age, ')
@@ -561,34 +620,37 @@ class Person extends DataClass implements Insertable<Person> {
   int get hashCode => $mrjf($mrjc(
       id.hashCode,
       $mrjc(
-          name.hashCode,
+          syncId.hashCode,
           $mrjc(
-              birthday.hashCode,
+              name.hashCode,
               $mrjc(
-                  age.hashCode,
+                  birthday.hashCode,
                   $mrjc(
-                      isForeigner.hashCode,
+                      age.hashCode,
                       $mrjc(
-                          isVaccinated.hashCode,
+                          isForeigner.hashCode,
                           $mrjc(
-                              vaccineName.hashCode,
+                              isVaccinated.hashCode,
                               $mrjc(
-                                  vaccinationDate.hashCode,
+                                  vaccineName.hashCode,
                                   $mrjc(
-                                      vaccinePhase.hashCode,
+                                      vaccinationDate.hashCode,
                                       $mrjc(
-                                          vaccinationAreaPk.hashCode,
+                                          vaccinePhase.hashCode,
                                           $mrjc(
-                                              timeStamp.hashCode,
+                                              vaccinationAreaPk.hashCode,
                                               $mrjc(
-                                                  deleted.hashCode,
-                                                  knowledgeId
-                                                      .hashCode)))))))))))));
+                                                  timeStamp.hashCode,
+                                                  $mrjc(
+                                                      deleted.hashCode,
+                                                      knowledgeId
+                                                          .hashCode))))))))))))));
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
       (other is Person &&
           other.id == this.id &&
+          other.syncId == this.syncId &&
           other.name == this.name &&
           other.birthday == this.birthday &&
           other.age == this.age &&
@@ -605,6 +667,7 @@ class Person extends DataClass implements Insertable<Person> {
 
 class PersonsCompanion extends UpdateCompanion<Person> {
   final Value<String> id;
+  final Value<String> syncId;
   final Value<String> name;
   final Value<DateTime> birthday;
   final Value<int> age;
@@ -619,6 +682,7 @@ class PersonsCompanion extends UpdateCompanion<Person> {
   final Value<String?> knowledgeId;
   const PersonsCompanion({
     this.id = const Value.absent(),
+    this.syncId = const Value.absent(),
     this.name = const Value.absent(),
     this.birthday = const Value.absent(),
     this.age = const Value.absent(),
@@ -634,6 +698,7 @@ class PersonsCompanion extends UpdateCompanion<Person> {
   });
   PersonsCompanion.insert({
     this.id = const Value.absent(),
+    this.syncId = const Value.absent(),
     this.name = const Value.absent(),
     this.birthday = const Value.absent(),
     this.age = const Value.absent(),
@@ -649,6 +714,7 @@ class PersonsCompanion extends UpdateCompanion<Person> {
   });
   static Insertable<Person> custom({
     Expression<String>? id,
+    Expression<String>? syncId,
     Expression<String>? name,
     Expression<DateTime>? birthday,
     Expression<int>? age,
@@ -664,6 +730,7 @@ class PersonsCompanion extends UpdateCompanion<Person> {
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
+      if (syncId != null) 'sync_id': syncId,
       if (name != null) 'name': name,
       if (birthday != null) 'birthday': birthday,
       if (age != null) 'age': age,
@@ -681,6 +748,7 @@ class PersonsCompanion extends UpdateCompanion<Person> {
 
   PersonsCompanion copyWith(
       {Value<String>? id,
+      Value<String>? syncId,
       Value<String>? name,
       Value<DateTime>? birthday,
       Value<int>? age,
@@ -695,6 +763,7 @@ class PersonsCompanion extends UpdateCompanion<Person> {
       Value<String?>? knowledgeId}) {
     return PersonsCompanion(
       id: id ?? this.id,
+      syncId: syncId ?? this.syncId,
       name: name ?? this.name,
       birthday: birthday ?? this.birthday,
       age: age ?? this.age,
@@ -715,6 +784,9 @@ class PersonsCompanion extends UpdateCompanion<Person> {
     final map = <String, Expression>{};
     if (id.present) {
       map['id'] = Variable<String>(id.value);
+    }
+    if (syncId.present) {
+      map['sync_id'] = Variable<String>(syncId.value);
     }
     if (name.present) {
       map['name'] = Variable<String>(name.value);
@@ -759,6 +831,7 @@ class PersonsCompanion extends UpdateCompanion<Person> {
   String toString() {
     return (StringBuffer('PersonsCompanion(')
           ..write('id: $id, ')
+          ..write('syncId: $syncId, ')
           ..write('name: $name, ')
           ..write('birthday: $birthday, ')
           ..write('age: $age, ')
@@ -788,6 +861,14 @@ class $PersonsTable extends Persons with TableInfo<$PersonsTable, Person> {
       typeName: 'TEXT',
       requiredDuringInsert: false,
       clientDefault: () => Uuid().v4());
+  final VerificationMeta _syncIdMeta = const VerificationMeta('syncId');
+  @override
+  late final GeneratedColumn<String?> syncId = GeneratedColumn<String?>(
+      'sync_id', aliasedName, false,
+      additionalChecks: GeneratedColumn.checkTextLength(maxTextLength: 255),
+      typeName: 'TEXT',
+      requiredDuringInsert: false,
+      defaultValue: Constant(""));
   final VerificationMeta _nameMeta = const VerificationMeta('name');
   @override
   late final GeneratedColumn<String?> name = GeneratedColumn<String?>(
@@ -795,7 +876,7 @@ class $PersonsTable extends Persons with TableInfo<$PersonsTable, Person> {
       additionalChecks: GeneratedColumn.checkTextLength(maxTextLength: 255),
       typeName: 'TEXT',
       requiredDuringInsert: false,
-      $customConstraints: 'NOT NULL DEFAULT \'\' UNIQUE',
+      $customConstraints: 'NOT NULL DEFAULT \'\'',
       defaultValue: Constant(""));
   final VerificationMeta _birthdayMeta = const VerificationMeta('birthday');
   @override
@@ -882,6 +963,7 @@ class $PersonsTable extends Persons with TableInfo<$PersonsTable, Person> {
   @override
   List<GeneratedColumn> get $columns => [
         id,
+        syncId,
         name,
         birthday,
         age,
@@ -906,6 +988,10 @@ class $PersonsTable extends Persons with TableInfo<$PersonsTable, Person> {
     final data = instance.toColumns(true);
     if (data.containsKey('id')) {
       context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('sync_id')) {
+      context.handle(_syncIdMeta,
+          syncId.isAcceptableOrUnknown(data['sync_id']!, _syncIdMeta));
     }
     if (data.containsKey('name')) {
       context.handle(
@@ -988,6 +1074,7 @@ class $PersonsTable extends Persons with TableInfo<$PersonsTable, Person> {
 
 class CustomObjectsCompanion extends UpdateCompanion<CustomObject> {
   final Value<String> id;
+  final Value<String> syncId;
   final Value<String> fieldString;
   final Value<String?> fieldStringNullable;
   final Value<int> fieldInt;
@@ -1001,6 +1088,7 @@ class CustomObjectsCompanion extends UpdateCompanion<CustomObject> {
   final Value<String?> knowledgeId;
   const CustomObjectsCompanion({
     this.id = const Value.absent(),
+    this.syncId = const Value.absent(),
     this.fieldString = const Value.absent(),
     this.fieldStringNullable = const Value.absent(),
     this.fieldInt = const Value.absent(),
@@ -1015,6 +1103,7 @@ class CustomObjectsCompanion extends UpdateCompanion<CustomObject> {
   });
   CustomObjectsCompanion.insert({
     required String id,
+    this.syncId = const Value.absent(),
     required String fieldString,
     this.fieldStringNullable = const Value.absent(),
     required int fieldInt,
@@ -1035,6 +1124,7 @@ class CustomObjectsCompanion extends UpdateCompanion<CustomObject> {
         deleted = Value(deleted);
   static Insertable<CustomObject> custom({
     Expression<String>? id,
+    Expression<String>? syncId,
     Expression<String>? fieldString,
     Expression<String?>? fieldStringNullable,
     Expression<int>? fieldInt,
@@ -1049,6 +1139,7 @@ class CustomObjectsCompanion extends UpdateCompanion<CustomObject> {
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
+      if (syncId != null) 'sync_id': syncId,
       if (fieldString != null) 'field_string': fieldString,
       if (fieldStringNullable != null)
         'field_string_nullable': fieldStringNullable,
@@ -1068,6 +1159,7 @@ class CustomObjectsCompanion extends UpdateCompanion<CustomObject> {
 
   CustomObjectsCompanion copyWith(
       {Value<String>? id,
+      Value<String>? syncId,
       Value<String>? fieldString,
       Value<String?>? fieldStringNullable,
       Value<int>? fieldInt,
@@ -1081,6 +1173,7 @@ class CustomObjectsCompanion extends UpdateCompanion<CustomObject> {
       Value<String?>? knowledgeId}) {
     return CustomObjectsCompanion(
       id: id ?? this.id,
+      syncId: syncId ?? this.syncId,
       fieldString: fieldString ?? this.fieldString,
       fieldStringNullable: fieldStringNullable ?? this.fieldStringNullable,
       fieldInt: fieldInt ?? this.fieldInt,
@@ -1101,6 +1194,9 @@ class CustomObjectsCompanion extends UpdateCompanion<CustomObject> {
     final map = <String, Expression>{};
     if (id.present) {
       map['id'] = Variable<String>(id.value);
+    }
+    if (syncId.present) {
+      map['sync_id'] = Variable<String>(syncId.value);
     }
     if (fieldString.present) {
       map['field_string'] = Variable<String>(fieldString.value);
@@ -1145,6 +1241,7 @@ class CustomObjectsCompanion extends UpdateCompanion<CustomObject> {
   String toString() {
     return (StringBuffer('CustomObjectsCompanion(')
           ..write('id: $id, ')
+          ..write('syncId: $syncId, ')
           ..write('fieldString: $fieldString, ')
           ..write('fieldStringNullable: $fieldStringNullable, ')
           ..write('fieldInt: $fieldInt, ')
@@ -1173,6 +1270,14 @@ class $CustomObjectsTable extends CustomObjects
       additionalChecks: GeneratedColumn.checkTextLength(maxTextLength: 36),
       typeName: 'TEXT',
       requiredDuringInsert: true);
+  final VerificationMeta _syncIdMeta = const VerificationMeta('syncId');
+  @override
+  late final GeneratedColumn<String?> syncId = GeneratedColumn<String?>(
+      'sync_id', aliasedName, false,
+      additionalChecks: GeneratedColumn.checkTextLength(maxTextLength: 255),
+      typeName: 'TEXT',
+      requiredDuringInsert: false,
+      defaultValue: Constant(""));
   final VerificationMeta _fieldStringMeta =
       const VerificationMeta('fieldString');
   @override
@@ -1251,6 +1356,7 @@ class $CustomObjectsTable extends CustomObjects
   @override
   List<GeneratedColumn> get $columns => [
         id,
+        syncId,
         fieldString,
         fieldStringNullable,
         fieldInt,
@@ -1276,6 +1382,10 @@ class $CustomObjectsTable extends CustomObjects
       context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
     } else if (isInserting) {
       context.missing(_idMeta);
+    }
+    if (data.containsKey('sync_id')) {
+      context.handle(_syncIdMeta,
+          syncId.isAcceptableOrUnknown(data['sync_id']!, _syncIdMeta));
     }
     if (data.containsKey('field_string')) {
       context.handle(
@@ -1360,6 +1470,8 @@ class $CustomObjectsTable extends CustomObjects
     return CustomObject.fromDb(
       id: const StringType()
           .mapFromDatabaseResponse(data['${effectivePrefix}id'])!,
+      syncId: const StringType()
+          .mapFromDatabaseResponse(data['${effectivePrefix}sync_id'])!,
       fieldString: const StringType()
           .mapFromDatabaseResponse(data['${effectivePrefix}field_string'])!,
       fieldStringNullable: const StringType().mapFromDatabaseResponse(
@@ -1396,36 +1508,46 @@ class NetCoreSyncKnowledgesCompanion
   final Value<String> id;
   final Value<bool> local;
   final Value<int> maxTimeStamp;
+  final Value<String> syncId;
   const NetCoreSyncKnowledgesCompanion({
     this.id = const Value.absent(),
     this.local = const Value.absent(),
     this.maxTimeStamp = const Value.absent(),
+    this.syncId = const Value.absent(),
   });
   NetCoreSyncKnowledgesCompanion.insert({
     required String id,
     required bool local,
     required int maxTimeStamp,
+    required String syncId,
   })  : id = Value(id),
         local = Value(local),
-        maxTimeStamp = Value(maxTimeStamp);
+        maxTimeStamp = Value(maxTimeStamp),
+        syncId = Value(syncId);
   static Insertable<NetCoreSyncKnowledge> custom({
     Expression<String>? id,
     Expression<bool>? local,
     Expression<int>? maxTimeStamp,
+    Expression<String>? syncId,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
       if (local != null) 'local': local,
       if (maxTimeStamp != null) 'max_time_stamp': maxTimeStamp,
+      if (syncId != null) 'sync_id': syncId,
     });
   }
 
   NetCoreSyncKnowledgesCompanion copyWith(
-      {Value<String>? id, Value<bool>? local, Value<int>? maxTimeStamp}) {
+      {Value<String>? id,
+      Value<bool>? local,
+      Value<int>? maxTimeStamp,
+      Value<String>? syncId}) {
     return NetCoreSyncKnowledgesCompanion(
       id: id ?? this.id,
       local: local ?? this.local,
       maxTimeStamp: maxTimeStamp ?? this.maxTimeStamp,
+      syncId: syncId ?? this.syncId,
     );
   }
 
@@ -1441,6 +1563,9 @@ class NetCoreSyncKnowledgesCompanion
     if (maxTimeStamp.present) {
       map['max_time_stamp'] = Variable<int>(maxTimeStamp.value);
     }
+    if (syncId.present) {
+      map['sync_id'] = Variable<String>(syncId.value);
+    }
     return map;
   }
 
@@ -1449,7 +1574,8 @@ class NetCoreSyncKnowledgesCompanion
     return (StringBuffer('NetCoreSyncKnowledgesCompanion(')
           ..write('id: $id, ')
           ..write('local: $local, ')
-          ..write('maxTimeStamp: $maxTimeStamp')
+          ..write('maxTimeStamp: $maxTimeStamp, ')
+          ..write('syncId: $syncId')
           ..write(')'))
         .toString();
   }
@@ -1480,8 +1606,15 @@ class $NetCoreSyncKnowledgesTable extends NetCoreSyncKnowledges
   late final GeneratedColumn<int?> maxTimeStamp = GeneratedColumn<int?>(
       'max_time_stamp', aliasedName, false,
       typeName: 'INTEGER', requiredDuringInsert: true);
+  final VerificationMeta _syncIdMeta = const VerificationMeta('syncId');
   @override
-  List<GeneratedColumn> get $columns => [id, local, maxTimeStamp];
+  late final GeneratedColumn<String?> syncId = GeneratedColumn<String?>(
+      'sync_id', aliasedName, false,
+      additionalChecks: GeneratedColumn.checkTextLength(maxTextLength: 255),
+      typeName: 'TEXT',
+      requiredDuringInsert: true);
+  @override
+  List<GeneratedColumn> get $columns => [id, local, maxTimeStamp, syncId];
   @override
   String get aliasedName => _alias ?? 'netcoresync_knowledges';
   @override
@@ -1511,6 +1644,12 @@ class $NetCoreSyncKnowledgesTable extends NetCoreSyncKnowledges
     } else if (isInserting) {
       context.missing(_maxTimeStampMeta);
     }
+    if (data.containsKey('sync_id')) {
+      context.handle(_syncIdMeta,
+          syncId.isAcceptableOrUnknown(data['sync_id']!, _syncIdMeta));
+    } else if (isInserting) {
+      context.missing(_syncIdMeta);
+    }
     return context;
   }
 
@@ -1526,6 +1665,8 @@ class $NetCoreSyncKnowledgesTable extends NetCoreSyncKnowledges
           .mapFromDatabaseResponse(data['${effectivePrefix}local'])!,
       maxTimeStamp: const IntType()
           .mapFromDatabaseResponse(data['${effectivePrefix}max_time_stamp'])!,
+      syncId: const StringType()
+          .mapFromDatabaseResponse(data['${effectivePrefix}sync_id'])!,
     );
   }
 
@@ -1554,9 +1695,9 @@ abstract class _$Database extends GeneratedDatabase {
 // **************************************************************************
 
 // NOTE: Obtained from @NetCoreSyncTable annotations:
-// Areas: {"tableClassName":"Areas","dataClassName":"AreaData","useRowClass":false,"netCoreSyncTable":{"mapToClassName":"SyncArea","idFieldName":"pk","timeStampFieldName":"syncTimeStamp","deletedFieldName":"syncDeleted","knowledgeIdFieldName":"syncKnowledgeId","order":1}}
-// Persons: {"tableClassName":"Persons","dataClassName":"Person","useRowClass":false,"netCoreSyncTable":{"mapToClassName":"SyncPerson","idFieldName":"id","timeStampFieldName":"timeStamp","deletedFieldName":"deleted","knowledgeIdFieldName":"knowledgeId","order":2}}
-// CustomObjects: {"tableClassName":"CustomObjects","dataClassName":"CustomObject","useRowClass":true,"netCoreSyncTable":{"mapToClassName":"SyncCustomObject","idFieldName":"id","timeStampFieldName":"timeStamp","deletedFieldName":"deleted","knowledgeIdFieldName":"knowledgeId","order":3}}
+// Areas: {"tableClassName":"Areas","dataClassName":"AreaData","useRowClass":false,"netCoreSyncTable":{"mapToClassName":"SyncArea","idFieldName":"pk","syncIdFieldName":"syncSyncId","timeStampFieldName":"syncTimeStamp","deletedFieldName":"syncDeleted","knowledgeIdFieldName":"syncKnowledgeId","order":1}}
+// Persons: {"tableClassName":"Persons","dataClassName":"Person","useRowClass":false,"netCoreSyncTable":{"mapToClassName":"SyncPerson","idFieldName":"id","syncIdFieldName":"syncId","timeStampFieldName":"timeStamp","deletedFieldName":"deleted","knowledgeIdFieldName":"knowledgeId","order":2}}
+// CustomObjects: {"tableClassName":"CustomObjects","dataClassName":"CustomObject","useRowClass":true,"netCoreSyncTable":{"mapToClassName":"SyncCustomObject","idFieldName":"id","syncIdFieldName":"syncId","timeStampFieldName":"timeStamp","deletedFieldName":"deleted","knowledgeIdFieldName":"knowledgeId","order":3}}
 
 class _$NetCoreSyncEngineUser extends NetCoreSyncEngine {
   _$NetCoreSyncEngineUser(
@@ -1747,12 +1888,14 @@ extension $NetCoreSyncClientExtension on Database {
             NetCoreSyncTable.fromJson({
               "mapToClassName": "SyncArea",
               "idFieldName": "pk",
+              "syncIdFieldName": "syncSyncId",
               "timeStampFieldName": "syncTimeStamp",
               "deletedFieldName": "syncDeleted",
               "knowledgeIdFieldName": "syncKnowledgeId",
               "order": 1
             }),
             areas.pk.escapedName,
+            areas.syncSyncId.escapedName,
             areas.syncTimeStamp.escapedName,
             areas.syncDeleted.escapedName,
             areas.syncKnowledgeId.escapedName,
@@ -1762,12 +1905,14 @@ extension $NetCoreSyncClientExtension on Database {
             NetCoreSyncTable.fromJson({
               "mapToClassName": "SyncPerson",
               "idFieldName": "id",
+              "syncIdFieldName": "syncId",
               "timeStampFieldName": "timeStamp",
               "deletedFieldName": "deleted",
               "knowledgeIdFieldName": "knowledgeId",
               "order": 2
             }),
             persons.id.escapedName,
+            persons.syncId.escapedName,
             persons.timeStamp.escapedName,
             persons.deleted.escapedName,
             persons.knowledgeId.escapedName,
@@ -1777,12 +1922,14 @@ extension $NetCoreSyncClientExtension on Database {
             NetCoreSyncTable.fromJson({
               "mapToClassName": "SyncCustomObject",
               "idFieldName": "id",
+              "syncIdFieldName": "syncId",
               "timeStampFieldName": "timeStamp",
               "deletedFieldName": "deleted",
               "knowledgeIdFieldName": "knowledgeId",
               "order": 3
             }),
             customObjects.id.escapedName,
+            customObjects.syncId.escapedName,
             customObjects.timeStamp.escapedName,
             customObjects.deleted.escapedName,
             customObjects.knowledgeId.escapedName,

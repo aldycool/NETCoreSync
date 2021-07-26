@@ -7,6 +7,9 @@ import 'package:netcoresync_moor/netcoresync_moor.dart';
 class Departments extends Table {
   TextColumn get id => text().clientDefault(() => Uuid().v4())();
 
+  TextColumn get syncId =>
+      text().withLength(max: 255).withDefault(Constant(""))();
+
   TextColumn get name => text().withLength(max: 255).nullable()();
 
   IntColumn get timeStamp => integer().withDefault(const Constant(0))();

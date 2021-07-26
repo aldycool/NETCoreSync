@@ -20,6 +20,7 @@ class NetCoreSyncTableUser<T extends Table, D> {
   TableInfo<T, D> tableInfo;
   NetCoreSyncTable tableAnnotation;
   String idEscapedName;
+  String syncIdEscapedName;
   String timeStampEscapedName;
   String deletedEscapedName;
   String knowledgeIdEscapedName;
@@ -27,6 +28,7 @@ class NetCoreSyncTableUser<T extends Table, D> {
     this.tableInfo,
     this.tableAnnotation,
     this.idEscapedName,
+    this.syncIdEscapedName,
     this.timeStampEscapedName,
     this.deletedEscapedName,
     this.knowledgeIdEscapedName,
