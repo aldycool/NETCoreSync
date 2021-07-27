@@ -8,6 +8,9 @@ using Microsoft.AspNetCore.HttpsPolicy;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Microsoft.EntityFrameworkCore;
+using WebSample.Models;
+using NETCoreSyncServer;
 
 namespace WebSample
 {
@@ -23,7 +26,13 @@ namespace WebSample
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
+            services.AddDbContext<DatabaseContext>(options => 
+            {
+                options.UseNpgsql("Host=localhost;Database=NETCoreSyncServerTimeStampDB;Username=NETCoreSyncServerTimeStamp_User;Password=NETCoreSyncServerTimeStamp_Password");
+            });
+
             services.AddControllersWithViews();
+            services.AddNETCoreSyncServer();
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
@@ -45,6 +54,8 @@ namespace WebSample
             app.UseRouting();
 
             app.UseAuthorization();
+
+            app.UseNETCoreSyncServer("/custompath");
 
             app.UseEndpoints(endpoints =>
             {

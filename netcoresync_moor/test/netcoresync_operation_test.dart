@@ -93,7 +93,7 @@ void main() async {
       });
       await database.netCoreSyncSynchronize(
         synchronizationId: "abc",
-        url: "https://localhost:5001/Sync",
+        url: "https://localhost:5001/custompath",
       );
     });
 
