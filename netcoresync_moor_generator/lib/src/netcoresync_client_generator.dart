@@ -62,14 +62,6 @@ class NetCoreSyncClientGenerator extends GeneratorForAnnotation<UseMoor> {
       return buffer.toString();
     }
 
-    jsonParts.sort((a, b) {
-      Map<String, dynamic> partA = jsonDecode(a);
-      Map<String, dynamic> partB = jsonDecode(b);
-      int orderA = partA["netCoreSyncTable"]["order"];
-      int orderB = partB["netCoreSyncTable"]["order"];
-      return orderA.compareTo(orderB);
-    });
-
     buffer.writeln();
     buffer.writeln("// NOTE: Obtained from @NetCoreSyncTable annotations:");
     for (var jsonPart in jsonParts) {
@@ -82,7 +74,7 @@ class NetCoreSyncClientGenerator extends GeneratorForAnnotation<UseMoor> {
     buffer
         .writeln("class _\$NetCoreSyncEngineUser extends NetCoreSyncEngine {");
     buffer.writeln(
-        "_\$NetCoreSyncEngineUser(List<Type> orderedTypes, Map<Type, NetCoreSyncTableUser> tables) : super(orderedTypes, tables);");
+        "_\$NetCoreSyncEngineUser(Map<Type, NetCoreSyncTableUser> tables) : super(tables);");
 
     // START METHOD: getSyncColumnValue
     buffer.writeln();
@@ -97,15 +89,18 @@ class NetCoreSyncClientGenerator extends GeneratorForAnnotation<UseMoor> {
       buffer.writeln("case\"id\":");
       buffer.writeln(
           "return (entity as ${part["tableClassName"]}Companion).${part["netCoreSyncTable"]["idFieldName"]} == Value.absent() ? null : (entity as ${part["tableClassName"]}Companion).${part["netCoreSyncTable"]["idFieldName"]}.value;");
-      buffer.writeln("case\"timeStamp\":");
+      buffer.writeln("case\"syncId\":");
       buffer.writeln(
-          "return (entity as ${part["tableClassName"]}Companion).${part["netCoreSyncTable"]["timeStampFieldName"]} == Value.absent() ? null : (entity as ${part["tableClassName"]}Companion).${part["netCoreSyncTable"]["timeStampFieldName"]}.value;");
-      buffer.writeln("case\"deleted\":");
-      buffer.writeln(
-          "return (entity as ${part["tableClassName"]}Companion).${part["netCoreSyncTable"]["deletedFieldName"]} == Value.absent() ? null : (entity as ${part["tableClassName"]}Companion).${part["netCoreSyncTable"]["deletedFieldName"]}.value;");
+          "return (entity as ${part["tableClassName"]}Companion).${part["netCoreSyncTable"]["syncIdFieldName"]} == Value.absent() ? null : (entity as ${part["tableClassName"]}Companion).${part["netCoreSyncTable"]["syncIdFieldName"]}.value;");
       buffer.writeln("case\"knowledgeId\":");
       buffer.writeln(
           "return (entity as ${part["tableClassName"]}Companion).${part["netCoreSyncTable"]["knowledgeIdFieldName"]} == Value.absent() ? null : (entity as ${part["tableClassName"]}Companion).${part["netCoreSyncTable"]["knowledgeIdFieldName"]}.value;");
+      buffer.writeln("case\"synced\":");
+      buffer.writeln(
+          "return (entity as ${part["tableClassName"]}Companion).${part["netCoreSyncTable"]["syncedFieldName"]} == Value.absent() ? null : (entity as ${part["tableClassName"]}Companion).${part["netCoreSyncTable"]["syncedFieldName"]}.value;");
+      buffer.writeln("case\"deleted\":");
+      buffer.writeln(
+          "return (entity as ${part["tableClassName"]}Companion).${part["netCoreSyncTable"]["deletedFieldName"]} == Value.absent() ? null : (entity as ${part["tableClassName"]}Companion).${part["netCoreSyncTable"]["deletedFieldName"]}.value;");
       buffer.writeln("}");
       buffer.writeln("}");
     }
@@ -117,15 +112,18 @@ class NetCoreSyncClientGenerator extends GeneratorForAnnotation<UseMoor> {
       buffer.writeln("case\"id\":");
       buffer.writeln(
           "return (entity as ${part["dataClassName"]}).${part["netCoreSyncTable"]["idFieldName"]};");
-      buffer.writeln("case\"timeStamp\":");
+      buffer.writeln("case\"syncId\":");
       buffer.writeln(
-          "return (entity as ${part["dataClassName"]}).${part["netCoreSyncTable"]["timeStampFieldName"]};");
-      buffer.writeln("case\"deleted\":");
-      buffer.writeln(
-          "return (entity as ${part["dataClassName"]}).${part["netCoreSyncTable"]["deletedFieldName"]};");
+          "return (entity as ${part["dataClassName"]}).${part["netCoreSyncTable"]["syncIdFieldName"]};");
       buffer.writeln("case\"knowledgeId\":");
       buffer.writeln(
           "return (entity as ${part["dataClassName"]}).${part["netCoreSyncTable"]["knowledgeIdFieldName"]};");
+      buffer.writeln("case\"synced\":");
+      buffer.writeln(
+          "return (entity as ${part["dataClassName"]}).${part["netCoreSyncTable"]["syncedFieldName"]};");
+      buffer.writeln("case\"deleted\":");
+      buffer.writeln(
+          "return (entity as ${part["dataClassName"]}).${part["netCoreSyncTable"]["deletedFieldName"]};");
       buffer.writeln("}");
       buffer.writeln("}");
     }
@@ -139,12 +137,14 @@ class NetCoreSyncClientGenerator extends GeneratorForAnnotation<UseMoor> {
     buffer.writeln();
     buffer.writeln("@override");
     buffer.writeln(
-        "Insertable<D> updateSyncColumns<D>(Insertable<D> entity, {required int timeStamp, bool? deleted,}) {");
+        "Insertable<D> updateSyncColumns<D>(Insertable<D> entity, {required bool synced, String? syncId, String? knowledgeId, bool? deleted,}) {");
     buffer.writeln("if (entity is RawValuesInsertable<D>) {");
     buffer.writeln(
-        "entity.data[tables[D]!.timeStampEscapedName] = Constant(timeStamp);");
+        "entity.data[tables[D]!.syncedEscapedName] = Constant(synced);");
     buffer.writeln(
-        "entity.data[tables[D]!.knowledgeIdEscapedName] = Constant(null);");
+        "if (syncId != null) { entity.data[tables[D]!.syncIdEscapedName] = Constant(syncId); }");
+    buffer.writeln(
+        "if (knowledgeId != null) { entity.data[tables[D]!.knowledgeIdEscapedName] = Constant(knowledgeId); }");
     buffer.writeln(
         "if (deleted != null) { entity.data[tables[D]!.deletedEscapedName] = Constant(deleted); }");
     buffer.writeln("return entity;");
@@ -155,9 +155,11 @@ class NetCoreSyncClientGenerator extends GeneratorForAnnotation<UseMoor> {
       buffer.writeln(
           "return (entity as ${part["tableClassName"]}Companion).copyWith(");
       buffer.writeln(
-          "${part["netCoreSyncTable"]["timeStampFieldName"]}: Value(timeStamp),");
+          "${part["netCoreSyncTable"]["syncedFieldName"]}: Value(synced),");
       buffer.writeln(
-          "${part["netCoreSyncTable"]["knowledgeIdFieldName"]}: Value(null),");
+          "${part["netCoreSyncTable"]["syncIdFieldName"]}: syncId != null ? Value(syncId) : Value.absent(),");
+      buffer.writeln(
+          "${part["netCoreSyncTable"]["knowledgeIdFieldName"]}: knowledgeId != null ? Value(knowledgeId) : Value.absent(),");
       buffer.writeln(
           "${part["netCoreSyncTable"]["deletedFieldName"]}: deleted != null ? Value(deleted) : Value.absent(),");
       buffer.writeln(") as Insertable<D>;");
@@ -170,10 +172,10 @@ class NetCoreSyncClientGenerator extends GeneratorForAnnotation<UseMoor> {
       if (part["useRowClass"]) continue;
       buffer.writeln("if (entity is ${part["dataClassName"]}) {");
       buffer.writeln("return (entity as ${part["dataClassName"]}).copyWith(");
+      buffer.writeln("${part["netCoreSyncTable"]["syncedFieldName"]}: synced,");
+      buffer.writeln("${part["netCoreSyncTable"]["syncIdFieldName"]}: syncId,");
       buffer.writeln(
-          "${part["netCoreSyncTable"]["timeStampFieldName"]}: timeStamp,");
-      buffer.writeln(
-          "${part["netCoreSyncTable"]["knowledgeIdFieldName"]}: null,");
+          "${part["netCoreSyncTable"]["knowledgeIdFieldName"]}: knowledgeId,");
       buffer
           .writeln("${part["netCoreSyncTable"]["deletedFieldName"]}: deleted,");
       buffer.writeln(") as Insertable<D>;");
@@ -186,11 +188,13 @@ class NetCoreSyncClientGenerator extends GeneratorForAnnotation<UseMoor> {
       if (!part["useRowClass"]) continue;
       buffer.writeln("if (entity is ${part["dataClassName"]}) {");
       buffer.writeln(
-          "(entity as ${part["dataClassName"]}).${part["netCoreSyncTable"]["timeStampFieldName"]} = timeStamp;");
+          "(entity as ${part["dataClassName"]}).${part["netCoreSyncTable"]["syncedFieldName"]} = synced;");
       buffer.writeln(
-          "(entity as ${part["dataClassName"]}).${part["netCoreSyncTable"]["knowledgeIdFieldName"]} = null;");
+          "if (syncId != null) { (entity as ${part["dataClassName"]}).${part["netCoreSyncTable"]["syncIdFieldName"]} = syncId; }");
       buffer.writeln(
-          "if (deleted != null) (entity as ${part["dataClassName"]}).${part["netCoreSyncTable"]["deletedFieldName"]} = deleted;");
+          "if (knowledgeId != null) { (entity as ${part["dataClassName"]}).${part["netCoreSyncTable"]["knowledgeIdFieldName"]} = knowledgeId; }");
+      buffer.writeln(
+          "if (deleted != null) { (entity as ${part["dataClassName"]}).${part["netCoreSyncTable"]["deletedFieldName"]} = deleted; }");
       buffer.writeln("return entity;");
       buffer.writeln("}");
     }
@@ -213,12 +217,6 @@ class NetCoreSyncClientGenerator extends GeneratorForAnnotation<UseMoor> {
     buffer.writeln("Future<void> netCoreSyncInitialize() async {");
     buffer.writeln("await netCoreSyncInitializeClient(");
     buffer.writeln("_\$NetCoreSyncEngineUser(");
-    buffer.writeln("[");
-    for (var jsonPart in jsonParts) {
-      Map<String, dynamic> part = jsonDecode(jsonPart);
-      buffer.writeln("${part["dataClassName"]},");
-    }
-    buffer.writeln("],");
     buffer.writeln("{");
     for (var jsonPart in jsonParts) {
       Map<String, dynamic> part = jsonDecode(jsonPart);
@@ -228,9 +226,9 @@ class NetCoreSyncClientGenerator extends GeneratorForAnnotation<UseMoor> {
         NetCoreSyncTable.fromJson(${jsonEncode(part["netCoreSyncTable"])}),
         ${ReCase(part["tableClassName"]).camelCase}.${part["netCoreSyncTable"]["idFieldName"]}.escapedName,
         ${ReCase(part["tableClassName"]).camelCase}.${part["netCoreSyncTable"]["syncIdFieldName"]}.escapedName,
-        ${ReCase(part["tableClassName"]).camelCase}.${part["netCoreSyncTable"]["timeStampFieldName"]}.escapedName,
-        ${ReCase(part["tableClassName"]).camelCase}.${part["netCoreSyncTable"]["deletedFieldName"]}.escapedName,
         ${ReCase(part["tableClassName"]).camelCase}.${part["netCoreSyncTable"]["knowledgeIdFieldName"]}.escapedName,
+        ${ReCase(part["tableClassName"]).camelCase}.${part["netCoreSyncTable"]["syncedFieldName"]}.escapedName,
+        ${ReCase(part["tableClassName"]).camelCase}.${part["netCoreSyncTable"]["deletedFieldName"]}.escapedName,
       ),''');
     }
     buffer.writeln("},");
@@ -249,11 +247,12 @@ class NetCoreSyncClientGenerator extends GeneratorForAnnotation<UseMoor> {
       buffer.writeln("");
       buffer.writeln('''
         class \$Sync${part["tableClassName"]}Table extends \$${part["tableClassName"]}Table implements SyncBaseTable {
-          \$Sync${part["tableClassName"]}Table(_\$${element.name} db) : super(db);
+          final String _allSyncIds;
+          \$Sync${part["tableClassName"]}Table(_\$${element.name} db, this._allSyncIds) : super(db);
           @override
           Type get type => ${part["dataClassName"]};
           @override
-          String get entityName => "(SELECT * FROM \${super.entityName} WHERE \${super.${part["netCoreSyncTable"]["deletedFieldName"]}.escapedName} = 0)";
+          String get entityName => "(SELECT * FROM \${super.entityName} WHERE \${super.${part["netCoreSyncTable"]["deletedFieldName"]}.escapedName} = 0 AND \${super.${part["netCoreSyncTable"]["syncIdFieldName"]}.escapedName} IN (\$_allSyncIds))";
         }
       ''');
     }
@@ -272,7 +271,7 @@ class NetCoreSyncClientGenerator extends GeneratorForAnnotation<UseMoor> {
     for (var jsonPart in jsonParts) {
       Map<String, dynamic> part = jsonDecode(jsonPart);
       buffer.writeln(
-          "sync${part["tableClassName"]} = \$Sync${part["tableClassName"]}Table(resolvedEngine);");
+          "sync${part["tableClassName"]} = \$Sync${part["tableClassName"]}Table(netCoreSyncResolvedEngine, netCoreSyncAllSyncIds);");
     }
     buffer.writeln("}");
 

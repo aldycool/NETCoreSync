@@ -3,31 +3,33 @@ import 'package:uuid/uuid.dart';
 import 'package:netcoresync_moor/netcoresync_moor.dart';
 
 @NetCoreSyncTable(
-  mapToClassName: "SyncArea",
   idFieldName: "pk",
   syncIdFieldName: "syncSyncId",
-  timeStampFieldName: "syncTimeStamp",
-  deletedFieldName: "syncDeleted",
   knowledgeIdFieldName: "syncKnowledgeId",
-  order: 1,
+  syncedFieldName: "syncSynced",
+  deletedFieldName: "syncDeleted",
 )
 @DataClassName("AreaData")
 class Areas extends Table {
   TextColumn get pk =>
       text().withLength(max: 36).clientDefault(() => Uuid().v4())();
-  TextColumn get syncSyncId =>
-      text().withLength(max: 255).withDefault(Constant(""))();
   TextColumn get city =>
       text().withLength(max: 255).withDefault(Constant(""))();
   TextColumn get district =>
       text().withLength(max: 255).withDefault(Constant(""))();
 
-  IntColumn get syncTimeStamp => integer().withDefault(const Constant(0))();
+  TextColumn get syncSyncId =>
+      text().withLength(max: 36).withDefault(Constant(""))();
+  TextColumn get syncKnowledgeId =>
+      text().withLength(max: 36).withDefault(Constant(""))();
+  BoolColumn get syncSynced => boolean().withDefault(const Constant(false))();
   BoolColumn get syncDeleted => boolean().withDefault(const Constant(false))();
-  TextColumn get syncKnowledgeId => text().withLength(max: 255).nullable()();
 
   @override
-  Set<Column> get primaryKey => {pk};
+  Set<Column> get primaryKey => {
+        pk,
+        syncSyncId,
+      };
 
   @override
   List<String> get customConstraints => [

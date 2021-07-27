@@ -24,14 +24,6 @@ class SyncHandler {
       throw NetCoreSyncMustNotInsideTransactionException();
     }
 
-    List<String> logs = [];
-
-    await dataAccess.database.transaction(() async {
-      List<String> ensureLogs =
-          await dataAccess.ensureAllTableTimeStampsAreValid();
-      logs.addAll(ensureLogs);
-    });
-
     var httpClient = http.Client();
     try {
       Map<String, dynamic> payload = {

@@ -91,7 +91,9 @@ class Database extends _$Database
     return departments.mapFromCompanion(DepartmentsCompanion(
       id: Value<String>(Uuid.NAMESPACE_NIL),
       name: Value<String>("[None]"),
-      timeStamp: Value<int>(0),
+      syncId: Value<String>(""),
+      knowledgeId: Value<String>(""),
+      synced: Value<bool>(false),
       deleted: Value<bool>(false),
     ));
   }

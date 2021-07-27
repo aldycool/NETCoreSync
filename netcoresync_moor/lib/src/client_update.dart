@@ -59,7 +59,8 @@ class SyncUpdateStatement<T extends Table, D> extends UpdateStatement<T, D> {
   }) async {
     return dataAccess.syncAction(
       entity,
-      (syncEntity, obtainedTimeStamp) => implementation(
+      null, // Updates will always ignore deleted value
+      (syncEntity, _) => implementation(
         syncEntity,
         dontExecute,
       ),

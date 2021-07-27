@@ -3,15 +3,10 @@ import 'package:uuid/uuid.dart';
 import 'package:netcoresync_moor/netcoresync_moor.dart';
 import 'database.dart';
 
-@NetCoreSyncTable(
-  mapToClassName: "SyncCustomObject",
-  order: 3,
-)
+@NetCoreSyncTable()
 @UseRowClass(CustomObject, constructor: "fromDb")
 class CustomObjects extends Table {
   TextColumn get id => text().withLength(max: 36)();
-  TextColumn get syncId =>
-      text().withLength(max: 255).withDefault(Constant(""))();
   TextColumn get fieldString => text().withLength(max: 255)();
   TextColumn get fieldStringNullable =>
       text().withLength(max: 255).nullable()();
@@ -22,9 +17,12 @@ class CustomObjects extends Table {
   DateTimeColumn get fieldDateTime => dateTime()();
   DateTimeColumn get fieldDateTimeNullable => dateTime().nullable()();
 
-  IntColumn get timeStamp => integer()();
+  TextColumn get syncId =>
+      text().withLength(max: 36).withDefault(Constant(""))();
+  TextColumn get knowledgeId =>
+      text().withLength(max: 36).withDefault(Constant(""))();
+  BoolColumn get synced => boolean()();
   BoolColumn get deleted => boolean()();
-  TextColumn get knowledgeId => text().withLength(max: 36).nullable()();
 
   @override
   Set<Column> get primaryKey => {id};
@@ -32,7 +30,6 @@ class CustomObjects extends Table {
 
 class CustomObject implements Insertable<CustomObject> {
   String id = Uuid().v4();
-  String syncId = "";
   String fieldString = "";
   String? fieldStringNullable;
   int fieldInt = 0;
@@ -42,15 +39,15 @@ class CustomObject implements Insertable<CustomObject> {
   DateTime fieldDateTime = DateTime(0);
   DateTime? fieldDateTimeNullable;
 
-  int timeStamp = 0;
+  String syncId = "";
+  String knowledgeId = "";
+  bool synced = false;
   bool deleted = false;
-  String? knowledgeId;
 
   CustomObject();
 
   CustomObject.fromDb({
     required this.id,
-    required this.syncId,
     required this.fieldString,
     required this.fieldStringNullable,
     required this.fieldInt,
@@ -59,16 +56,16 @@ class CustomObject implements Insertable<CustomObject> {
     required this.fieldBooleanNullable,
     required this.fieldDateTime,
     required this.fieldDateTimeNullable,
-    required this.timeStamp,
-    required this.deleted,
+    required this.syncId,
     required this.knowledgeId,
+    required this.synced,
+    required this.deleted,
   });
 
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     return CustomObjectsCompanion(
-      id: id == "" ? Value.absent() : Value(id),
-      syncId: Value(syncId),
+      id: Value(id),
       fieldString: Value(fieldString),
       fieldStringNullable: Value(fieldStringNullable),
       fieldInt: Value(fieldInt),
@@ -77,9 +74,10 @@ class CustomObject implements Insertable<CustomObject> {
       fieldBooleanNullable: Value(fieldBooleanNullable),
       fieldDateTime: Value(fieldDateTime),
       fieldDateTimeNullable: Value(fieldDateTimeNullable),
-      timeStamp: Value(timeStamp),
-      deleted: Value(deleted),
+      syncId: Value(syncId),
       knowledgeId: Value(knowledgeId),
+      synced: Value(synced),
+      deleted: Value(deleted),
     ).toColumns(nullToAbsent);
   }
 
@@ -87,7 +85,6 @@ class CustomObject implements Insertable<CustomObject> {
     final serializer = moorRuntimeOptions.defaultSerializer;
     CustomObject customObject = CustomObject();
     customObject.id = serializer.fromJson<String>(json['id']);
-    customObject.syncId = serializer.fromJson<String>(json['syncId']);
     customObject.fieldString = serializer.fromJson<String>(json['fieldString']);
     customObject.fieldStringNullable =
         serializer.fromJson<String?>(json['fieldStringNullable']);
@@ -101,10 +98,10 @@ class CustomObject implements Insertable<CustomObject> {
         serializer.fromJson<DateTime>(json['fieldDateTime']);
     customObject.fieldDateTimeNullable =
         serializer.fromJson<DateTime?>(json['fieldDateTimeNullable']);
-    customObject.timeStamp = serializer.fromJson<int>(json['timeStamp']);
+    customObject.syncId = serializer.fromJson<String>(json['syncId']);
+    customObject.knowledgeId = serializer.fromJson<String>(json['knowledgeId']);
+    customObject.synced = serializer.fromJson<bool>(json['synced']);
     customObject.deleted = serializer.fromJson<bool>(json['deleted']);
-    customObject.knowledgeId =
-        serializer.fromJson<String?>(json['knowledgeId']);
     return customObject;
   }
 
@@ -112,7 +109,6 @@ class CustomObject implements Insertable<CustomObject> {
     final serializer = moorRuntimeOptions.defaultSerializer;
     return <String, dynamic>{
       'id': serializer.toJson<String>(id),
-      'syncId': serializer.toJson<String>(syncId),
       'fieldString': serializer.toJson<String>(fieldString),
       'fieldStringNullable': serializer.toJson<String?>(fieldStringNullable),
       'fieldInt': serializer.toJson<int>(fieldInt),
@@ -122,9 +118,10 @@ class CustomObject implements Insertable<CustomObject> {
       'fieldDateTime': serializer.toJson<DateTime>(fieldDateTime),
       'fieldDateTimeNullable':
           serializer.toJson<DateTime?>(fieldDateTimeNullable),
-      'timeStamp': serializer.toJson<int>(timeStamp),
+      'syncId': serializer.toJson<String>(syncId),
+      'knowledgeId': serializer.toJson<String>(knowledgeId),
+      'synced': serializer.toJson<bool>(synced),
       'deleted': serializer.toJson<bool>(deleted),
-      'knowledgeId': serializer.toJson<String?>(knowledgeId),
     };
   }
 }

@@ -2,24 +2,28 @@ import 'package:moor/moor.dart';
 import 'package:uuid/uuid.dart';
 import 'package:netcoresync_moor/netcoresync_moor.dart';
 
-@NetCoreSyncTable(mapToClassName: "SyncDepartment")
+@NetCoreSyncTable()
 // @DataClassName("Department") // This is remarked to test the netcoresync_moor_generator
 class Departments extends Table {
   TextColumn get id => text().clientDefault(() => Uuid().v4())();
 
-  TextColumn get syncId =>
-      text().withLength(max: 255).withDefault(Constant(""))();
-
   TextColumn get name => text().withLength(max: 255).nullable()();
 
-  IntColumn get timeStamp => integer().withDefault(const Constant(0))();
+  TextColumn get syncId =>
+      text().withLength(max: 36).withDefault(Constant(""))();
+
+  TextColumn get knowledgeId =>
+      text().withLength(max: 36).withDefault(Constant(""))();
+
+  BoolColumn get synced => boolean().withDefault(const Constant(false))();
 
   BoolColumn get deleted => boolean().withDefault(const Constant(false))();
 
-  TextColumn get knowledgeId => text().withLength(max: 255).nullable()();
-
   @override
-  Set<Column> get primaryKey => {id};
+  Set<Column> get primaryKey => {
+        id,
+        syncId,
+      };
 
   @override
   String? get tableName => "department";

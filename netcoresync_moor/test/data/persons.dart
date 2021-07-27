@@ -2,15 +2,10 @@ import 'package:moor/moor.dart';
 import 'package:uuid/uuid.dart';
 import 'package:netcoresync_moor/netcoresync_moor.dart';
 
-@NetCoreSyncTable(
-  mapToClassName: "SyncPerson",
-  order: 2,
-)
+@NetCoreSyncTable()
 class Persons extends Table {
   TextColumn get id =>
       text().withLength(max: 36).clientDefault(() => Uuid().v4())();
-  TextColumn get syncId =>
-      text().withLength(max: 255).withDefault(Constant(""))();
   TextColumn get name =>
       text().withLength(max: 255).withDefault(Constant("")).customConstraint(
           "NOT NULL DEFAULT ''")(); // If using customConstraints, we have to repeat all attached constraints in SQL language
@@ -26,12 +21,18 @@ class Persons extends Table {
   TextColumn get vaccinationAreaPk => text().nullable().customConstraint(
       "NULLABLE REFERENCES area(pk)")(); // If using customConstraints, we have to repeat all attached constraints in SQL language
 
-  IntColumn get timeStamp => integer().withDefault(const Constant(0))();
+  TextColumn get syncId =>
+      text().withLength(max: 36).withDefault(Constant(""))();
+  TextColumn get knowledgeId =>
+      text().withLength(max: 36).withDefault(Constant(""))();
+  BoolColumn get synced => boolean().withDefault(const Constant(false))();
   BoolColumn get deleted => boolean().withDefault(const Constant(false))();
-  TextColumn get knowledgeId => text().withLength(max: 255).nullable()();
 
   @override
-  Set<Column> get primaryKey => {id};
+  Set<Column> get primaryKey => {
+        id,
+        syncId,
+      };
 
   @override
   List<String> get customConstraints => [

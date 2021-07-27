@@ -18,13 +18,11 @@ class TableGenerator extends GeneratorForAnnotation<NetCoreSyncTable> {
     }
 
     final netCoreSyncTable = NetCoreSyncTable(
-      mapToClassName: annotation.read("mapToClassName").stringValue,
       idFieldName: annotation.read("idFieldName").stringValue,
       syncIdFieldName: annotation.read("syncIdFieldName").stringValue,
-      timeStampFieldName: annotation.read("timeStampFieldName").stringValue,
-      deletedFieldName: annotation.read("deletedFieldName").stringValue,
       knowledgeIdFieldName: annotation.read("knowledgeIdFieldName").stringValue,
-      order: annotation.read("order").intValue,
+      syncedFieldName: annotation.read("syncedFieldName").stringValue,
+      deletedFieldName: annotation.read("deletedFieldName").stringValue,
     );
 
     _ModelVisitor visitor = _ModelVisitor();
@@ -51,10 +49,19 @@ class TableGenerator extends GeneratorForAnnotation<NetCoreSyncTable> {
     checkFieldError = _checkFields(
       element.name,
       visitor.fields,
-      netCoreSyncTable.timeStampFieldName,
-      "timeStampFieldName",
-      "Column<int?>",
-      "IntColumn",
+      netCoreSyncTable.knowledgeIdFieldName,
+      "knowledgeIdFieldName",
+      "Column<String?>",
+      "TextColumn",
+    );
+    if (checkFieldError != null) throw checkFieldError;
+    checkFieldError = _checkFields(
+      element.name,
+      visitor.fields,
+      netCoreSyncTable.syncedFieldName,
+      "syncedFieldName",
+      "Column<bool?>",
+      "BoolColumn",
     );
     if (checkFieldError != null) throw checkFieldError;
     checkFieldError = _checkFields(
@@ -64,15 +71,6 @@ class TableGenerator extends GeneratorForAnnotation<NetCoreSyncTable> {
       "deletedFieldName",
       "Column<bool?>",
       "BoolColumn",
-    );
-    if (checkFieldError != null) throw checkFieldError;
-    checkFieldError = _checkFields(
-      element.name,
-      visitor.fields,
-      netCoreSyncTable.knowledgeIdFieldName,
-      "knowledgeIdFieldName",
-      "Column<String?>",
-      "TextColumn",
     );
     if (checkFieldError != null) throw checkFieldError;
 

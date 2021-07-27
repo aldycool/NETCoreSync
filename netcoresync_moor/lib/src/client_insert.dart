@@ -24,6 +24,7 @@ class SyncInsertStatement<T extends Table, D> extends InsertStatement<T, D> {
   }) async {
     return _syncActionInsert(
       entity,
+      false, // We can confidently ensure that this operation will only be inserts, therefore we set the deleted to false. The mode parameter is also already checked for not doing other than inserts. The onConflict parameter is handled on different class (during resolve), which will not set the deleted value (on updates deleted will be ignored and not changed at all).
       mode: mode,
       onConflict: onConflict,
       implementation: (
@@ -42,6 +43,7 @@ class SyncInsertStatement<T extends Table, D> extends InsertStatement<T, D> {
   Future<int> syncInsertOnConflictUpdate(Insertable<D> entity) async {
     return _syncActionInsert(
       entity,
+      null, // In here, we cannot actually detect whether the operation will perform insert or update, therefore, we just rely on the entity's deleted value. In most likely situations (new object or queried existing) this will be false and not null, so proceed wisely, the worst case is we have a risk of undeleting a previously deleted data, but from user's interface this should not be possible (deleted rows will not be shown to be edited).
       implementation: (
         syncEntity,
         _,
@@ -57,6 +59,7 @@ class SyncInsertStatement<T extends Table, D> extends InsertStatement<T, D> {
       {InsertMode? mode, SyncUpsertClause<T, D>? onConflict}) async {
     return _syncActionInsert(
       entity,
+      false, // The same explanation as the standard syncInsert above.
       mode: mode,
       onConflict: onConflict,
       implementation: (
@@ -73,7 +76,8 @@ class SyncInsertStatement<T extends Table, D> extends InsertStatement<T, D> {
   }
 
   Future<V> _syncActionInsert<V>(
-    Insertable<D> entity, {
+    Insertable<D> entity,
+    bool? deleted, {
     InsertMode? mode,
     SyncUpsertClause<T, D>? onConflict,
     required Future<V> Function(
@@ -91,10 +95,11 @@ class SyncInsertStatement<T extends Table, D> extends InsertStatement<T, D> {
 
     return dataAccess.syncAction(
       entity,
-      (syncEntity, obtainedTimeStamp) => implementation(
+      deleted,
+      (syncEntity, obtainedKnowledgeId) => implementation(
         syncEntity,
         mode,
-        onConflict?.resolve(obtainedTimeStamp, dataAccess),
+        onConflict?.resolve(dataAccess, obtainedKnowledgeId),
       ),
     );
   }

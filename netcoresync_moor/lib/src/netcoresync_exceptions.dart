@@ -9,6 +9,10 @@ class NetCoreSyncNotInitializedException extends NetCoreSyncException {
   NetCoreSyncNotInitializedException() : super("Client is not initialized yet");
 }
 
+class NetCoreSyncSyncIdInfoNotSetException extends NetCoreSyncException {
+  NetCoreSyncSyncIdInfoNotSetException() : super("SyncIdInfo is not set yet");
+}
+
 class NetCoreSyncMustInsideTransactionException extends NetCoreSyncException {
   NetCoreSyncMustInsideTransactionException()
       : super("Sync methods must be wrapped inside Transaction");

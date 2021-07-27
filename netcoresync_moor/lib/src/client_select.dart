@@ -23,6 +23,10 @@ class SyncSimpleSelectStatement<T extends HasResultSet, D>
     if (!dataAccess.engine.tables.containsKey(D)) {
       throw NetCoreSyncTypeNotRegisteredException(D);
     }
+    // Ensure syncIdInfo is set because all of the syncTables are dependent on syncIdInfo.allSyncIds
+    if (dataAccess.syncIdInfo == null) {
+      throw NetCoreSyncSyncIdInfoNotSetException();
+    }
   }
 
   SyncJoinedSelectStatement syncJoin(List<Join> joins) {
@@ -83,6 +87,10 @@ class SyncJoinedSelectStatement<T extends HasResultSet, D>
         ) {
     if (!dataAccess.engine.tables.containsKey(D)) {
       throw NetCoreSyncTypeNotRegisteredException(D);
+    }
+    // Ensure syncIdInfo is set because all of the syncTables are dependent on syncIdInfo.allSyncIds
+    if (dataAccess.syncIdInfo == null) {
+      throw NetCoreSyncSyncIdInfoNotSetException();
     }
   }
 

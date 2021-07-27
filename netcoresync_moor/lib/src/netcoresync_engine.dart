@@ -2,16 +2,18 @@ import 'package:moor/moor.dart';
 import 'netcoresync_annotations.dart';
 
 abstract class NetCoreSyncEngine {
-  late List<Type> orderedTypes;
+  List<Type> orderedTypes = [];
   late Map<Type, NetCoreSyncTableUser> tables;
 
-  NetCoreSyncEngine(this.orderedTypes, this.tables);
+  NetCoreSyncEngine(this.tables);
 
   Object? getSyncColumnValue<D>(Insertable<D> entity, String fieldName);
 
   Insertable<D> updateSyncColumns<D>(
     Insertable<D> entity, {
-    required int timeStamp,
+    required bool synced,
+    String? syncId,
+    String? knowledgeId,
     bool? deleted,
   });
 }
@@ -21,16 +23,16 @@ class NetCoreSyncTableUser<T extends Table, D> {
   NetCoreSyncTable tableAnnotation;
   String idEscapedName;
   String syncIdEscapedName;
-  String timeStampEscapedName;
-  String deletedEscapedName;
   String knowledgeIdEscapedName;
+  String syncedEscapedName;
+  String deletedEscapedName;
   NetCoreSyncTableUser(
     this.tableInfo,
     this.tableAnnotation,
     this.idEscapedName,
     this.syncIdEscapedName,
-    this.timeStampEscapedName,
-    this.deletedEscapedName,
     this.knowledgeIdEscapedName,
+    this.syncedEscapedName,
+    this.deletedEscapedName,
   );
 }
