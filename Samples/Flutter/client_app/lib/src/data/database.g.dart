@@ -850,7 +850,7 @@ class $DepartmentsTable extends Departments
   }
 
   @override
-  Set<GeneratedColumn> get $primaryKey => {id, syncId};
+  Set<GeneratedColumn> get $primaryKey => {id};
   @override
   Department map(Map<String, dynamic> data, {String? tablePrefix}) {
     return Department.fromData(data, _db,

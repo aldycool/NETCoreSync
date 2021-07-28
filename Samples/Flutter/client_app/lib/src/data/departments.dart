@@ -22,7 +22,6 @@ class Departments extends Table {
   @override
   Set<Column> get primaryKey => {
         id,
-        syncId,
       };
 
   @override

@@ -4,7 +4,7 @@ Dart / Flutter Client (opinionated to Moor) for NETCoreSync (a data synchronizat
 
 ## Usage Example
 
-Please check the NETCoreSync's example that uses Flutter [here](https://github.com/aldycool/NETCoreSync/tree/master/Samples/Flutter). The server-side uses .NET Core 5.0 + EntityFramework Core + PostgreSQL, while the client-side uses Flutter + Moor as its offline database. The Flutter project supports all platforms, including Android, iOS, Windows, MacOS, Linux, and Web. Read the documentation on how to deploy the clients. **NOTE: FLUTTER SYNC IS STILL IN WORKS!**
+Please check the NETCoreSync's example that uses Flutter [here](https://github.com/aldycool/NETCoreSync/tree/master/Samples/Flutter). The server-side uses .NET Core 5.0 + EntityFramework Core + PostgreSQL, while the client-side uses Flutter + Moor as its offline database. The Flutter project supports all platforms, including Android, iOS, Windows, MacOS, Linux, and Web. Read the documentation on how to deploy the clients. **NOTE: SYNC IS STILL IN WORKS!**
 
 General Guide:
 - in `pubspec.yaml`, import `netcoresync_moor` on `dependencies`, and `netcoresync_moor_generator` on `dev_dependencies`, do `flutter pub get`.
@@ -12,7 +12,8 @@ General Guide:
 - On your Moor's Database class (the one with the `@UseMoor` annotation), add the `NetCoreSyncClient` and the `NetCoreSyncClientUser` mixin, for example: `class Database extends _$Database with NetCoreSyncClient, NetCoreSyncClientUser`.
 - Inside your `@UseMoor`'s `tables` list, add the `NetCoreSyncKnowledges` class.
 - Now perform the source code generation (read the Generate Builds below) like with Moor as usual, the `netcoresync_moor` code will be generated along with Moor's generated code inside the Moor's standard generated file, the `[yourdatabasefile].g.dart`.
-- Then, somewhere on your code after your Database class has been instantiated, call the NetCoreSync initialize method like this: `await database.netCoreSync_initialize();`. The `netCoreSync_initialize()` method is already generated for you to execute.
+- Then, somewhere on your code after your Database class has been instantiated, call the NetCoreSync initialize method like this: `await database.netCoreSyncInitialize();`. The `netCoreSync_initialize()` method is already generated for you to execute.
+= After that, to start performing CRUDs, you must also call `database.netCoreSyncSetSyncIdInfo()` with parameter of your logged-in user, also you can switch into the one of linked syncIds by calling `database.netCoreSyncSetActiveSyncId()`. Read more on what these does.
 - There are differences on doing things. For example, the standard Moor operations like:
   ```sh
   await database.into(someTable).insert(data);
@@ -23,7 +24,7 @@ General Guide:
     await database.syncInto(someTable).syncInsert(data);
   });
   ```
-  NetCoreSync introduces the equivalent counterpart methods like `syncInsert`, `syncReplace`, `syncDelete`, etc., for the standard Moor operations such as `insert`, `replace`, `delete`, etc. Read more on the documentation to find out what the changes are (As per writing, read the `netcoresync_operation_test.dart` on the `test` folder, this test file covers all of the equivalent methods). Also it is required to **wrap any of the equivalent counterpart methods that modifies data (insert, update, delete) inside a Transaction block** as those methods will execute on several tables internally, so atomic operation is needed to ensure the data integrity.
+  NetCoreSync introduces the equivalent counterpart methods like `syncInsert`, `syncReplace`, `syncDelete`, etc., for the standard Moor operations such as `insert`, `replace`, `delete`, etc. Read more on the documentation to find out what the changes are (As per writing, read the `netcoresync_operation_test.dart` on the `test` folder, this test file covers all of the equivalent methods). ~~Also it is required to **wrap any of the equivalent counterpart methods that modifies data (insert, update, delete) inside a Transaction block** as those methods will execute on several tables internally, so atomic operation is needed to ensure the data integrity.~~ (Since the ServerTimeStamp approach, this is not needed anymore)
 - TODO: explain on how to do Synchronization
 - Restrictions:
   - All restrictions inherited from NetCoreSync

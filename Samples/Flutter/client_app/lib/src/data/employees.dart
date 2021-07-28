@@ -33,7 +33,9 @@ class Employees extends Table {
   BoolColumn get deleted => boolean().withDefault(const Constant(false))();
 
   @override
-  Set<Column> get primaryKey => {id};
+  Set<Column> get primaryKey => {
+        id,
+      };
 
   @override
   String? get tableName => "employee";

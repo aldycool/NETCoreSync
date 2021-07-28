@@ -25,7 +25,9 @@ class CustomObjects extends Table {
   BoolColumn get deleted => boolean()();
 
   @override
-  Set<Column> get primaryKey => {id};
+  Set<Column> get primaryKey => {
+        id,
+      };
 }
 
 class CustomObject implements Insertable<CustomObject> {

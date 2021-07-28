@@ -377,7 +377,7 @@ class $AreasTable extends Areas with TableInfo<$AreasTable, AreaData> {
   }
 
   @override
-  Set<GeneratedColumn> get $primaryKey => {pk, syncSyncId};
+  Set<GeneratedColumn> get $primaryKey => {pk};
   @override
   AreaData map(Map<String, dynamic> data, {String? tablePrefix}) {
     return AreaData.fromData(data, _db,
@@ -1052,7 +1052,7 @@ class $PersonsTable extends Persons with TableInfo<$PersonsTable, Person> {
   }
 
   @override
-  Set<GeneratedColumn> get $primaryKey => {id, syncId};
+  Set<GeneratedColumn> get $primaryKey => {id};
   @override
   Person map(Map<String, dynamic> data, {String? tablePrefix}) {
     return Person.fromData(data, _db,

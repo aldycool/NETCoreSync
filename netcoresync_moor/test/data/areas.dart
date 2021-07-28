@@ -28,7 +28,6 @@ class Areas extends Table {
   @override
   Set<Column> get primaryKey => {
         pk,
-        syncSyncId,
       };
 
   @override

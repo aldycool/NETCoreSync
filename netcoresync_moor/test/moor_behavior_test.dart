@@ -137,6 +137,7 @@ void main() async {
     () async {
       await database.into(database.persons).insert(
             PersonsCompanion(
+              syncId: Value("abc"),
               name: Value("John Doe"),
             ),
           );
@@ -144,6 +145,7 @@ void main() async {
       await database
           .into(database.persons)
           .insertOnConflictUpdate(person.toCompanion(true).copyWith(
+                syncId: Value("abc"),
                 name: Value("Jane Doe"),
               ));
       final persons = await database.select(database.persons).get();
@@ -157,11 +159,13 @@ void main() async {
     () async {
       await database.into(database.persons).insert(
             PersonsCompanion(
+              syncId: Value("abc"),
               name: Value("John Doe"),
             ),
           );
       await database.into(database.persons).insert(
           PersonsCompanion(
+            syncId: Value("abc"),
             name: Value("John Doe"),
           ),
           onConflict: DoUpdate(
@@ -169,6 +173,7 @@ void main() async {
               name: old.name + Constant(" 2"),
             ),
             target: [
+              database.persons.syncId,
               database.persons.name,
             ],
           ));
@@ -183,11 +188,13 @@ void main() async {
     () async {
       await database.into(database.persons).insert(
             PersonsCompanion(
+              syncId: Value("abc"),
               name: Value("John Doe"),
             ),
           );
       await database.into(database.persons).insert(
           PersonsCompanion(
+            syncId: Value("abc"),
             name: Value("John Doe"),
           ),
           onConflict: UpsertMultiple([
@@ -205,6 +212,7 @@ void main() async {
                 name: Constant("John Doe 2"),
               ),
               target: [
+                database.persons.syncId,
                 database.persons.name,
               ],
             ),
