@@ -13,11 +13,6 @@ class NetCoreSyncSyncIdInfoNotSetException extends NetCoreSyncException {
   NetCoreSyncSyncIdInfoNotSetException() : super("SyncIdInfo is not set yet");
 }
 
-class NetCoreSyncMustInsideTransactionException extends NetCoreSyncException {
-  NetCoreSyncMustInsideTransactionException()
-      : super("Sync methods must be wrapped inside Transaction");
-}
-
 class NetCoreSyncMustNotInsideTransactionException
     extends NetCoreSyncException {
   NetCoreSyncMustNotInsideTransactionException()

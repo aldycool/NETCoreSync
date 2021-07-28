@@ -33,7 +33,6 @@ class DataAccess<G extends GeneratedDatabase> extends DatabaseAccessor<G> {
   Future<String> getLocalKnowledgeId() async {
     // Local Knowledge is always obtained from syncIdInfo.syncId (logged in user), not the activeSyncId, this is to ensure the logged in user's local knowledge id is returned when inserting on behalf of linked SyncId (other linked user). When other users logged into this device, then the netCoreSyncSetIdInfo() should also be called first when logging in.
     if (syncIdInfo == null) throw NetCoreSyncSyncIdInfoNotSetException();
-    if (!inTransaction()) throw NetCoreSyncMustInsideTransactionException();
     DatabaseConnectionUser activeDb = resolvedEngine as DatabaseConnectionUser;
     NetCoreSyncKnowledge? localKnowledge = await (activeDb.select(knowledges)
           ..where((tbl) => tbl.syncId.equals(syncIdInfo!.syncId) & tbl.local))
@@ -55,7 +54,6 @@ class DataAccess<G extends GeneratedDatabase> extends DatabaseAccessor<G> {
     bool? deleted,
     Future<T> Function(dynamic syncEntity, String obtainedKnowledgeId) action,
   ) async {
-    if (!inTransaction()) throw NetCoreSyncMustInsideTransactionException();
     if (!engine.tables.containsKey(D)) {
       throw NetCoreSyncTypeNotRegisteredException(D);
     }

@@ -57,11 +57,9 @@ void main() async {
       // should throw Exception on inserts/updates/deletes if SyncIdInfo is not set yet
       await expectLater(
         () async {
-          await database.transaction(() async {
-            await database
-                .syncInto(database.persons)
-                .syncInsert(PersonsCompanion());
-          });
+          await database
+              .syncInto(database.persons)
+              .syncInsert(PersonsCompanion());
         },
         throwsA(isA<NetCoreSyncSyncIdInfoNotSetException>()),
       );
@@ -109,15 +107,6 @@ void main() async {
       expect(
         () => database.netCoreSyncSetActiveSyncId("ghi"),
         throwsA(isA<NetCoreSyncException>()),
-      );
-      // should throw Exception if insert / update / delete operations is not wrapped inside Transaction
-      await expectLater(
-        () async {
-          await database
-              .syncInto(database.persons)
-              .syncInsert(PersonsCompanion());
-        },
-        throwsA(isA<NetCoreSyncMustInsideTransactionException>()),
       );
       // should throw Exception if the table is not registered (not marked with @NetCoreSyncTable)
       await expectLater(
@@ -176,38 +165,36 @@ void main() async {
     test(
       "Sync Insert",
       () async {
-        await database.transaction(() async {
-          String? localKnowledgeId = await getLocalKnowledgeId();
-          expect(localKnowledgeId, equals(null));
-          await database.syncInto(database.persons).syncInsert(
-                PersonsCompanion(name: Value("A")),
-              );
-          localKnowledgeId = await getLocalKnowledgeId();
-          expect(
-            localKnowledgeId,
-            allOf(
-              isNot(equals(null)),
-              isNot(equals("")),
-            ),
-          );
-          await database.syncInto(database.persons).syncInsert(
-                PersonsCompanion(name: Value("B")),
-              );
-          final personA = await (database.select(database.persons)
-                ..where((tbl) => tbl.name.equals("A")))
-              .getSingle();
-          final personB = await (database.select(database.persons)
-                ..where((tbl) => tbl.name.equals("B")))
-              .getSingle();
-          expect(personA.syncId, equals(syncId));
-          expect(personA.knowledgeId, equals(localKnowledgeId));
-          expect(personA.synced, equals(false));
-          expect(personA.deleted, equals(false));
-          expect(personB.syncId, equals(syncId));
-          expect(personB.knowledgeId, equals(localKnowledgeId));
-          expect(personB.synced, equals(false));
-          expect(personB.deleted, equals(false));
-        });
+        String? localKnowledgeId = await getLocalKnowledgeId();
+        expect(localKnowledgeId, equals(null));
+        await database.syncInto(database.persons).syncInsert(
+              PersonsCompanion(name: Value("A")),
+            );
+        localKnowledgeId = await getLocalKnowledgeId();
+        expect(
+          localKnowledgeId,
+          allOf(
+            isNot(equals(null)),
+            isNot(equals("")),
+          ),
+        );
+        await database.syncInto(database.persons).syncInsert(
+              PersonsCompanion(name: Value("B")),
+            );
+        final personA = await (database.select(database.persons)
+              ..where((tbl) => tbl.name.equals("A")))
+            .getSingle();
+        final personB = await (database.select(database.persons)
+              ..where((tbl) => tbl.name.equals("B")))
+            .getSingle();
+        expect(personA.syncId, equals(syncId));
+        expect(personA.knowledgeId, equals(localKnowledgeId));
+        expect(personA.synced, equals(false));
+        expect(personA.deleted, equals(false));
+        expect(personB.syncId, equals(syncId));
+        expect(personB.knowledgeId, equals(localKnowledgeId));
+        expect(personB.synced, equals(false));
+        expect(personB.deleted, equals(false));
       },
     );
 
@@ -216,23 +203,19 @@ void main() async {
       () async {
         await expectLater(
           () async {
-            await database.transaction(() async {
-              await database.syncInto(database.persons).syncInsert(
-                    PersonsCompanion(),
-                    mode: InsertMode.replace,
-                  );
-            });
+            await database.syncInto(database.persons).syncInsert(
+                  PersonsCompanion(),
+                  mode: InsertMode.replace,
+                );
           },
           throwsA(isA<NetCoreSyncException>()),
         );
         await expectLater(
           () async {
-            await database.transaction(() async {
-              await database.syncInto(database.persons).syncInsert(
-                    PersonsCompanion(),
-                    mode: InsertMode.insertOrReplace,
-                  );
-            });
+            await database.syncInto(database.persons).syncInsert(
+                  PersonsCompanion(),
+                  mode: InsertMode.insertOrReplace,
+                );
           },
           throwsA(isA<NetCoreSyncException>()),
         );
@@ -242,160 +225,152 @@ void main() async {
     test(
       "Sync InsertOnConflictUpdate",
       () async {
-        await database.transaction(() async {
-          String? localKnowledgeId = await getLocalKnowledgeId();
-          expect(localKnowledgeId, equals(null));
-          await database.syncInto(database.persons).syncInsert(
-                PersonsCompanion(
-                  name: Value("John Doe"),
-                ),
-              );
-          localKnowledgeId = await getLocalKnowledgeId();
-          expect(
-            localKnowledgeId,
-            allOf(
-              isNot(equals(null)),
-              isNot(equals("")),
-            ),
-          );
-          final person = (await database.select(database.persons).get())[0];
-          await database
-              .syncInto(database.persons)
-              .syncInsertOnConflictUpdate(person.toCompanion(true).copyWith(
-                    name: Value("Jane Doe"),
-                  ));
-          final persons = await database.select(database.persons).get();
-          expect(persons.length, equals(1));
-          expect(persons[0].name, equals("Jane Doe"));
-          expect(persons[0].syncId, equals(syncId));
-          expect(persons[0].knowledgeId, equals(localKnowledgeId));
-          expect(persons[0].synced, equals(false));
-          expect(persons[0].deleted, equals(false));
-        });
+        String? localKnowledgeId = await getLocalKnowledgeId();
+        expect(localKnowledgeId, equals(null));
+        await database.syncInto(database.persons).syncInsert(
+              PersonsCompanion(
+                name: Value("John Doe"),
+              ),
+            );
+        localKnowledgeId = await getLocalKnowledgeId();
+        expect(
+          localKnowledgeId,
+          allOf(
+            isNot(equals(null)),
+            isNot(equals("")),
+          ),
+        );
+        final person = (await database.select(database.persons).get())[0];
+        await database
+            .syncInto(database.persons)
+            .syncInsertOnConflictUpdate(person.toCompanion(true).copyWith(
+                  name: Value("Jane Doe"),
+                ));
+        final persons = await database.select(database.persons).get();
+        expect(persons.length, equals(1));
+        expect(persons[0].name, equals("Jane Doe"));
+        expect(persons[0].syncId, equals(syncId));
+        expect(persons[0].knowledgeId, equals(localKnowledgeId));
+        expect(persons[0].synced, equals(false));
+        expect(persons[0].deleted, equals(false));
       },
     );
 
     test(
       "Sync Insert with SyncDoUpdate",
       () async {
-        await database.transaction(() async {
-          String? localKnowledgeId = await getLocalKnowledgeId();
-          expect(localKnowledgeId, equals(null));
-          await database.syncInto(database.persons).syncInsert(
-                PersonsCompanion(
-                  name: Value("John Doe"),
-                ),
-              );
-          localKnowledgeId = await getLocalKnowledgeId();
-          expect(
-            localKnowledgeId,
-            allOf(
-              isNot(equals(null)),
-              isNot(equals("")),
-            ),
-          );
-          await database.syncInto(database.persons).syncInsert(
+        String? localKnowledgeId = await getLocalKnowledgeId();
+        expect(localKnowledgeId, equals(null));
+        await database.syncInto(database.persons).syncInsert(
               PersonsCompanion(
                 name: Value("John Doe"),
               ),
-              onConflict: SyncDoUpdate(
-                (old) => PersonsCompanion.custom(
-                  name: old.name + Constant(" 2"),
-                ),
-                target: [
-                  database.persons.syncId,
-                  database.persons.name,
-                ],
-              ));
-          final persons = await database.select(database.persons).get();
-          expect(persons.length, equals(1));
-          expect(persons[0].name, equals("John Doe 2"));
-          expect(persons[0].syncId, equals(syncId));
-          expect(persons[0].knowledgeId, equals(localKnowledgeId));
-          expect(persons[0].synced, equals(false));
-          expect(persons[0].deleted, equals(false));
-        });
+            );
+        localKnowledgeId = await getLocalKnowledgeId();
+        expect(
+          localKnowledgeId,
+          allOf(
+            isNot(equals(null)),
+            isNot(equals("")),
+          ),
+        );
+        await database.syncInto(database.persons).syncInsert(
+            PersonsCompanion(
+              name: Value("John Doe"),
+            ),
+            onConflict: SyncDoUpdate(
+              (old) => PersonsCompanion.custom(
+                name: old.name + Constant(" 2"),
+              ),
+              target: [
+                database.persons.syncId,
+                database.persons.name,
+              ],
+            ));
+        final persons = await database.select(database.persons).get();
+        expect(persons.length, equals(1));
+        expect(persons[0].name, equals("John Doe 2"));
+        expect(persons[0].syncId, equals(syncId));
+        expect(persons[0].knowledgeId, equals(localKnowledgeId));
+        expect(persons[0].synced, equals(false));
+        expect(persons[0].deleted, equals(false));
       },
     );
 
     test(
       "Sync Insert with invalid SyncDoUpdate",
       () async {
-        await database.transaction(() async {
-          await database.syncInto(database.persons).syncInsert(
+        await database.syncInto(database.persons).syncInsert(
+              PersonsCompanion(
+                name: Value("John Doe"),
+              ),
+            );
+        await expectLater(
+          () async {
+            await database.syncInto(database.persons).syncInsert(
                 PersonsCompanion(
                   name: Value("John Doe"),
                 ),
-              );
-          await expectLater(
-            () async {
-              await database.syncInto(database.persons).syncInsert(
-                  PersonsCompanion(
-                    name: Value("John Doe"),
+                onConflict: SyncDoUpdate(
+                  (old) => PersonsCompanion.custom(
+                    id: Constant("change id should not be allowed"),
                   ),
-                  onConflict: SyncDoUpdate(
-                    (old) => PersonsCompanion.custom(
-                      id: Constant("change id should not be allowed"),
-                    ),
-                  ));
-            },
-            throwsA(isA<NetCoreSyncException>()),
-          );
-        });
+                ));
+          },
+          throwsA(isA<NetCoreSyncException>()),
+        );
       },
     );
 
     test(
       "Sync Insert with SyncUpsertMultiple",
       () async {
-        await database.transaction(() async {
-          String? localKnowledgeId = await getLocalKnowledgeId();
-          expect(localKnowledgeId, equals(null));
-          await database.syncInto(database.persons).syncInsert(
-                PersonsCompanion(
-                  name: Value("John Doe"),
-                ),
-              );
-          localKnowledgeId = await getLocalKnowledgeId();
-          expect(
-            localKnowledgeId,
-            allOf(
-              isNot(equals(null)),
-              isNot(equals("")),
-            ),
-          );
-          await database.syncInto(database.persons).syncInsert(
+        String? localKnowledgeId = await getLocalKnowledgeId();
+        expect(localKnowledgeId, equals(null));
+        await database.syncInto(database.persons).syncInsert(
               PersonsCompanion(
                 name: Value("John Doe"),
               ),
-              onConflict: SyncUpsertMultiple([
-                SyncDoUpdate(
-                  (old) => PersonsCompanion.custom(
-                    name: Constant(
-                        "should never reached here because target is id"),
-                  ),
-                  target: [
-                    database.persons.id,
-                  ],
+            );
+        localKnowledgeId = await getLocalKnowledgeId();
+        expect(
+          localKnowledgeId,
+          allOf(
+            isNot(equals(null)),
+            isNot(equals("")),
+          ),
+        );
+        await database.syncInto(database.persons).syncInsert(
+            PersonsCompanion(
+              name: Value("John Doe"),
+            ),
+            onConflict: SyncUpsertMultiple([
+              SyncDoUpdate(
+                (old) => PersonsCompanion.custom(
+                  name: Constant(
+                      "should never reached here because target is id"),
                 ),
-                SyncDoUpdate(
-                  (old) => PersonsCompanion.custom(
-                    name: Constant("John Doe 2"),
-                  ),
-                  target: [
-                    database.persons.syncId,
-                    database.persons.name,
-                  ],
+                target: [
+                  database.persons.id,
+                ],
+              ),
+              SyncDoUpdate(
+                (old) => PersonsCompanion.custom(
+                  name: Constant("John Doe 2"),
                 ),
-              ]));
-          final persons = await database.select(database.persons).get();
-          expect(persons.length, equals(1));
-          expect(persons[0].name, equals("John Doe 2"));
-          expect(persons[0].syncId, equals(syncId));
-          expect(persons[0].knowledgeId, equals(localKnowledgeId));
-          expect(persons[0].synced, equals(false));
-          expect(persons[0].deleted, equals(false));
-        });
+                target: [
+                  database.persons.syncId,
+                  database.persons.name,
+                ],
+              ),
+            ]));
+        final persons = await database.select(database.persons).get();
+        expect(persons.length, equals(1));
+        expect(persons[0].name, equals("John Doe 2"));
+        expect(persons[0].syncId, equals(syncId));
+        expect(persons[0].knowledgeId, equals(localKnowledgeId));
+        expect(persons[0].synced, equals(false));
+        expect(persons[0].deleted, equals(false));
       },
       skip: Helper.shouldSkip(
         currentVersion,
@@ -408,27 +383,25 @@ void main() async {
     test(
       "Sync insertReturning",
       () async {
-        await database.transaction(() async {
-          String? localKnowledgeId = await getLocalKnowledgeId();
-          expect(localKnowledgeId, equals(null));
-          final person =
-              await database.syncInto(database.persons).syncInsertReturning(
-                    PersonsCompanion(name: Value("John Doe")),
-                  );
-          localKnowledgeId = await getLocalKnowledgeId();
-          expect(
-            localKnowledgeId,
-            allOf(
-              isNot(equals(null)),
-              isNot(equals("")),
-            ),
-          );
-          expect(person.name, equals("John Doe"));
-          expect(person.syncId, equals(syncId));
-          expect(person.knowledgeId, equals(localKnowledgeId));
-          expect(person.synced, equals(false));
-          expect(person.deleted, equals(false));
-        });
+        String? localKnowledgeId = await getLocalKnowledgeId();
+        expect(localKnowledgeId, equals(null));
+        final person =
+            await database.syncInto(database.persons).syncInsertReturning(
+                  PersonsCompanion(name: Value("John Doe")),
+                );
+        localKnowledgeId = await getLocalKnowledgeId();
+        expect(
+          localKnowledgeId,
+          allOf(
+            isNot(equals(null)),
+            isNot(equals("")),
+          ),
+        );
+        expect(person.name, equals("John Doe"));
+        expect(person.syncId, equals(syncId));
+        expect(person.knowledgeId, equals(localKnowledgeId));
+        expect(person.synced, equals(false));
+        expect(person.deleted, equals(false));
       },
       skip: Helper.shouldSkip(
         currentVersion,
@@ -441,138 +414,157 @@ void main() async {
     test(
       "Sync Updates",
       () async {
-        await database.transaction(() async {
-          String? localKnowledgeId = await getLocalKnowledgeId();
-          expect(localKnowledgeId, equals(null));
-          await database.syncInto(database.persons).syncInsert(
-                PersonsCompanion(name: Value("A")),
-              );
-          localKnowledgeId = await getLocalKnowledgeId();
-          expect(
-            localKnowledgeId,
-            allOf(
-              isNot(equals(null)),
-              isNot(equals("")),
-            ),
-          );
-          final ret1 = await (database.select(database.persons)
-                ..where((tbl) => tbl.name.equals("A")))
-              .getSingle();
-          final affected1 = await database
-              .syncUpdate(database.persons)
-              .syncReplace(ret1.copyWith(name: "B"));
-          expect(affected1, equals(true));
-          final ret2 = await (database.select(database.persons)
-                ..where((tbl) => tbl.name.equals("B")))
-              .getSingle();
-          expect(ret2.name, equals("B"));
-          expect(ret2.syncId, equals(syncId));
-          expect(ret2.knowledgeId, equals(localKnowledgeId));
-          expect(ret2.synced, equals(false));
-          expect(ret2.deleted, equals(false));
-          await (database.syncUpdate(database.persons)
-                ..where((tbl) => tbl.id.equals(ret2.id)))
-              .syncWrite(ret2.toCompanion(true).copyWith(
-                    name: Value("C"),
-                    age: Value(10),
-                  ));
-          final ret3 = await (database.select(database.persons)
-                ..where((tbl) => tbl.name.equals("C") & tbl.age.equals(10)))
-              .getSingle();
-          expect(ret3.name, equals("C"));
-          expect(ret3.age, equals(10));
-          expect(ret3.syncId, equals(syncId));
-          expect(ret3.knowledgeId, equals(localKnowledgeId));
-          expect(ret3.synced, equals(false));
-          expect(ret3.deleted, equals(false));
-        });
+        String? localKnowledgeId = await getLocalKnowledgeId();
+        expect(localKnowledgeId, equals(null));
+        await database.syncInto(database.persons).syncInsert(
+              PersonsCompanion(name: Value("A")),
+            );
+        localKnowledgeId = await getLocalKnowledgeId();
+        expect(
+          localKnowledgeId,
+          allOf(
+            isNot(equals(null)),
+            isNot(equals("")),
+          ),
+        );
+        final ret1 = await (database.select(database.persons)
+              ..where((tbl) => tbl.name.equals("A")))
+            .getSingle();
+        final affected1 = await database
+            .syncUpdate(database.persons)
+            .syncReplace(ret1.copyWith(name: "B"));
+        expect(affected1, equals(true));
+        final ret2 = await (database.select(database.persons)
+              ..where((tbl) => tbl.name.equals("B")))
+            .getSingle();
+        expect(ret2.name, equals("B"));
+        expect(ret2.syncId, equals(syncId));
+        expect(ret2.knowledgeId, equals(localKnowledgeId));
+        expect(ret2.synced, equals(false));
+        expect(ret2.deleted, equals(false));
+        await (database.syncUpdate(database.persons)
+              ..where((tbl) => tbl.id.equals(ret2.id)))
+            .syncWrite(ret2.toCompanion(true).copyWith(
+                  name: Value("C"),
+                  age: Value(10),
+                ));
+        final ret3 = await (database.select(database.persons)
+              ..where((tbl) => tbl.name.equals("C") & tbl.age.equals(10)))
+            .getSingle();
+        expect(ret3.name, equals("C"));
+        expect(ret3.age, equals(10));
+        expect(ret3.syncId, equals(syncId));
+        expect(ret3.knowledgeId, equals(localKnowledgeId));
+        expect(ret3.synced, equals(false));
+        expect(ret3.deleted, equals(false));
       },
     );
 
-    // test(
-    //   "Sync Deletes",
-    //   () async {
-    //     await database.transaction(() async {
-    //       await database.syncInto(database.persons).syncInsert(
-    //             PersonsCompanion(name: Value("A")),
-    //           );
-    //       await database.syncInto(database.persons).syncInsert(
-    //             PersonsCompanion(name: Value("B")),
-    //           );
-    //       await database.syncInto(database.persons).syncInsert(
-    //             PersonsCompanion(name: Value("C")),
-    //           );
-    //       final deletedRowCount1 = await (database.syncDelete(database.persons)
-    //             ..where((tbl) => tbl.name.equals("A")))
-    //           .go();
-    //       expect(deletedRowCount1, equals(1));
-    //       final physical1 = await (database.select(database.persons)
-    //             ..where((tbl) => tbl.name.equals("A")))
-    //           .getSingle();
-    //       expect(physical1.deleted, equals(true));
-    //       expect(physical1.timeStamp,
-    //           equals(4)); // from 3 times insert above + 1 time delete
-    //       final deletedRowCount2 = await (database.syncDelete(database.persons)
-    //             ..where((tbl) => tbl.name.equals("B") | tbl.name.equals("C")))
-    //           .go();
-    //       expect(deletedRowCount2, equals(2));
-    //       final col2 = await (database.select(database.persons)
-    //             ..where((tbl) => tbl.name.equals("B") | tbl.name.equals("C")))
-    //           .get();
-    //       expect(col2.length, equals(2));
-    //       expect(col2[0].deleted, equals(true));
-    //       expect(col2[0].timeStamp, equals(5));
-    //       expect(col2[1].deleted, equals(true));
-    //       expect(col2[1].timeStamp, equals(5));
-    //     });
-    //   },
-    // );
+    test(
+      "Sync Deletes",
+      () async {
+        String? localKnowledgeId = await getLocalKnowledgeId();
+        expect(localKnowledgeId, equals(null));
+        await database.syncInto(database.persons).syncInsert(
+              PersonsCompanion(name: Value("A")),
+            );
+        localKnowledgeId = await getLocalKnowledgeId();
+        expect(
+          localKnowledgeId,
+          allOf(
+            isNot(equals(null)),
+            isNot(equals("")),
+          ),
+        );
+        await database.syncInto(database.persons).syncInsert(
+              PersonsCompanion(name: Value("B")),
+            );
+        await database.syncInto(database.persons).syncInsert(
+              PersonsCompanion(name: Value("C")),
+            );
+        final deletedRowCount1 = await (database.syncDelete(database.persons)
+              ..where((tbl) => tbl.name.equals("A")))
+            .go();
+        expect(deletedRowCount1, equals(1));
+        final physical1 = await (database.select(database.persons)
+              ..where((tbl) => tbl.name.equals("A")))
+            .getSingle();
+        expect(physical1.syncId, equals(syncId));
+        expect(physical1.knowledgeId, equals(localKnowledgeId));
+        expect(physical1.synced, equals(false));
+        expect(physical1.deleted, equals(true));
+        final deletedRowCount2 = await (database.syncDelete(database.persons)
+              ..where((tbl) => tbl.name.equals("B") | tbl.name.equals("C")))
+            .go();
+        expect(deletedRowCount2, equals(2));
+        final col2 = await (database.select(database.persons)
+              ..where((tbl) => tbl.name.equals("B") | tbl.name.equals("C")))
+            .get();
+        expect(col2.length, equals(2));
+        expect(col2[0].syncId, equals(syncId));
+        expect(col2[0].knowledgeId, equals(localKnowledgeId));
+        expect(col2[0].synced, equals(false));
+        expect(col2[0].deleted, equals(true));
+        expect(col2[1].syncId, equals(syncId));
+        expect(col2[1].knowledgeId, equals(localKnowledgeId));
+        expect(col2[1].synced, equals(false));
+        expect(col2[1].deleted, equals(true));
+      },
+    );
 
-    // test(
-    //   "Sync Selects",
-    //   () async {
-    //     await database.transaction(() async {
-    //       await database.syncInto(database.persons).syncInsert(
-    //             PersonsCompanion(
-    //               name: Value("A"),
-    //               age: Value(10),
-    //             ),
-    //           );
-    //       await database.syncInto(database.persons).syncInsert(
-    //             PersonsCompanion(
-    //               name: Value("B"),
-    //               age: Value(20),
-    //             ),
-    //           );
-    //       await database.syncInto(database.persons).syncInsert(
-    //             PersonsCompanion(
-    //               name: Value("C"),
-    //               age: Value(30),
-    //             ),
-    //           );
+    test(
+      "Sync Selects",
+      () async {
+        String? localKnowledgeId = await getLocalKnowledgeId();
+        expect(localKnowledgeId, equals(null));
+        await database.syncInto(database.persons).syncInsert(
+              PersonsCompanion(
+                name: Value("A"),
+                age: Value(10),
+              ),
+            );
+        localKnowledgeId = await getLocalKnowledgeId();
+        expect(
+          localKnowledgeId,
+          allOf(
+            isNot(equals(null)),
+            isNot(equals("")),
+          ),
+        );
+        await database.syncInto(database.persons).syncInsert(
+              PersonsCompanion(
+                name: Value("B"),
+                age: Value(20),
+              ),
+            );
+        await database.syncInto(database.persons).syncInsert(
+              PersonsCompanion(
+                name: Value("C"),
+                age: Value(30),
+              ),
+            );
 
-    //       await (database.syncDelete(database.persons)
-    //             ..where((tbl) => tbl.name.equals("B")))
-    //           .go();
+        await (database.syncDelete(database.persons)
+              ..where((tbl) => tbl.name.equals("B")))
+            .go();
 
-    //       final colRemaining1 =
-    //           await database.syncSelect(database.syncPersons).get();
-    //       expect(colRemaining1.length, equals(2));
+        final colRemaining1 =
+            await database.syncSelect(database.syncPersons).get();
+        expect(colRemaining1.length, equals(2));
 
-    //       final colRemaining2 = await (database.syncSelectOnly(
-    //               database.syncPersons)
-    //             ..addColumns([
-    //               database.persons.name,
-    //               database.persons.age,
-    //             ])
-    //             ..orderBy([OrderingTerm(expression: database.persons.name)]))
-    //           .get();
-    //       expect(colRemaining2.length, equals(2));
-    //       expect(colRemaining2[0].read(database.persons.name), equals("A"));
-    //       expect(colRemaining2[1].read(database.persons.name), equals("C"));
-    //     });
-    //   },
-    // );
+        final colRemaining2 =
+            await (database.syncSelectOnly(database.syncPersons)
+                  ..addColumns([
+                    database.persons.name,
+                    database.persons.age,
+                  ])
+                  ..orderBy([OrderingTerm(expression: database.persons.name)]))
+                .get();
+        expect(colRemaining2.length, equals(2));
+        expect(colRemaining2[0].read(database.persons.name), equals("A"));
+        expect(colRemaining2[1].read(database.persons.name), equals("C"));
+      },
+    );
 
     // test(
     //   "Sync Joins",
