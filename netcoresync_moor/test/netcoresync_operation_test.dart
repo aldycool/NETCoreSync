@@ -200,209 +200,6 @@ void main() async {
     });
   });
 
-  group("Multi User Tests", () {
-    late Database database;
-
-    setUp(() async {
-      database = await Helper.setUpDatabase(
-        testFilesFolder: testFilesFolder,
-        databaseFileName: databaseFileName,
-        useInMemoryDatabase: useInMemoryDatabase,
-        logSqlStatements: logSqlStatements,
-      );
-      await database.netCoreSyncInitialize();
-    });
-
-    tearDown(() async {
-      await Helper.tearDownDatabase(database);
-    });
-
-    Future<String?> getLocalKnowledgeId(String syncId) async {
-      final queryRow = await database
-          .customSelect(
-              "SELECT ${database.netCoreSyncKnowledges.id.escapedName} AS id "
-              "FROM ${database.netCoreSyncKnowledges.actualTableName} WHERE "
-              "${database.netCoreSyncKnowledges.syncId.escapedName} = '$syncId'"
-              " AND ${database.netCoreSyncKnowledges.local.escapedName} = 1")
-          .getSingleOrNull();
-      return queryRow?.data['id'];
-    }
-
-    test("Insert on behalf of Linked User", () async {
-      database.netCoreSyncSetSyncIdInfo(SyncIdInfo(
-        syncId: "abc",
-        linkedSyncIds: [
-          "def",
-        ],
-      ));
-
-      await database
-          .syncInto(database.persons)
-          .syncInsert(PersonsCompanion(name: Value("A")));
-
-      database.netCoreSyncSetActiveSyncId("def");
-
-      await database
-          .syncInto(database.persons)
-          .syncInsert(PersonsCompanion(name: Value("B")));
-
-      final col1 = await (database.syncSelect(database.syncPersons)
-            ..orderBy([
-              (t) => OrderingTerm(expression: t.name),
-            ]))
-          .get();
-
-      String? knowledgeId = await getLocalKnowledgeId("abc");
-      expect(knowledgeId, isNot(equals(null)));
-      expect(col1.length, equals(2));
-      expect(col1[0].name, equals("A"));
-      expect(col1[0].syncId, equals("abc"));
-      expect(col1[0].knowledgeId, equals(knowledgeId));
-      expect(col1[0].synced, equals(false));
-      expect(col1[0].deleted, equals(false));
-      expect(col1[1].name, equals("B"));
-      expect(col1[1].syncId, equals("def"));
-      expect(col1[1].knowledgeId, equals(knowledgeId));
-      expect(col1[1].synced, equals(false));
-      expect(col1[1].deleted, equals(false));
-    });
-
-    test("Update Sync'ed Linked User data", () async {
-      // Simulate existing synchronized "def" user data
-      NetCoreSyncKnowledge defKnowledge = NetCoreSyncKnowledge();
-      defKnowledge.id = Uuid().v4();
-      defKnowledge.syncId = "def";
-      defKnowledge.local = false;
-      await database.into(database.netCoreSyncKnowledges).insert(defKnowledge);
-      await database.into(database.persons).insert(PersonsCompanion(
-            name: Value("B"),
-            syncId: Value(defKnowledge.syncId),
-            knowledgeId: Value(defKnowledge.id),
-            synced: Value(true),
-            deleted: Value(false),
-          ));
-
-      database.netCoreSyncSetSyncIdInfo(SyncIdInfo(
-        syncId: "abc",
-        linkedSyncIds: [
-          "def",
-        ],
-      ));
-
-      var defData = await database.syncSelect(database.syncPersons).getSingle();
-      await database
-          .syncUpdate(database.persons)
-          .syncReplace(defData.toCompanion(true).copyWith(
-                name: Value("C"),
-              ));
-
-      final col1 = await database.syncSelect(database.syncPersons).get();
-      expect(col1.length, equals(1));
-      expect(col1[0].name, equals("C"));
-      expect(col1[0].syncId, equals(defKnowledge.syncId));
-      expect(col1[0].knowledgeId, equals(defKnowledge.id));
-      expect(col1[0].synced, equals(false));
-      expect(col1[0].deleted, equals(false));
-    });
-
-    test("Delete Sync'ed Linked User data", () async {
-      // Simulate existing synchronized "def" user data
-      NetCoreSyncKnowledge defKnowledge = NetCoreSyncKnowledge();
-      defKnowledge.id = Uuid().v4();
-      defKnowledge.syncId = "def";
-      defKnowledge.local = false;
-      await database.into(database.netCoreSyncKnowledges).insert(defKnowledge);
-      await database.into(database.persons).insert(PersonsCompanion(
-            name: Value("B"),
-            syncId: Value(defKnowledge.syncId),
-            knowledgeId: Value(defKnowledge.id),
-            synced: Value(true),
-            deleted: Value(false),
-          ));
-
-      database.netCoreSyncSetSyncIdInfo(SyncIdInfo(
-        syncId: "abc",
-        linkedSyncIds: [
-          "def",
-        ],
-      ));
-
-      var defData = await database.syncSelect(database.syncPersons).getSingle();
-      await (database.syncDelete(database.persons)
-            ..where((tbl) => tbl.id.equals(defData.id)))
-          .go();
-
-      final col1 = await database.select(database.persons).get();
-      expect(col1.length, equals(1));
-      expect(col1[0].syncId, equals(defKnowledge.syncId));
-      expect(col1[0].knowledgeId, equals(defKnowledge.id));
-      expect(col1[0].synced, equals(false));
-      expect(col1[0].deleted, equals(true));
-    });
-
-    test("Each User Inserts and Selects", () async {
-      database.netCoreSyncSetSyncIdInfo(SyncIdInfo(
-        syncId: "abc",
-      ));
-
-      await database
-          .syncInto(database.persons)
-          .syncInsert(PersonsCompanion(name: Value("A")));
-
-      database.netCoreSyncSetSyncIdInfo(SyncIdInfo(
-        syncId: "def",
-      ));
-
-      await database
-          .syncInto(database.persons)
-          .syncInsert(PersonsCompanion(name: Value("B")));
-
-      final col1 = await (database.select(database.persons)
-            ..orderBy([
-              (t) => OrderingTerm(expression: t.name),
-            ]))
-          .get();
-
-      expect(col1.length, equals(2));
-      String? abcKnowledgeId = await getLocalKnowledgeId("abc");
-      expect(abcKnowledgeId, isNot(equals(null)));
-      expect(col1[0].name, equals("A"));
-      expect(col1[0].syncId, equals("abc"));
-      expect(col1[0].knowledgeId, equals(abcKnowledgeId));
-      expect(col1[0].synced, equals(false));
-      expect(col1[0].deleted, equals(false));
-      String? defKnowledgeId = await getLocalKnowledgeId("def");
-      expect(defKnowledgeId, isNot(equals(null)));
-      expect(col1[1].name, equals("B"));
-      expect(col1[1].syncId, equals("def"));
-      expect(col1[1].knowledgeId, equals(defKnowledgeId));
-      expect(col1[1].synced, equals(false));
-      expect(col1[1].deleted, equals(false));
-
-      database.netCoreSyncSetSyncIdInfo(SyncIdInfo(
-        syncId: "abc",
-        linkedSyncIds: [
-          "def",
-        ],
-      ));
-
-      final col2 = await (database.syncSelect(database.syncPersons)
-            ..orderBy([(o) => OrderingTerm(expression: o.name)]))
-          .get();
-      expect(col2.length, equals(2));
-      expect(col2[0].name, equals("A"));
-      expect(col2[1].name, equals("B"));
-
-      database.netCoreSyncSetSyncIdInfo(SyncIdInfo(
-        syncId: "def",
-      ));
-
-      final col3 = await database.syncSelect(database.syncPersons).get();
-      expect(col3.length, equals(1));
-      expect(col3[0].name, equals("B"));
-    });
-  });
-
   group("Single User Tests", () {
     late Database database;
     late String syncId;
@@ -1133,6 +930,209 @@ void main() async {
         expect(col2.length, equals(0));
       },
     );
+  });
+
+  group("Multi User Tests", () {
+    late Database database;
+
+    setUp(() async {
+      database = await Helper.setUpDatabase(
+        testFilesFolder: testFilesFolder,
+        databaseFileName: databaseFileName,
+        useInMemoryDatabase: useInMemoryDatabase,
+        logSqlStatements: logSqlStatements,
+      );
+      await database.netCoreSyncInitialize();
+    });
+
+    tearDown(() async {
+      await Helper.tearDownDatabase(database);
+    });
+
+    Future<String?> getLocalKnowledgeId(String syncId) async {
+      final queryRow = await database
+          .customSelect(
+              "SELECT ${database.netCoreSyncKnowledges.id.escapedName} AS id "
+              "FROM ${database.netCoreSyncKnowledges.actualTableName} WHERE "
+              "${database.netCoreSyncKnowledges.syncId.escapedName} = '$syncId'"
+              " AND ${database.netCoreSyncKnowledges.local.escapedName} = 1")
+          .getSingleOrNull();
+      return queryRow?.data['id'];
+    }
+
+    test("Insert on behalf of Linked User", () async {
+      database.netCoreSyncSetSyncIdInfo(SyncIdInfo(
+        syncId: "abc",
+        linkedSyncIds: [
+          "def",
+        ],
+      ));
+
+      await database
+          .syncInto(database.persons)
+          .syncInsert(PersonsCompanion(name: Value("A")));
+
+      database.netCoreSyncSetActiveSyncId("def");
+
+      await database
+          .syncInto(database.persons)
+          .syncInsert(PersonsCompanion(name: Value("B")));
+
+      final col1 = await (database.syncSelect(database.syncPersons)
+            ..orderBy([
+              (t) => OrderingTerm(expression: t.name),
+            ]))
+          .get();
+
+      String? knowledgeId = await getLocalKnowledgeId("abc");
+      expect(knowledgeId, isNot(equals(null)));
+      expect(col1.length, equals(2));
+      expect(col1[0].name, equals("A"));
+      expect(col1[0].syncId, equals("abc"));
+      expect(col1[0].knowledgeId, equals(knowledgeId));
+      expect(col1[0].synced, equals(false));
+      expect(col1[0].deleted, equals(false));
+      expect(col1[1].name, equals("B"));
+      expect(col1[1].syncId, equals("def"));
+      expect(col1[1].knowledgeId, equals(knowledgeId));
+      expect(col1[1].synced, equals(false));
+      expect(col1[1].deleted, equals(false));
+    });
+
+    test("Update Sync'ed Linked User data", () async {
+      // Simulate existing synchronized "def" user data
+      NetCoreSyncKnowledge defKnowledge = NetCoreSyncKnowledge();
+      defKnowledge.id = Uuid().v4();
+      defKnowledge.syncId = "def";
+      defKnowledge.local = false;
+      await database.into(database.netCoreSyncKnowledges).insert(defKnowledge);
+      await database.into(database.persons).insert(PersonsCompanion(
+            name: Value("B"),
+            syncId: Value(defKnowledge.syncId),
+            knowledgeId: Value(defKnowledge.id),
+            synced: Value(true),
+            deleted: Value(false),
+          ));
+
+      database.netCoreSyncSetSyncIdInfo(SyncIdInfo(
+        syncId: "abc",
+        linkedSyncIds: [
+          "def",
+        ],
+      ));
+
+      var defData = await database.syncSelect(database.syncPersons).getSingle();
+      await database
+          .syncUpdate(database.persons)
+          .syncReplace(defData.toCompanion(true).copyWith(
+                name: Value("C"),
+              ));
+
+      final col1 = await database.syncSelect(database.syncPersons).get();
+      expect(col1.length, equals(1));
+      expect(col1[0].name, equals("C"));
+      expect(col1[0].syncId, equals(defKnowledge.syncId));
+      expect(col1[0].knowledgeId, equals(defKnowledge.id));
+      expect(col1[0].synced, equals(false));
+      expect(col1[0].deleted, equals(false));
+    });
+
+    test("Delete Sync'ed Linked User data", () async {
+      // Simulate existing synchronized "def" user data
+      NetCoreSyncKnowledge defKnowledge = NetCoreSyncKnowledge();
+      defKnowledge.id = Uuid().v4();
+      defKnowledge.syncId = "def";
+      defKnowledge.local = false;
+      await database.into(database.netCoreSyncKnowledges).insert(defKnowledge);
+      await database.into(database.persons).insert(PersonsCompanion(
+            name: Value("B"),
+            syncId: Value(defKnowledge.syncId),
+            knowledgeId: Value(defKnowledge.id),
+            synced: Value(true),
+            deleted: Value(false),
+          ));
+
+      database.netCoreSyncSetSyncIdInfo(SyncIdInfo(
+        syncId: "abc",
+        linkedSyncIds: [
+          "def",
+        ],
+      ));
+
+      var defData = await database.syncSelect(database.syncPersons).getSingle();
+      await (database.syncDelete(database.persons)
+            ..where((tbl) => tbl.id.equals(defData.id)))
+          .go();
+
+      final col1 = await database.select(database.persons).get();
+      expect(col1.length, equals(1));
+      expect(col1[0].syncId, equals(defKnowledge.syncId));
+      expect(col1[0].knowledgeId, equals(defKnowledge.id));
+      expect(col1[0].synced, equals(false));
+      expect(col1[0].deleted, equals(true));
+    });
+
+    test("Each User Inserts and Selects", () async {
+      database.netCoreSyncSetSyncIdInfo(SyncIdInfo(
+        syncId: "abc",
+      ));
+
+      await database
+          .syncInto(database.persons)
+          .syncInsert(PersonsCompanion(name: Value("A")));
+
+      database.netCoreSyncSetSyncIdInfo(SyncIdInfo(
+        syncId: "def",
+      ));
+
+      await database
+          .syncInto(database.persons)
+          .syncInsert(PersonsCompanion(name: Value("B")));
+
+      final col1 = await (database.select(database.persons)
+            ..orderBy([
+              (t) => OrderingTerm(expression: t.name),
+            ]))
+          .get();
+
+      expect(col1.length, equals(2));
+      String? abcKnowledgeId = await getLocalKnowledgeId("abc");
+      expect(abcKnowledgeId, isNot(equals(null)));
+      expect(col1[0].name, equals("A"));
+      expect(col1[0].syncId, equals("abc"));
+      expect(col1[0].knowledgeId, equals(abcKnowledgeId));
+      expect(col1[0].synced, equals(false));
+      expect(col1[0].deleted, equals(false));
+      String? defKnowledgeId = await getLocalKnowledgeId("def");
+      expect(defKnowledgeId, isNot(equals(null)));
+      expect(col1[1].name, equals("B"));
+      expect(col1[1].syncId, equals("def"));
+      expect(col1[1].knowledgeId, equals(defKnowledgeId));
+      expect(col1[1].synced, equals(false));
+      expect(col1[1].deleted, equals(false));
+
+      database.netCoreSyncSetSyncIdInfo(SyncIdInfo(
+        syncId: "abc",
+        linkedSyncIds: [
+          "def",
+        ],
+      ));
+
+      final col2 = await (database.syncSelect(database.syncPersons)
+            ..orderBy([(o) => OrderingTerm(expression: o.name)]))
+          .get();
+      expect(col2.length, equals(2));
+      expect(col2[0].name, equals("A"));
+      expect(col2[1].name, equals("B"));
+
+      database.netCoreSyncSetSyncIdInfo(SyncIdInfo(
+        syncId: "def",
+      ));
+
+      final col3 = await database.syncSelect(database.syncPersons).get();
+      expect(col3.length, equals(1));
+      expect(col3[0].name, equals("B"));
+    });
   });
 }
 
