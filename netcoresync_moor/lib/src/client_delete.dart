@@ -18,7 +18,8 @@ class SyncDeleteStatement<T extends Table, D> extends DeleteStatement<T, D> {
 
   @override
   void writeStartPart(GenerationContext ctx) async {
-    ctx.buffer.write(
-        "UPDATE ${table.tableWithAlias} SET ${dataAccess.engine.tables[D]!.deletedEscapedName} = 1, ${dataAccess.engine.tables[D]!.syncedEscapedName} = 0 ");
+    ctx.buffer.write("UPDATE ${table.tableWithAlias} "
+        "SET ${dataAccess.engine.tables[D]!.deletedEscapedName} = 1, "
+        "${dataAccess.engine.tables[D]!.syncedEscapedName} = 0 ");
   }
 }

@@ -1726,8 +1726,74 @@ class _$NetCoreSyncEngineUser extends NetCoreSyncEngine {
       : super(tables);
 
   @override
+  UpdateCompanion<D> toSafeCompanion<D>(Insertable<D> entity) {
+    if (D == AreaData) {
+      AreasCompanion safeEntity;
+      if (entity is AreasCompanion) {
+        safeEntity = entity as AreasCompanion;
+      } else {
+        safeEntity = (entity as AreaData).toCompanion(false);
+      }
+      safeEntity = safeEntity.copyWith(
+        pk: Value.absent(),
+        syncSyncId: Value.absent(),
+        syncKnowledgeId: Value.absent(),
+        syncSynced: Value.absent(),
+        syncDeleted: Value.absent(),
+      );
+      return safeEntity as UpdateCompanion<D>;
+    }
+    if (D == CustomObject) {
+      CustomObjectsCompanion safeEntity;
+      if (entity is CustomObjectsCompanion) {
+        safeEntity = entity as CustomObjectsCompanion;
+      } else {
+        safeEntity = (entity as CustomObject).toCompanion(false);
+      }
+      safeEntity = safeEntity.copyWith(
+        id: Value.absent(),
+        syncId: Value.absent(),
+        knowledgeId: Value.absent(),
+        synced: Value.absent(),
+        deleted: Value.absent(),
+      );
+      return safeEntity as UpdateCompanion<D>;
+    }
+    if (D == Person) {
+      PersonsCompanion safeEntity;
+      if (entity is PersonsCompanion) {
+        safeEntity = entity as PersonsCompanion;
+      } else {
+        safeEntity = (entity as Person).toCompanion(false);
+      }
+      safeEntity = safeEntity.copyWith(
+        id: Value.absent(),
+        syncId: Value.absent(),
+        knowledgeId: Value.absent(),
+        synced: Value.absent(),
+        deleted: Value.absent(),
+      );
+      return safeEntity as UpdateCompanion<D>;
+    }
+    throw NetCoreSyncException("Unexpected entity Type: $entity");
+  }
+
+  @override
   Object? getSyncColumnValue<D>(Insertable<D> entity, String fieldName) {
-    if (entity is UpdateCompanion<D>) {
+    if (entity is RawValuesInsertable<D>) {
+      switch (fieldName) {
+        case "id":
+          return entity.data[tables[D]!.idEscapedName];
+        case "syncId":
+          return entity.data[tables[D]!.syncIdEscapedName];
+        case "knowledgeId":
+          return entity.data[tables[D]!.knowledgeIdEscapedName];
+        case "synced":
+          return entity.data[tables[D]!.syncedEscapedName];
+        case "deleted":
+          return entity.data[tables[D]!.deletedEscapedName];
+      }
+    } else if (entity is UpdateCompanion<D>) {
       if (D == AreaData) {
         switch (fieldName) {
           case "id":
@@ -1990,48 +2056,65 @@ extension $NetCoreSyncClientExtension on Database {
   }
 }
 
-class $SyncAreasTable extends $AreasTable implements SyncBaseTable {
-  final String _allSyncIds;
+class $SyncAreasTable extends $AreasTable
+    implements SyncBaseTable<$AreasTable, AreaData> {
+  final String Function() _allSyncIds;
   $SyncAreasTable(_$Database db, this._allSyncIds) : super(db);
   @override
   Type get type => AreaData;
   @override
   String get entityName =>
-      "(SELECT * FROM ${super.entityName} WHERE ${super.syncDeleted.escapedName} = 0 AND ${super.syncSyncId.escapedName} IN ($_allSyncIds))";
+      "(SELECT * FROM ${super.entityName} WHERE ${super.syncDeleted.escapedName} = 0 AND ${super.syncSyncId.escapedName} IN (${_allSyncIds.call()}))";
 }
 
 class $SyncCustomObjectsTable extends $CustomObjectsTable
-    implements SyncBaseTable {
-  final String _allSyncIds;
+    implements SyncBaseTable<$CustomObjectsTable, CustomObject> {
+  final String Function() _allSyncIds;
   $SyncCustomObjectsTable(_$Database db, this._allSyncIds) : super(db);
   @override
   Type get type => CustomObject;
   @override
   String get entityName =>
-      "(SELECT * FROM ${super.entityName} WHERE ${super.deleted.escapedName} = 0 AND ${super.syncId.escapedName} IN ($_allSyncIds))";
+      "(SELECT * FROM ${super.entityName} WHERE ${super.deleted.escapedName} = 0 AND ${super.syncId.escapedName} IN (${_allSyncIds.call()}))";
 }
 
-class $SyncPersonsTable extends $PersonsTable implements SyncBaseTable {
-  final String _allSyncIds;
+class $SyncPersonsTable extends $PersonsTable
+    implements SyncBaseTable<$PersonsTable, Person> {
+  final String Function() _allSyncIds;
   $SyncPersonsTable(_$Database db, this._allSyncIds) : super(db);
   @override
   Type get type => Person;
   @override
   String get entityName =>
-      "(SELECT * FROM ${super.entityName} WHERE ${super.deleted.escapedName} = 0 AND ${super.syncId.escapedName} IN ($_allSyncIds))";
+      "(SELECT * FROM ${super.entityName} WHERE ${super.deleted.escapedName} = 0 AND ${super.syncId.escapedName} IN (${_allSyncIds.call()}))";
 }
 
 mixin NetCoreSyncClientUser on NetCoreSyncClient {
-  late $SyncAreasTable syncAreas;
-  late $SyncCustomObjectsTable syncCustomObjects;
-  late $SyncPersonsTable syncPersons;
+  late $SyncAreasTable _syncAreas;
+  late $SyncCustomObjectsTable _syncCustomObjects;
+  late $SyncPersonsTable _syncPersons;
 
   void netCoreSyncInitializeUser() {
-    syncAreas =
+    _syncAreas =
         $SyncAreasTable(netCoreSyncResolvedEngine, netCoreSyncAllSyncIds);
-    syncCustomObjects = $SyncCustomObjectsTable(
+    _syncCustomObjects = $SyncCustomObjectsTable(
         netCoreSyncResolvedEngine, netCoreSyncAllSyncIds);
-    syncPersons =
+    _syncPersons =
         $SyncPersonsTable(netCoreSyncResolvedEngine, netCoreSyncAllSyncIds);
+  }
+
+  $SyncAreasTable get syncAreas {
+    if (!netCoreSyncInitialized) throw NetCoreSyncNotInitializedException();
+    return _syncAreas;
+  }
+
+  $SyncCustomObjectsTable get syncCustomObjects {
+    if (!netCoreSyncInitialized) throw NetCoreSyncNotInitializedException();
+    return _syncCustomObjects;
+  }
+
+  $SyncPersonsTable get syncPersons {
+    if (!netCoreSyncInitialized) throw NetCoreSyncNotInitializedException();
+    return _syncPersons;
   }
 }

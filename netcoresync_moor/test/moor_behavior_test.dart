@@ -11,7 +11,8 @@ void main() async {
   bool useInMemoryDatabase = true;
   bool logSqlStatements = false;
 
-  // Obtain the running sqlite3 library version first to determine which tests to skip
+  // Obtain the running sqlite3 library version first to determine which tests
+  // to skip
   Version currentVersion = await Helper.getLibraryVersion(
     testFilesFolder: testFilesFolder,
     databaseFileName: databaseFileName,
@@ -224,8 +225,8 @@ void main() async {
     skip: Helper.shouldSkip(
       currentVersion,
       Version.parse("3.35.0"),
-      moreInfo:
-          "New sqlite feature: multiple ON CONFLICT. Read more at: https://sqlite.org/releaselog/3_35_0.html",
+      moreInfo: "New sqlite feature: multiple ON CONFLICT. Read more at: "
+          "https://sqlite.org/releaselog/3_35_0.html",
     ),
   );
 
@@ -240,38 +241,9 @@ void main() async {
     skip: Helper.shouldSkip(
       currentVersion,
       Version.parse("3.35.0"),
-      moreInfo:
-          "New sqlite feature: RETURNING. Read more at: https://sqlite.org/releaselog/3_35_0.html",
+      moreInfo: "New sqlite feature: RETURNING. Read more at: "
+          "https://sqlite.org/releaselog/3_35_0.html",
     ),
-  );
-
-  test(
-    "Moor's selects",
-    () async {
-      await database.into(database.persons).insert(
-            PersonsCompanion(name: Value("A")),
-          );
-      await database.into(database.persons).insert(
-            PersonsCompanion(name: Value("B")),
-          );
-      await database.into(database.persons).insert(
-            PersonsCompanion(name: Value("C")),
-          );
-      final col1 = await database.select(database.persons).get();
-      expect(col1.length, equals(3));
-      final col2 = await (database.select(database.persons)
-            ..where((tbl) => tbl.name.equals("A") | tbl.name.equals("B")))
-          .get();
-      expect(col2.length, equals(2));
-      final ret1 = await (database.select(database.persons)
-            ..where((tbl) => tbl.name.equals("A")))
-          .getSingle();
-      expect(ret1.name, equals("A"));
-      final ret2 = await (database.select(database.persons)
-            ..where((tbl) => tbl.name.equals("X")))
-          .getSingleOrNull();
-      expect(ret2, equals(null));
-    },
   );
 
   test(
@@ -372,6 +344,35 @@ void main() async {
             ..where((tbl) => tbl.name.equals("A")))
           .getSingle();
       expect(person2.age, equals(10));
+    },
+  );
+
+  test(
+    "Moor's selects",
+    () async {
+      await database.into(database.persons).insert(
+            PersonsCompanion(name: Value("A")),
+          );
+      await database.into(database.persons).insert(
+            PersonsCompanion(name: Value("B")),
+          );
+      await database.into(database.persons).insert(
+            PersonsCompanion(name: Value("C")),
+          );
+      final col1 = await database.select(database.persons).get();
+      expect(col1.length, equals(3));
+      final col2 = await (database.select(database.persons)
+            ..where((tbl) => tbl.name.equals("A") | tbl.name.equals("B")))
+          .get();
+      expect(col2.length, equals(2));
+      final ret1 = await (database.select(database.persons)
+            ..where((tbl) => tbl.name.equals("A")))
+          .getSingle();
+      expect(ret1.name, equals("A"));
+      final ret2 = await (database.select(database.persons)
+            ..where((tbl) => tbl.name.equals("X")))
+          .getSingleOrNull();
+      expect(ret2, equals(null));
     },
   );
 

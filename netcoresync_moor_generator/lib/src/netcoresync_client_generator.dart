@@ -24,7 +24,9 @@ class NetCoreSyncClientGenerator extends GeneratorForAnnotation<UseMoor> {
             (w) => w.getDisplayString(withNullability: true) == nameClassClient)
         .isEmpty) {
       throw NetCoreSyncMoorGeneratorException(
-          "The database class (${element.name}) is expected to be 'mixin' with $nameClassClient (for example: 'class Database extends _\$Database with $nameClassClient')");
+          "The database class (${element.name}) is expected to be 'mixin' with "
+          "$nameClassClient (for example: 'class Database extends _\$Database "
+          "with $nameClassClient')");
     }
     if (annotation
         .read("tables")
@@ -58,7 +60,8 @@ class NetCoreSyncClientGenerator extends GeneratorForAnnotation<UseMoor> {
 
     if (jsonParts.isEmpty) {
       buffer.writeln(
-          "// NOTE: NetCoreSyncExtension does not generate any codes because classes annotated with @NetCoreSyncTable were not found");
+          "// NOTE: NetCoreSyncExtension does not generate any codes because "
+          "classes annotated with @NetCoreSyncTable were not found");
       return buffer.toString();
     }
 
@@ -76,12 +79,54 @@ class NetCoreSyncClientGenerator extends GeneratorForAnnotation<UseMoor> {
     buffer.writeln(
         "_\$NetCoreSyncEngineUser(Map<Type, NetCoreSyncTableUser> tables) : super(tables);");
 
+    // START METHOD: toSafeCompanion
+    buffer.writeln();
+    buffer.writeln("@override");
+    buffer.writeln(
+        "UpdateCompanion<D> toSafeCompanion<D>(Insertable<D> entity) {");
+    for (var jsonPart in jsonParts) {
+      Map<String, dynamic> part = jsonDecode(jsonPart);
+      // @UseRowClass is expected to already implements toCompanion() method (forced by generator)
+      buffer.writeln("if (D == ${part["dataClassName"]}) {");
+      buffer.writeln("${part["tableClassName"]}Companion safeEntity;");
+      buffer.writeln(
+          "if (entity is ${part["tableClassName"]}Companion) { safeEntity = entity as ${part["tableClassName"]}Companion; } else { safeEntity = (entity as ${part["dataClassName"]}).toCompanion(false); }");
+      buffer.writeln('''
+        safeEntity = safeEntity.copyWith(
+          ${part["netCoreSyncTable"]["idFieldName"]}: Value.absent(),
+          ${part["netCoreSyncTable"]["syncIdFieldName"]}: Value.absent(),
+          ${part["netCoreSyncTable"]["knowledgeIdFieldName"]}: Value.absent(),
+          ${part["netCoreSyncTable"]["syncedFieldName"]}: Value.absent(),
+          ${part["netCoreSyncTable"]["deletedFieldName"]}: Value.absent(),
+        );
+        return safeEntity as UpdateCompanion<D>;
+      ''');
+      buffer.writeln("}");
+    }
+    buffer.writeln(
+        "throw NetCoreSyncException(\"Unexpected entity Type: \$entity\");");
+    buffer.writeln("}");
+    // END METHOD: toSafeCompanion
+
     // START METHOD: getSyncColumnValue
     buffer.writeln();
     buffer.writeln("@override");
     buffer.writeln(
         "Object? getSyncColumnValue<D>(Insertable<D> entity, String fieldName) {");
-    buffer.writeln("if (entity is UpdateCompanion<D>) {");
+    buffer.writeln("if (entity is RawValuesInsertable<D>) {");
+    buffer.writeln("switch (fieldName) {");
+    buffer.writeln("case\"id\":");
+    buffer.writeln("return entity.data[tables[D]!.idEscapedName];");
+    buffer.writeln("case\"syncId\":");
+    buffer.writeln("return entity.data[tables[D]!.syncIdEscapedName];");
+    buffer.writeln("case\"knowledgeId\":");
+    buffer.writeln("return entity.data[tables[D]!.knowledgeIdEscapedName];");
+    buffer.writeln("case\"synced\":");
+    buffer.writeln("return entity.data[tables[D]!.syncedEscapedName];");
+    buffer.writeln("case\"deleted\":");
+    buffer.writeln("return entity.data[tables[D]!.deletedEscapedName];");
+    buffer.writeln("}");
+    buffer.writeln("} else if (entity is UpdateCompanion<D>) {");
     for (var jsonPart in jsonParts) {
       Map<String, dynamic> part = jsonDecode(jsonPart);
       buffer.writeln("if (D == ${part["dataClassName"]}) {");
@@ -246,13 +291,13 @@ class NetCoreSyncClientGenerator extends GeneratorForAnnotation<UseMoor> {
       Map<String, dynamic> part = jsonDecode(jsonPart);
       buffer.writeln("");
       buffer.writeln('''
-        class \$Sync${part["tableClassName"]}Table extends \$${part["tableClassName"]}Table implements SyncBaseTable {
-          final String _allSyncIds;
+        class \$Sync${part["tableClassName"]}Table extends \$${part["tableClassName"]}Table implements SyncBaseTable<\$${part["tableClassName"]}Table, ${part["dataClassName"]}> {
+          final String Function() _allSyncIds;
           \$Sync${part["tableClassName"]}Table(_\$${element.name} db, this._allSyncIds) : super(db);
           @override
           Type get type => ${part["dataClassName"]};
           @override
-          String get entityName => "(SELECT * FROM \${super.entityName} WHERE \${super.${part["netCoreSyncTable"]["deletedFieldName"]}.escapedName} = 0 AND \${super.${part["netCoreSyncTable"]["syncIdFieldName"]}.escapedName} IN (\$_allSyncIds))";
+          String get entityName => "(SELECT * FROM \${super.entityName} WHERE \${super.${part["netCoreSyncTable"]["deletedFieldName"]}.escapedName} = 0 AND \${super.${part["netCoreSyncTable"]["syncIdFieldName"]}.escapedName} IN (\${_allSyncIds.call()}))";
         }
       ''');
     }
@@ -264,16 +309,27 @@ class NetCoreSyncClientGenerator extends GeneratorForAnnotation<UseMoor> {
     for (var jsonPart in jsonParts) {
       Map<String, dynamic> part = jsonDecode(jsonPart);
       buffer.writeln(
-          "late \$Sync${part["tableClassName"]}Table sync${part["tableClassName"]};");
+          "late \$Sync${part["tableClassName"]}Table _sync${part["tableClassName"]};");
     }
     buffer.writeln("");
     buffer.writeln("void netCoreSyncInitializeUser() {");
     for (var jsonPart in jsonParts) {
       Map<String, dynamic> part = jsonDecode(jsonPart);
       buffer.writeln(
-          "sync${part["tableClassName"]} = \$Sync${part["tableClassName"]}Table(netCoreSyncResolvedEngine, netCoreSyncAllSyncIds);");
+          "_sync${part["tableClassName"]} = \$Sync${part["tableClassName"]}Table(netCoreSyncResolvedEngine, netCoreSyncAllSyncIds);");
     }
     buffer.writeln("}");
+
+    for (var jsonPart in jsonParts) {
+      Map<String, dynamic> part = jsonDecode(jsonPart);
+      buffer.writeln("");
+      buffer.writeln('''
+        \$Sync${part["tableClassName"]}Table get sync${part["tableClassName"]} {
+          if (!netCoreSyncInitialized) throw NetCoreSyncNotInitializedException();
+          return _sync${part["tableClassName"]};
+        }
+      ''');
+    }
 
     buffer.writeln("}");
     // END MIXIN: NetCoreSyncClientUser

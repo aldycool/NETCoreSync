@@ -18,7 +18,8 @@ class Helper {
 
     openSqlite();
 
-    // Override for macos is defined here (not inside the openSqlite() method), this is due to the need to support recent "insertReturning" of sqlite3
+    // Override for macos is defined here (not inside the openSqlite() method),
+    // this is due to the need to support recent "insertReturning" of sqlite3
     if (io.Platform.isMacOS) {
       final rootDir = io.File(io.Platform.script.toFilePath()).parent.path;
       final overrideSqliteLib = path.join(
@@ -27,7 +28,8 @@ class Helper {
           () => ffi.DynamicLibrary.open(overrideSqliteLib));
     }
 
-    // The .test_files folder will be created (if useInMemoryDatabase = false) in the root folder (same folder as pubspec.yaml).
+    // The .test_files folder will be created (if useInMemoryDatabase = false)
+    // in the root folder (same folder as pubspec.yaml).
     Database database = await constructDatabase(
       databaseFileLocation: path.join(testFilesFolder, databaseFileName),
       logStatements: logSqlStatements,
@@ -78,7 +80,9 @@ class Helper {
     String moreInfo = "",
   }) {
     if (currentVersion < requiredVersion) {
-      return "Test is skipped due to the current sqlite3 version: ($currentVersion) is less than the required version: ($requiredVersion).${moreInfo.isNotEmpty ? " " + moreInfo : ""}";
+      return "Test is skipped due to the current sqlite3 version: "
+          "($currentVersion) is less than the required version: ($requiredVersion)."
+          "${moreInfo.isNotEmpty ? " " + moreInfo : ""}";
     }
     return null;
   }

@@ -31,7 +31,11 @@ class DataAccess<G extends GeneratedDatabase> extends DatabaseAccessor<G> {
       Zone.current[#DatabaseConnectionUser] ?? database;
 
   Future<String> getLocalKnowledgeId() async {
-    // Local Knowledge is always obtained from syncIdInfo.syncId (logged in user), not the activeSyncId, this is to ensure the logged in user's local knowledge id is returned when inserting on behalf of linked SyncId (other linked user). When other users logged into this device, then the netCoreSyncSetIdInfo() should also be called first when logging in.
+    // Local Knowledge is always obtained from syncIdInfo.syncId (logged in
+    // user), not the activeSyncId, this is to ensure the logged in user's local
+    // knowledge id is returned when inserting on behalf of linked SyncId (other
+    // linked user). When other users logged into this device, then the
+    // netCoreSyncSetIdInfo() should also be called first when logging in.
     if (syncIdInfo == null) throw NetCoreSyncSyncIdInfoNotSetException();
     DatabaseConnectionUser activeDb = resolvedEngine as DatabaseConnectionUser;
     NetCoreSyncKnowledge? localKnowledge = await (activeDb.select(knowledges)
@@ -49,27 +53,51 @@ class DataAccess<G extends GeneratedDatabase> extends DatabaseAccessor<G> {
     return localKnowledge.id;
   }
 
-  Future<T> syncAction<T, D>(
+  Insertable<D> syncActionInsert<D>(
     Insertable<D> entity,
-    bool? deleted,
-    Future<T> Function(dynamic syncEntity, String obtainedKnowledgeId) action,
-  ) async {
+    String knowledgeId,
+  ) {
     if (!engine.tables.containsKey(D)) {
       throw NetCoreSyncTypeNotRegisteredException(D);
     }
-    String knowledgeId = await getLocalKnowledgeId();
     Insertable<D> syncEntity = engine.updateSyncColumns(
       entity,
       synced: false,
       syncId: activeSyncId,
       knowledgeId: knowledgeId,
-      deleted: deleted,
+      deleted: false,
     );
-    return action(syncEntity, knowledgeId);
+    return syncEntity;
+  }
+
+  Insertable<D> syncActionUpdate<D>(
+    Insertable<D> entity,
+  ) {
+    if (!engine.tables.containsKey(D)) {
+      throw NetCoreSyncTypeNotRegisteredException(D);
+    }
+    Insertable<D> entityForUpdate;
+    if (entity is RawValuesInsertable<D>) {
+      entity.data.remove(engine.tables[D]!.idEscapedName);
+      entity.data.remove(engine.tables[D]!.syncIdEscapedName);
+      entity.data.remove(engine.tables[D]!.knowledgeIdEscapedName);
+      entity.data.remove(engine.tables[D]!.syncIdEscapedName);
+      entity.data.remove(engine.tables[D]!.deletedEscapedName);
+      entityForUpdate = entity;
+    } else {
+      entityForUpdate = engine.toSafeCompanion(entity);
+    }
+    Insertable<D> syncEntity = engine.updateSyncColumns(
+      entityForUpdate,
+      synced: false,
+    );
+    return syncEntity;
   }
 }
 
-// The following classes were copied from Moor's generated @UseMoor class (with several modifications such as making class names private with underscore + removing unused constructors)
+// The following classes were copied from Moor's generated @UseMoor class (with
+// several modifications such as making class names private with
+// underscore + removing unused constructors)
 
 class _NetCoreSyncKnowledgesTable extends NetCoreSyncKnowledges
     with TableInfo<_NetCoreSyncKnowledgesTable, NetCoreSyncKnowledge> {

@@ -7,6 +7,8 @@ abstract class NetCoreSyncEngine {
 
   NetCoreSyncEngine(this.tables);
 
+  UpdateCompanion<D> toSafeCompanion<D>(Insertable<D> entity);
+
   Object? getSyncColumnValue<D>(Insertable<D> entity, String fieldName);
 
   Insertable<D> updateSyncColumns<D>(

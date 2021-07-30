@@ -6,9 +6,12 @@ import 'package:netcoresync_moor/netcoresync_moor.dart';
 class Persons extends Table {
   TextColumn get id =>
       text().withLength(max: 36).clientDefault(() => Uuid().v4())();
-  TextColumn get name =>
-      text().withLength(max: 255).withDefault(Constant("")).customConstraint(
-          "NOT NULL DEFAULT ''")(); // If using customConstraints, we have to repeat all attached constraints in SQL language
+  // If using customConstraints, we have to repeat all attached constraints
+  // in SQL language
+  TextColumn get name => text()
+      .withLength(max: 255)
+      .withDefault(Constant(""))
+      .customConstraint("NOT NULL DEFAULT ''")();
   DateTimeColumn get birthday =>
       dateTime().clientDefault(() => DateTime.now())();
   IntColumn get age => integer().withDefault(const Constant(0))();
@@ -18,8 +21,10 @@ class Persons extends Table {
   TextColumn get vaccineName => text().withLength(max: 255).nullable()();
   DateTimeColumn get vaccinationDate => dateTime().nullable()();
   IntColumn get vaccinePhase => integer().nullable()();
-  TextColumn get vaccinationAreaPk => text().nullable().customConstraint(
-      "NULLABLE REFERENCES area(pk)")(); // If using customConstraints, we have to repeat all attached constraints in SQL language
+  // If using customConstraints, we have to repeat all attached constraints
+  // in SQL language
+  TextColumn get vaccinationAreaPk =>
+      text().nullable().customConstraint("NULLABLE REFERENCES area(pk)")();
 
   TextColumn get syncId =>
       text().withLength(max: 36).withDefault(Constant(""))();

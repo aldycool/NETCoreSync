@@ -1293,8 +1293,58 @@ class _$NetCoreSyncEngineUser extends NetCoreSyncEngine {
       : super(tables);
 
   @override
+  UpdateCompanion<D> toSafeCompanion<D>(Insertable<D> entity) {
+    if (D == Employee) {
+      EmployeesCompanion safeEntity;
+      if (entity is EmployeesCompanion) {
+        safeEntity = entity as EmployeesCompanion;
+      } else {
+        safeEntity = (entity as Employee).toCompanion(false);
+      }
+      safeEntity = safeEntity.copyWith(
+        id: Value.absent(),
+        syncId: Value.absent(),
+        knowledgeId: Value.absent(),
+        synced: Value.absent(),
+        deleted: Value.absent(),
+      );
+      return safeEntity as UpdateCompanion<D>;
+    }
+    if (D == Department) {
+      DepartmentsCompanion safeEntity;
+      if (entity is DepartmentsCompanion) {
+        safeEntity = entity as DepartmentsCompanion;
+      } else {
+        safeEntity = (entity as Department).toCompanion(false);
+      }
+      safeEntity = safeEntity.copyWith(
+        id: Value.absent(),
+        syncId: Value.absent(),
+        knowledgeId: Value.absent(),
+        synced: Value.absent(),
+        deleted: Value.absent(),
+      );
+      return safeEntity as UpdateCompanion<D>;
+    }
+    throw NetCoreSyncException("Unexpected entity Type: $entity");
+  }
+
+  @override
   Object? getSyncColumnValue<D>(Insertable<D> entity, String fieldName) {
-    if (entity is UpdateCompanion<D>) {
+    if (entity is RawValuesInsertable<D>) {
+      switch (fieldName) {
+        case "id":
+          return entity.data[tables[D]!.idEscapedName];
+        case "syncId":
+          return entity.data[tables[D]!.syncIdEscapedName];
+        case "knowledgeId":
+          return entity.data[tables[D]!.knowledgeIdEscapedName];
+        case "synced":
+          return entity.data[tables[D]!.syncedEscapedName];
+        case "deleted":
+          return entity.data[tables[D]!.deletedEscapedName];
+      }
+    } else if (entity is UpdateCompanion<D>) {
       if (D == Employee) {
         switch (fieldName) {
           case "id":
@@ -1481,34 +1531,46 @@ extension $NetCoreSyncClientExtension on Database {
   }
 }
 
-class $SyncEmployeesTable extends $EmployeesTable implements SyncBaseTable {
-  final String _allSyncIds;
+class $SyncEmployeesTable extends $EmployeesTable
+    implements SyncBaseTable<$EmployeesTable, Employee> {
+  final String Function() _allSyncIds;
   $SyncEmployeesTable(_$Database db, this._allSyncIds) : super(db);
   @override
   Type get type => Employee;
   @override
   String get entityName =>
-      "(SELECT * FROM ${super.entityName} WHERE ${super.deleted.escapedName} = 0 AND ${super.syncId.escapedName} IN ($_allSyncIds))";
+      "(SELECT * FROM ${super.entityName} WHERE ${super.deleted.escapedName} = 0 AND ${super.syncId.escapedName} IN (${_allSyncIds.call()}))";
 }
 
-class $SyncDepartmentsTable extends $DepartmentsTable implements SyncBaseTable {
-  final String _allSyncIds;
+class $SyncDepartmentsTable extends $DepartmentsTable
+    implements SyncBaseTable<$DepartmentsTable, Department> {
+  final String Function() _allSyncIds;
   $SyncDepartmentsTable(_$Database db, this._allSyncIds) : super(db);
   @override
   Type get type => Department;
   @override
   String get entityName =>
-      "(SELECT * FROM ${super.entityName} WHERE ${super.deleted.escapedName} = 0 AND ${super.syncId.escapedName} IN ($_allSyncIds))";
+      "(SELECT * FROM ${super.entityName} WHERE ${super.deleted.escapedName} = 0 AND ${super.syncId.escapedName} IN (${_allSyncIds.call()}))";
 }
 
 mixin NetCoreSyncClientUser on NetCoreSyncClient {
-  late $SyncEmployeesTable syncEmployees;
-  late $SyncDepartmentsTable syncDepartments;
+  late $SyncEmployeesTable _syncEmployees;
+  late $SyncDepartmentsTable _syncDepartments;
 
   void netCoreSyncInitializeUser() {
-    syncEmployees =
+    _syncEmployees =
         $SyncEmployeesTable(netCoreSyncResolvedEngine, netCoreSyncAllSyncIds);
-    syncDepartments =
+    _syncDepartments =
         $SyncDepartmentsTable(netCoreSyncResolvedEngine, netCoreSyncAllSyncIds);
+  }
+
+  $SyncEmployeesTable get syncEmployees {
+    if (!netCoreSyncInitialized) throw NetCoreSyncNotInitializedException();
+    return _syncEmployees;
+  }
+
+  $SyncDepartmentsTable get syncDepartments {
+    if (!netCoreSyncInitialized) throw NetCoreSyncNotInitializedException();
+    return _syncDepartments;
   }
 }

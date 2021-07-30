@@ -115,6 +115,40 @@ class TableGenerator extends GeneratorForAnnotation<NetCoreSyncTable> {
         throw NetCoreSyncMoorGeneratorException(
             "The $dataClassName class must have a constructor method called 'fromJson()' with type 'Map<String, dynamic>' on its first parameter. It is required for the Dart's 'jsonDecode()' function later. Please take a look at the 'json_serializable' package on how to do this properly.");
       }
+      // Must check if toCompanion() method is exists. This is needed later because we want to generate the Companion version of the Row Class, so we can protect the sync fields (and also id field if using syncWrite) by setting them to Value.absent() during updates.
+      MethodElement? methodToCompanion = (elementAnnotation
+              .computeConstantValue()!
+              .getField("type")!
+              .toTypeValue()! as InterfaceType)
+          .methods
+          .where((w) => w.name == "toCompanion")
+          .firstOrNull;
+      String toCompanionError = "";
+      if (methodToCompanion == null) {
+        toCompanionError = "Instance Method 'toCompanion()' not exist";
+      } else if (methodToCompanion.parameters.length != 1) {
+        toCompanionError =
+            "The expected parameter length is 1, actual is: ${methodToCompanion.parameters.length}";
+      } else if (methodToCompanion.parameters[0].type
+              .getDisplayString(withNullability: false) !=
+          "bool") {
+        toCompanionError =
+            "The expected parameter type is bool, actual is: ${methodToCompanion.parameters[0].type.getDisplayString(withNullability: false)}";
+        // Now we check the return type of the method. Unfortunately, our current mechanism only returns "dynamic" for the Companion types, so we have to dive into the source code with regex
+      } else if (methodToCompanion.returnType
+              .getDisplayString(withNullability: false) !=
+          "dynamic") {
+        toCompanionError =
+            "The expected return type is ${tableClassName}Companion, actual is: ${methodToCompanion.returnType.getDisplayString(withNullability: false)}";
+      } else if (!RegExp("${tableClassName}Companion toCompanion\\(")
+          .hasMatch(methodToCompanion.source.contents.data)) {
+        toCompanionError =
+            "The expected return type is ${tableClassName}Companion, actual is: ${methodToCompanion.returnType.getDisplayString(withNullability: false)}";
+      }
+      if (toCompanionError.isNotEmpty) {
+        throw NetCoreSyncMoorGeneratorException(
+            "Error: $toCompanionError. NOTE: The $dataClassName class must have an instance method called 'toCompanion()' with 1 bool argument called 'nullToAbsent' that returns '${tableClassName}Companion'. This is required for the NETCoreSync's syncWrite() and syncReplace() internal implementations later during updates. This should be implemented exactly like Moor does, by returning an instance of '${tableClassName}Companion' where it is constructed by passing all of your Row Class fields values, and each of those fields values is wrapped with the 'Value()' class. Take a look on how Moor implement it for your tables that 'extends DataClass' in the generated '*.g.dart' file, especially when handling the 'nullToAbsent' argument, where it is expected to use Value.absent() for your nullable fields if the 'nullToAbsent' parameter is set to 'true'.");
+      }
     } else {
       dataClassName = tableClassName.substring(0, tableClassName.length - 1);
       elementAnnotation = _getElementAnnotation(element, "DataClassName");

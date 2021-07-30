@@ -23,7 +23,7 @@ mixin NetCoreSyncClient on GeneratedDatabase {
 
   @internal
   DataAccess get dataAccess {
-    if (_dataAccess == null) throw NetCoreSyncNotInitializedException();
+    if (!netCoreSyncInitialized) throw NetCoreSyncNotInitializedException();
     return _dataAccess!;
   }
 
@@ -41,6 +41,7 @@ mixin NetCoreSyncClient on GeneratedDatabase {
   SyncIdInfo? netCoreSyncGetSyncIdInfo() => dataAccess.syncIdInfo;
 
   void netCoreSyncSetSyncIdInfo(SyncIdInfo value) {
+    if (!netCoreSyncInitialized) throw NetCoreSyncNotInitializedException();
     if (value.syncId.isEmpty) {
       throw NetCoreSyncException("SyncIdInfo.syncId cannot be empty");
     }
@@ -60,21 +61,23 @@ mixin NetCoreSyncClient on GeneratedDatabase {
   String? netCoreSyncGetActiveSyncId() => dataAccess.activeSyncId;
 
   void netCoreSyncSetActiveSyncId(String value) {
-    if (value.isEmpty) {
-      throw NetCoreSyncException("The active syncId cannot be empty");
-    }
+    if (!netCoreSyncInitialized) throw NetCoreSyncNotInitializedException();
     if (dataAccess.syncIdInfo == null) {
       throw NetCoreSyncSyncIdInfoNotSetException();
+    }
+    if (value.isEmpty) {
+      throw NetCoreSyncException("The active syncId cannot be empty");
     }
     if (dataAccess.syncIdInfo!.syncId != value &&
         !dataAccess.syncIdInfo!.linkedSyncIds.contains(value)) {
       throw NetCoreSyncException(
-          "The active syncId is different than the SyncIdInfo.syncId and also cannot be found in the SyncIdInfo.linkedSyncIds");
+          "The active syncId is different than the SyncIdInfo.syncId and also "
+          "cannot be found in the SyncIdInfo.linkedSyncIds");
     }
     dataAccess.activeSyncId = value;
   }
 
-  String get netCoreSyncAllSyncIds {
+  String netCoreSyncAllSyncIds() {
     return dataAccess.syncIdInfo?.allSyncIds ?? "";
   }
 
@@ -85,6 +88,7 @@ mixin NetCoreSyncClient on GeneratedDatabase {
         SynchronizeDirection.pushThenPull,
     Map<String, dynamic> customInfo = const {},
   }) async {
+    if (!netCoreSyncInitialized) throw NetCoreSyncNotInitializedException();
     final syncHandler = SyncHandler(dataAccess);
     await syncHandler.synchronize(
       synchronizationId: synchronizationId,
@@ -95,48 +99,58 @@ mixin NetCoreSyncClient on GeneratedDatabase {
   }
 
   SyncSimpleSelectStatement<T, R> syncSelect<T extends HasResultSet, R>(
-    ResultSetImplementation<T, R> table, {
+    SyncBaseTable<T, R> table, {
     bool distinct = false,
-  }) =>
-      SyncSimpleSelectStatement(
-        dataAccess,
-        table,
-        distinct: distinct,
-      );
+  }) {
+    if (!netCoreSyncInitialized) throw NetCoreSyncNotInitializedException();
+    return SyncSimpleSelectStatement(
+      dataAccess,
+      table as ResultSetImplementation<T, R>,
+      distinct: distinct,
+    );
+  }
 
   SyncJoinedSelectStatement<T, R> syncSelectOnly<T extends HasResultSet, R>(
-    ResultSetImplementation<T, R> table, {
+    SyncBaseTable<T, R> table, {
     bool distinct = false,
-  }) =>
-      SyncJoinedSelectStatement<T, R>(
-        dataAccess,
-        table,
-        [],
-        distinct,
-        false,
-      );
+  }) {
+    if (!netCoreSyncInitialized) throw NetCoreSyncNotInitializedException();
+    return SyncJoinedSelectStatement<T, R>(
+      dataAccess,
+      table as ResultSetImplementation<T, R>,
+      [],
+      distinct,
+      false,
+    );
+  }
 
   SyncInsertStatement<T, D> syncInto<T extends Table, D>(
     TableInfo<T, D> table,
-  ) =>
-      SyncInsertStatement<T, D>(
-        dataAccess,
-        table,
-      );
+  ) {
+    if (!netCoreSyncInitialized) throw NetCoreSyncNotInitializedException();
+    return SyncInsertStatement<T, D>(
+      dataAccess,
+      table,
+    );
+  }
 
   SyncUpdateStatement<T, D> syncUpdate<T extends Table, D>(
     TableInfo<T, D> table,
-  ) =>
-      SyncUpdateStatement<T, D>(
-        dataAccess,
-        table,
-      );
+  ) {
+    if (!netCoreSyncInitialized) throw NetCoreSyncNotInitializedException();
+    return SyncUpdateStatement<T, D>(
+      dataAccess,
+      table,
+    );
+  }
 
   SyncDeleteStatement<T, D> syncDelete<T extends Table, D>(
     TableInfo<T, D> table,
-  ) =>
-      SyncDeleteStatement<T, D>(
-        dataAccess,
-        table,
-      );
+  ) {
+    if (!netCoreSyncInitialized) throw NetCoreSyncNotInitializedException();
+    return SyncDeleteStatement<T, D>(
+      dataAccess,
+      table,
+    );
+  }
 }

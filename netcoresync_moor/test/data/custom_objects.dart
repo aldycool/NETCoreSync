@@ -66,21 +66,7 @@ class CustomObject implements Insertable<CustomObject> {
 
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
-    return CustomObjectsCompanion(
-      id: Value(id),
-      fieldString: Value(fieldString),
-      fieldStringNullable: Value(fieldStringNullable),
-      fieldInt: Value(fieldInt),
-      fieldIntNullable: Value(fieldIntNullable),
-      fieldBoolean: Value(fieldBoolean),
-      fieldBooleanNullable: Value(fieldBooleanNullable),
-      fieldDateTime: Value(fieldDateTime),
-      fieldDateTimeNullable: Value(fieldDateTimeNullable),
-      syncId: Value(syncId),
-      knowledgeId: Value(knowledgeId),
-      synced: Value(synced),
-      deleted: Value(deleted),
-    ).toColumns(nullToAbsent);
+    return toCompanion(nullToAbsent).toColumns(nullToAbsent);
   }
 
   factory CustomObject.fromJson(Map<String, dynamic> json) {
@@ -125,5 +111,31 @@ class CustomObject implements Insertable<CustomObject> {
       'synced': serializer.toJson<bool>(synced),
       'deleted': serializer.toJson<bool>(deleted),
     };
+  }
+
+  CustomObjectsCompanion toCompanion(bool nullToAbsent) {
+    return CustomObjectsCompanion(
+      id: Value(id),
+      fieldString: Value(fieldString),
+      fieldStringNullable: nullToAbsent && fieldStringNullable == null
+          ? Value.absent()
+          : Value(fieldStringNullable),
+      fieldInt: Value(fieldInt),
+      fieldIntNullable: nullToAbsent && fieldIntNullable == null
+          ? Value.absent()
+          : Value(fieldIntNullable),
+      fieldBoolean: Value(fieldBoolean),
+      fieldBooleanNullable: nullToAbsent && fieldBooleanNullable == null
+          ? Value.absent()
+          : Value(fieldBooleanNullable),
+      fieldDateTime: Value(fieldDateTime),
+      fieldDateTimeNullable: nullToAbsent && fieldDateTimeNullable == null
+          ? Value.absent()
+          : Value(fieldDateTimeNullable),
+      syncId: Value(syncId),
+      knowledgeId: Value(knowledgeId),
+      synced: Value(synced),
+      deleted: Value(deleted),
+    );
   }
 }

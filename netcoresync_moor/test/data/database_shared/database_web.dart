@@ -13,7 +13,8 @@ Future<Database> constructDatabase({
 }) async {
   if (inMemory) {
     throw Exception(
-        "At per writing, In-Memory Database is only supported on Android, iOS, and MacOS");
+        "At per writing, In-Memory Database is only supported on Android, iOS, "
+        "and MacOS");
   }
 
   String storageType = databaseFileLocation.split("|")[0];

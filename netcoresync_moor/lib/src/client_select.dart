@@ -4,7 +4,8 @@ import 'netcoresync_exceptions.dart';
 import 'netcoresync_classes.dart';
 import 'data_access.dart';
 
-// Need to confirm with the moor's author @simolus3: why is the abstract class BaseSelectStatement is sealed? is there something I should worry about?
+// Need to confirm with the moor's author @simolus3: why is the abstract class
+// BaseSelectStatement is sealed? is there something I should worry about?
 // ignore: subtype_of_sealed_class
 @internal
 class SyncSimpleSelectStatement<T extends HasResultSet, D>
@@ -23,15 +24,25 @@ class SyncSimpleSelectStatement<T extends HasResultSet, D>
     if (!dataAccess.engine.tables.containsKey(D)) {
       throw NetCoreSyncTypeNotRegisteredException(D);
     }
-    // Ensure syncIdInfo is set because all of the syncTables are dependent on syncIdInfo.allSyncIds
+    // Ensure syncIdInfo is set because all of the syncTables are dependent on
+    // syncIdInfo.allSyncIds
     if (dataAccess.syncIdInfo == null) {
       throw NetCoreSyncSyncIdInfoNotSetException();
     }
   }
 
   SyncJoinedSelectStatement syncJoin(List<Join> joins) {
-    // DEV-WARNING: The implementation code is copied from original library, ensure future changes are updated in here!
-    // This is needed because we need to handle the `writeStartPart()` of the original `JoinedSelectStatement` class.
+    for (var i = 0; i < joins.length; i++) {
+      if (joins[i].table is! SyncBaseTable) {
+        throw NetCoreSyncException(
+            "The joined table: ${joins[i].table} is expected to be the "
+            "SyncTable version of the table");
+      }
+    }
+    // COPIED-IMPLEMENTATION: The implementation code is copied from original
+    // library, ensure future changes are updated in here!
+    // This is needed because we need to handle the `writeStartPart()` of the
+    // original `JoinedSelectStatement` class.
     final statement =
         SyncJoinedSelectStatement(dataAccess, table, joins, distinct);
 
@@ -51,8 +62,10 @@ class SyncSimpleSelectStatement<T extends HasResultSet, D>
   @override
   void writeStartPart(GenerationContext ctx) {
     super.writeStartPart(ctx);
-    // The ctx.watchedTables needs to be reverted back to original tables to ensure the `watch()` function works properly!
-    // I don't know how the watchedTables is being used in other code, so I'm taking the safest approach here
+    // The ctx.watchedTables needs to be reverted back to original tables to
+    // ensure the `watch()` function works properly!
+    // I don't know how the watchedTables is being used in other code, so I'm
+    // taking the safest approach here
     int idx = 0;
     while (idx < ctx.watchedTables.length) {
       if (ctx.watchedTables[idx] is SyncBaseTable) {
@@ -88,7 +101,8 @@ class SyncJoinedSelectStatement<T extends HasResultSet, D>
     if (!dataAccess.engine.tables.containsKey(D)) {
       throw NetCoreSyncTypeNotRegisteredException(D);
     }
-    // Ensure syncIdInfo is set because all of the syncTables are dependent on syncIdInfo.allSyncIds
+    // Ensure syncIdInfo is set because all of the syncTables are dependent on
+    // syncIdInfo.allSyncIds
     if (dataAccess.syncIdInfo == null) {
       throw NetCoreSyncSyncIdInfoNotSetException();
     }
@@ -97,8 +111,10 @@ class SyncJoinedSelectStatement<T extends HasResultSet, D>
   @override
   void writeStartPart(GenerationContext ctx) {
     super.writeStartPart(ctx);
-    // The ctx.watchedTables needs to be reverted back to original tables to ensure the `watch()` function works properly!
-    // I don't know how the watchedTables is being used in other code, so I'm taking the safest approach here
+    // The ctx.watchedTables needs to be reverted back to original tables to
+    // ensure the `watch()` function works properly!
+    // I don't know how the watchedTables is being used in other code, so I'm
+    // taking the safest approach here
     int idx = 0;
     while (idx < ctx.watchedTables.length) {
       if (ctx.watchedTables[idx] is SyncBaseTable) {

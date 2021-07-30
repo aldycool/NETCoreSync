@@ -1,6 +1,5 @@
 import 'package:meta/meta.dart';
 import 'package:moor/moor.dart';
-import 'netcoresync_exceptions.dart';
 import 'data_access.dart';
 
 class SyncIdInfo {
@@ -19,13 +18,13 @@ class SyncIdInfo {
   }
 }
 
-abstract class SyncBaseTable {
+abstract class SyncBaseTable<T extends HasResultSet, D> {
   Type get type;
 }
 
 @sealed
 abstract class SyncUpsertClause<T extends Table, D> {
-  UpsertClause<T, D> resolve(DataAccess dataAccess, String obtainedKnowledgeId);
+  Future<UpsertClause<T, D>> resolve(DataAccess dataAccess);
 }
 
 class SyncDoUpdate<T extends Table, D> extends SyncUpsertClause<T, D> {
@@ -37,23 +36,18 @@ class SyncDoUpdate<T extends Table, D> extends SyncUpsertClause<T, D> {
 
   @internal
   @override
-  DoUpdate<T, D> resolve(DataAccess dataAccess, String obtainedKnowledgeId) {
+  Future<DoUpdate<T, D>> resolve(DataAccess dataAccess) async {
+    String knowledgeId = await dataAccess.getLocalKnowledgeId();
     return DoUpdate(
       (T old) {
         Insertable<D> result = _creator(old);
-        if (!dataAccess.engine.tables.containsKey(D)) {
-          throw NetCoreSyncTypeNotRegisteredException(D);
-        }
-        if ((result as RawValuesInsertable<D>).data.containsKey(
-            dataAccess.engine.tables[D]!.tableAnnotation.idFieldName)) {
-          throw NetCoreSyncException(
-              "Changing the 'id' (as primary key) value is prohibited. This error is raised because your 'DoUpdate' contains actions that have altered your 'id' field: ${dataAccess.engine.tables[D]!.tableAnnotation.idFieldName}");
-        }
-        Insertable<D> syncResult = dataAccess.engine.updateSyncColumns(
+        // Because of DoUpdate is always called from Insert, and the INSERT INTO
+        // + DO UPDATE behavior is always insert new row, then we should perform
+        // syncActionInsert here rather than syncActionUpdate to ensure the sync
+        // fields are always valid.
+        Insertable<D> syncResult = dataAccess.syncActionInsert(
           result,
-          synced: false,
-          syncId: dataAccess.activeSyncId,
-          knowledgeId: obtainedKnowledgeId,
+          knowledgeId,
         );
         return syncResult;
       },
@@ -69,11 +63,10 @@ class SyncUpsertMultiple<T extends Table, D> extends SyncUpsertClause<T, D> {
 
   @internal
   @override
-  UpsertMultiple<T, D> resolve(
-      DataAccess dataAccess, String obtainedKnowledgeId) {
+  Future<UpsertMultiple<T, D>> resolve(DataAccess dataAccess) async {
     List<DoUpdate<T, D>> syncClauses = [];
     for (var element in clauses) {
-      syncClauses.add(element.resolve(dataAccess, obtainedKnowledgeId));
+      syncClauses.add(await element.resolve(dataAccess));
     }
     return UpsertMultiple(syncClauses);
   }

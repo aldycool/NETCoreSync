@@ -17,90 +17,91 @@ class SyncInsertStatement<T extends Table, D> extends InsertStatement<T, D> {
     }
   }
 
+  @override
+  Future<int> insert(
+    Insertable<D> entity, {
+    InsertMode? mode,
+    UpsertClause<T, D>? onConflict,
+  }) async {
+    throw NetCoreSyncException("Use the syncInsert version instead");
+  }
+
   Future<int> syncInsert(
     Insertable<D> entity, {
     InsertMode? mode,
     SyncUpsertClause<T, D>? onConflict,
   }) async {
-    return _syncActionInsert(
+    return await _commonAction(
       entity,
-      false, // We can confidently ensure that this operation will only be inserts, therefore we set the deleted to false. The mode parameter is also already checked for not doing other than inserts. The onConflict parameter is handled on different class (during resolve), which will not set the deleted value (on updates deleted will be ignored and not changed at all).
       mode: mode,
       onConflict: onConflict,
-      implementation: (
+      implementation: (syncEntity, syncMode, syncOnConflict) => super.insert(
         syncEntity,
-        _mode,
-        _onConflict,
-      ) =>
-          insert(
-        syncEntity,
-        mode: _mode,
-        onConflict: _onConflict,
+        mode: syncMode,
+        onConflict: syncOnConflict,
       ),
     );
   }
 
+  @override
+  Future<int> insertOnConflictUpdate(Insertable<D> entity) {
+    throw NetCoreSyncException(
+        "Use the syncInsertOnConflictUpdate version instead");
+  }
+
   Future<int> syncInsertOnConflictUpdate(Insertable<D> entity) async {
-    return _syncActionInsert(
-      entity,
-      null, // In here, we cannot actually detect whether the operation will perform insert or update, therefore, we just rely on the entity's deleted value. In most likely situations (new object or queried existing) this will be false and not null, so proceed wisely, the worst case is we have a risk of undeleting a previously deleted data, but from user's interface this should not be possible (deleted rows will not be shown to be edited).
-      implementation: (
-        syncEntity,
-        _,
-        __,
-      ) =>
-          insertOnConflictUpdate(
-        syncEntity,
-      ),
-    );
+    // COPIED-IMPLEMENTATION: The implementation code is copied from original
+    // library, ensure future changes are updated in here!
+    // This is needed because the original implementation of
+    // `super.insertOnConflictUpdate()` is calling `insert()` directly, which we
+    // already override above to throw Exception
+    return syncInsert(entity, onConflict: SyncDoUpdate((_) => entity));
+  }
+
+  @override
+  Future<D> insertReturning(Insertable<D> entity,
+      {InsertMode? mode, UpsertClause<T, D>? onConflict}) async {
+    throw NetCoreSyncException("Use the syncInsertReturning version instead");
   }
 
   Future<D> syncInsertReturning(Insertable<D> entity,
       {InsertMode? mode, SyncUpsertClause<T, D>? onConflict}) async {
-    return _syncActionInsert(
+    return await _commonAction(
       entity,
-      false, // The same explanation as the standard syncInsert above.
       mode: mode,
       onConflict: onConflict,
-      implementation: (
+      implementation: (syncEntity, syncMode, syncOnConflict) =>
+          super.insertReturning(
         syncEntity,
-        _mode,
-        _onConflict,
-      ) =>
-          insertReturning(
-        syncEntity,
-        mode: _mode,
-        onConflict: _onConflict,
+        mode: syncMode,
+        onConflict: syncOnConflict,
       ),
     );
   }
 
-  Future<V> _syncActionInsert<V>(
-    Insertable<D> entity,
-    bool? deleted, {
+  Future<V> _commonAction<V>(
+    Insertable<D> entity, {
     InsertMode? mode,
     SyncUpsertClause<T, D>? onConflict,
     required Future<V> Function(
       Insertable<D> syncEntity,
-      InsertMode? mode,
-      UpsertClause<T, D>? onConflict,
+      InsertMode? syncMode,
+      UpsertClause<T, D>? syncOnConflict,
     )
         implementation,
   }) async {
     if (mode != null &&
         (mode == InsertMode.replace || mode == InsertMode.insertOrReplace)) {
       throw NetCoreSyncException(
-          "Unsupported mode: $mode. This mode is disabled because it may physically delete an existing already-synchronized row.");
+          "Unsupported mode: $mode. This mode is disabled because it may "
+          "physically delete an existing already-synchronized row.");
     }
-
-    return dataAccess.syncAction(
-      entity,
-      deleted,
-      (syncEntity, obtainedKnowledgeId) => implementation(
-        syncEntity,
-        mode,
-        onConflict?.resolve(dataAccess, obtainedKnowledgeId),
-      ),
+    String knowledgeId = await dataAccess.getLocalKnowledgeId();
+    Insertable<D> syncEntity = dataAccess.syncActionInsert(entity, knowledgeId);
+    return await implementation(
+      syncEntity,
+      mode,
+      await onConflict?.resolve(dataAccess),
     );
   }
 }
