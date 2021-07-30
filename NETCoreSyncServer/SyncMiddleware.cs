@@ -1,43 +1,53 @@
-using System.IO;
-using System.Linq;
-using System.Text;
-using System.Text.Json;
+using System;
+using System.Threading;
 using System.Threading.Tasks;
+using System.Net.WebSockets;
 using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Mvc.Infrastructure;
-using Microsoft.AspNetCore.Routing;
 
 namespace NETCoreSyncServer
 {
     internal class SyncMiddleware
     {
-        private readonly RequestDelegate _next;
-        private readonly string _path;
+        private readonly RequestDelegate next;
+        private readonly NETCoreSyncServerOptions netCoreSyncServerOptions;
 
-        public SyncMiddleware(RequestDelegate next, string path)
+        public SyncMiddleware(RequestDelegate next, NETCoreSyncServerOptions options)
         {
-            _next = next;
-            _path = path;
+            this.next = next;
+            netCoreSyncServerOptions = options;
         }
 
         public async Task Invoke(HttpContext httpContext, SyncService syncService)
         {
-            if (httpContext.Request.Path != _path)
+            if (httpContext.Request.Path != netCoreSyncServerOptions.Path)
             {
-                await _next(httpContext);
+                await next(httpContext);
                 return;
             }
 
-            if (!httpContext.Request.HasFormContentType)
+            if (!httpContext.WebSockets.IsWebSocketRequest)
             {
-                await httpContext.Response.WriteAsync("Must invoke with HTTP POST");
+                httpContext.Response.StatusCode = (int)StatusCodes.Status400BadRequest;
                 return;
             }
 
-            IFormFile? file = httpContext.Request.Form.Files.FirstOrDefault();
-
-            await httpContext.Response.WriteAsync("OK!");
+            using (WebSocket webSocket = await httpContext.WebSockets.AcceptWebSocketAsync())
+            {
+                await RunAsync(webSocket);
+            }
         }
 
+        private async Task RunAsync(WebSocket webSocket)
+        {
+            var buffer = new byte[netCoreSyncServerOptions.ReceiveBufferInBytes];
+            WebSocketReceiveResult result = await webSocket.ReceiveAsync(new ArraySegment<byte>(buffer), CancellationToken.None);
+            while (!result.CloseStatus.HasValue)
+            {
+                await webSocket.SendAsync(new ArraySegment<byte>(buffer, 0, result.Count), result.MessageType, result.EndOfMessage, CancellationToken.None);
+
+                result = await webSocket.ReceiveAsync(new ArraySegment<byte>(buffer), CancellationToken.None);
+            }
+            await webSocket.CloseAsync(result.CloseStatus.Value, result.CloseStatusDescription, CancellationToken.None);
+        }
     }
 }

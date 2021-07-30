@@ -1,8 +1,6 @@
 using System;
-using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.AspNetCore.Builder;
 using NETCoreSyncServer;
 
@@ -77,9 +75,15 @@ namespace Microsoft.Extensions.DependencyInjection
 
     public static class NETCoreSyncServerApplicationBuilderExtensions
     {
-        public static IApplicationBuilder UseNETCoreSyncServer(this IApplicationBuilder app, string path = "/netcoresyncserver")
+        public static IApplicationBuilder UseNETCoreSyncServer(this IApplicationBuilder app, NETCoreSyncServerOptions? options = null)
         {
-            return app.UseMiddleware<NETCoreSyncServer.SyncMiddleware>(path);
+            if (options == null) options = new NETCoreSyncServerOptions();
+
+            WebSocketOptions webSocketOptions = new WebSocketOptions();
+            webSocketOptions.KeepAliveInterval = TimeSpan.FromSeconds(options.KeepAliveIntervalInSeconds);
+
+            app.UseWebSockets(webSocketOptions);
+            return app.UseMiddleware<NETCoreSyncServer.SyncMiddleware>(options);
         }
     }
 }

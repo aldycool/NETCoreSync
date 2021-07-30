@@ -1,6 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Text;
 using System.Reflection;
 
 namespace NETCoreSyncServer
@@ -25,32 +23,4 @@ namespace NETCoreSyncServer
         {
         }
     }
-
-    // public class SyncConfigurationDuplicateTypeException : Exception
-    // {
-    //     public SyncConfigurationDuplicateTypeException(Type type) : base($"Duplicate Type found: {type.FullName}")
-    //     {
-    //     }
-    // }
-
-    // public class SyncConfigurationMissingSyncSchemaAttributeException : Exception
-    // {
-    //     public SyncConfigurationMissingSyncSchemaAttributeException(Type type) : base($"Missing {nameof(SyncSchemaAttribute)} for Type: {type.FullName}")
-    //     {
-    //     }
-    // }
-
-    // public class SyncEngineConstraintException : Exception
-    // {
-    //     public SyncEngineConstraintException(string errorMessage) : base(errorMessage)
-    //     {
-    //     }
-    // }
-
-    // public class SyncEngineMissingTypeInSyncConfigurationException : Exception
-    // {
-    //     public SyncEngineMissingTypeInSyncConfigurationException(Type missingType) : base($"Missing Type: {missingType.FullName} in {nameof(SyncConfiguration)}")
-    //     {
-    //     }
-    // }
 }

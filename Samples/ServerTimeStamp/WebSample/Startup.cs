@@ -55,7 +55,7 @@ namespace WebSample
 
             app.UseAuthorization();
 
-            app.UseNETCoreSyncServer("/custompath");
+            app.UseNETCoreSyncServer();
 
             app.UseEndpoints(endpoints =>
             {

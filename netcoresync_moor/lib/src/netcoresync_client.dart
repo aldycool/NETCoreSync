@@ -11,11 +11,6 @@ import 'client_update.dart';
 import 'client_delete.dart';
 import 'sync_handler.dart';
 
-enum SynchronizeDirection {
-  pushThenPull,
-  pullThenPush,
-}
-
 mixin NetCoreSyncClient on GeneratedDatabase {
   DataAccess? _dataAccess;
 
@@ -82,18 +77,16 @@ mixin NetCoreSyncClient on GeneratedDatabase {
   }
 
   Future<void> netCoreSyncSynchronize({
-    required String synchronizationId,
     required String url,
-    SynchronizeDirection synchronizeDirection =
-        SynchronizeDirection.pushThenPull,
     Map<String, dynamic> customInfo = const {},
   }) async {
     if (!netCoreSyncInitialized) throw NetCoreSyncNotInitializedException();
+    if (dataAccess.syncIdInfo == null) {
+      throw NetCoreSyncSyncIdInfoNotSetException();
+    }
     final syncHandler = SyncHandler(dataAccess);
     await syncHandler.synchronize(
-      synchronizationId: synchronizationId,
       url: url,
-      synchronizeDirection: synchronizeDirection,
       customInfo: customInfo,
     );
   }
