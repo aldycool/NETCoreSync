@@ -76,7 +76,7 @@ mixin NetCoreSyncClient on GeneratedDatabase {
     return dataAccess.syncIdInfo?.allSyncIds ?? "";
   }
 
-  Future<void> netCoreSyncSynchronize({
+  Future netCoreSyncSynchronize({
     required String url,
     Map<String, dynamic> customInfo = const {},
   }) async {

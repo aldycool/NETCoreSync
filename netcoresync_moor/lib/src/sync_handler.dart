@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:web_socket_channel/io.dart';
 import 'package:web_socket_channel/status.dart' as socket_channel_status;
 import 'netcoresync_exceptions.dart';
@@ -8,7 +9,7 @@ class SyncHandler {
 
   SyncHandler(this.dataAccess);
 
-  Future<void> synchronize({
+  Future synchronize({
     required String url,
     Map<String, dynamic> customInfo = const {},
   }) async {
@@ -17,12 +18,11 @@ class SyncHandler {
     }
 
     var channel = IOWebSocketChannel.connect(Uri.parse(url));
-    bool finished = false;
+
     int counter = 1;
     channel.sink.add('$counter = hello from client!');
-    channel.stream.listen((message) async {
+    StreamSubscription sub = channel.stream.listen((message) async {
       print(message);
-
       await Future.delayed(Duration(seconds: 1), () {});
 
       counter++;
@@ -30,14 +30,12 @@ class SyncHandler {
         channel.sink.add('$counter = hello from client!');
       } else {
         channel.sink.close(socket_channel_status.goingAway);
-        finished = true;
       }
     });
-    int waitFinish = 0;
-    while (!finished) {
-      await Future.delayed(Duration(seconds: 1), () {});
-      waitFinish++;
-      print("Waiting finished $waitFinish...");
-    }
+
+    Future futureSub = sub.asFuture();
+    return Future.wait([
+      futureSub,
+    ]);
   }
 }
