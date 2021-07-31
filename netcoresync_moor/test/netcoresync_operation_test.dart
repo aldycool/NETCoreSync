@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:moor/moor.dart';
 import 'package:test/test.dart';
 import 'package:uuid/uuid.dart';
@@ -792,6 +793,62 @@ void main() async {
         expect(colRemaining2.length, equals(2));
         expect(colRemaining2[0].read(database.persons.name), equals("A"));
         expect(colRemaining2[1].read(database.persons.name), equals("C"));
+      },
+    );
+
+    test(
+      "Sync Watches",
+      () async {
+        final stream = database.syncSelect(database.syncPersons).watch();
+
+        int numberOfCall = 0;
+        String? action;
+
+        stream.listen((persons) {
+          numberOfCall++;
+
+          if (numberOfCall == 1) {
+            expect(action, equals(null));
+          } else if (numberOfCall == 2) {
+            expect(action, equals("InsertCall"));
+            expect(persons.length, equals(1));
+            expect(persons[0].name, equals("A"));
+          } else if (numberOfCall == 3) {
+            expect(action, equals("UpdateCall"));
+            expect(persons.length, equals(1));
+            expect(persons[0].name, equals("B"));
+          } else if (numberOfCall == 4) {
+            expect(action, equals("DeleteCall"));
+            expect(persons.length, equals(0));
+          }
+        });
+        // pump now, because the listen handler will be automatically invoked
+        // during the first attach
+        await pumpEventQueue(times: 1);
+
+        action = "InsertCall";
+        database.syncInto(database.persons).syncInsert(
+              PersonsCompanion(
+                name: Value("A"),
+              ),
+            );
+        await pumpEventQueue(times: 1);
+
+        action = "UpdateCall";
+        final person =
+            await database.syncSelect(database.syncPersons).getSingle();
+        database.syncUpdate(database.persons).syncReplace(
+              person.copyWith(
+                name: "B",
+              ),
+            );
+        await pumpEventQueue(times: 1);
+
+        action = "DeleteCall";
+        (database.syncDelete(database.persons)
+              ..where((tbl) => tbl.name.equals("B")))
+            .go();
+        await pumpEventQueue(times: 1);
       },
     );
 
