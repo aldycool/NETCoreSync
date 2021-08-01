@@ -13,7 +13,8 @@ dependencies:
   meta: ^1.3.0 # https://pub.dev/packages/meta # ...Because every version of flutter_test from sdk depends on meta 1.3.0...
   moor: ^4.4.1 # https://pub.dev/packages/moor
   uuid: ^3.0.4 # https://pub.dev/packages/uuid
-  http: ^0.13.3 # https://pub.dev/packages/http
+  web_socket_channel: ^2.1.0 # https://pub.dev/packages/web_socket_channel
+  enum_to_string: ^2.0.1 # https://pub.dev/packages/enum_to_string
   archive: ^3.1.2 # https://pub.dev/packages/archive
 
 dev_dependencies:
@@ -26,8 +27,6 @@ dev_dependencies:
   path: ^1.8.0 # https://pub.dev/packages/path
   sqlite3_flutter_libs: ^0.5.0 # https://pub.dev/packages/sqlite3_flutter_libs
   version: ^2.0.0 # https://pub.dev/packages/version
-  web_socket_channel: ^2.1.0 # https://pub.dev/packages/web_socket_channel
-  
 
 dependency_overrides:
   netcoresync_moor_generator:

@@ -1,4 +1,3 @@
-import 'package:moor/moor.dart';
 import 'package:test/test.dart';
 import 'package:netcoresync_moor/netcoresync_moor.dart';
 import 'data/database.dart';
@@ -31,10 +30,6 @@ void main() async {
       database.netCoreSyncSetSyncIdInfo(SyncIdInfo(
         syncId: "abc",
       ));
-
-      await database
-          .syncInto(database.syncPersons)
-          .syncInsert(PersonsCompanion(name: Value("A")));
 
       await database.netCoreSyncSynchronize(
         url: "wss://localhost:5001/netcoresyncserver",

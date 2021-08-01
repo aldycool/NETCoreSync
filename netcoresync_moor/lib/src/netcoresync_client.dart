@@ -81,9 +81,6 @@ mixin NetCoreSyncClient on GeneratedDatabase {
     Map<String, dynamic> customInfo = const {},
   }) async {
     if (!netCoreSyncInitialized) throw NetCoreSyncNotInitializedException();
-    if (dataAccess.syncIdInfo == null) {
-      throw NetCoreSyncSyncIdInfoNotSetException();
-    }
     final syncHandler = SyncHandler(dataAccess);
     await syncHandler.synchronize(
       url: url,

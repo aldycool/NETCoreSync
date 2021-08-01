@@ -3,10 +3,21 @@ import 'package:moor/moor.dart';
 import 'data_access.dart';
 
 class SyncIdInfo {
-  late String syncId;
-  late List<String> linkedSyncIds;
+  String syncId;
+  List<String> linkedSyncIds;
 
   SyncIdInfo({required this.syncId, this.linkedSyncIds = const []});
+
+  SyncIdInfo.fromJson(Map<String, dynamic> json)
+      : syncId = json["syncId"],
+        linkedSyncIds = List.from(json["linkedSyncIds"]);
+
+  Map<String, dynamic> toJson() {
+    return <String, dynamic>{
+      "syncId": syncId,
+      "linkedSyncIds": linkedSyncIds,
+    };
+  }
 
   String get allSyncIds {
     StringBuffer buffer = StringBuffer();
