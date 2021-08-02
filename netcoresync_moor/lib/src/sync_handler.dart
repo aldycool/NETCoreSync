@@ -27,47 +27,44 @@ class SyncHandler {
     var channel = WebSocketChannel.connect(Uri.parse(url));
 
     String echoMessage = Uuid().v4();
-
-    final echoRequest = RequestMessage(
+    final request = RequestMessage(
       schemaVersion: dataAccess.database.schemaVersion,
       syncIdInfo: dataAccess.syncIdInfo!,
       basePayload: EchoRequestPayload(message: echoMessage),
     );
-    channel.sink.add(SyncMessages.compress(echoRequest));
+    channel.sink.add(SyncMessages.compress(request));
 
     StreamSubscription sub = channel.stream.listen((message) async {
-      ResponseMessage responseMessage = SyncMessages.decompress(message);
+      ResponseMessage response = SyncMessages.decompress(message);
 
-      if (EnumToString.fromString(
-              PayloadActions.values, responseMessage.action) ==
+      if (EnumToString.fromString(PayloadActions.values, response.action) ==
           PayloadActions.echoResponse) {
-        EchoResponsePayload echoResponsePayload =
-            EchoResponsePayload.fromJson(responseMessage.payload);
-        if (echoResponsePayload.message != echoMessage) {
+        EchoResponsePayload payload =
+            EchoResponsePayload.fromJson(response.payload);
+        if (payload.message != echoMessage) {
           throw NetCoreSyncException(
-              "Response echoMessage: ${echoResponsePayload.message} is "
+              "Response echoMessage: ${payload.message} is "
               "different than Request echoMessage: $echoMessage");
         }
 
-        final handshakeRequest = RequestMessage(
+        final request = RequestMessage(
           schemaVersion: dataAccess.database.schemaVersion,
           syncIdInfo: dataAccess.syncIdInfo!,
           basePayload: HandshakeRequestPayload(),
         );
-        channel.sink.add(SyncMessages.compress(handshakeRequest));
+        channel.sink.add(SyncMessages.compress(request));
       }
 
-      if (EnumToString.fromString(
-              PayloadActions.values, responseMessage.action) ==
+      if (EnumToString.fromString(PayloadActions.values, response.action) ==
           PayloadActions.handshakeResponse) {
-        HandshakeResponsePayload handshakeResponsePayload =
-            HandshakeResponsePayload.fromJson(responseMessage.payload);
-        print(handshakeResponsePayload.orderedClassNames);
+        HandshakeResponsePayload payload =
+            HandshakeResponsePayload.fromJson(response.payload);
+        print(payload.orderedClassNames);
         channel.sink.close(socket_channel_status.goingAway);
       }
     });
 
-    return Future.wait([
+    await Future.wait([
       sub.asFuture(),
     ]);
   }

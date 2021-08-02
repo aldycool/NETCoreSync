@@ -45,14 +45,26 @@ namespace NETCoreSyncServer
             int bufferSize = netCoreSyncServerOptions.SendReceiveBufferSizeInBytes;            
             while (true)
             {
-                RequestMessage? requestMessage = null;
+                RequestMessage? request = null;
 
                 using var msRequest = new MemoryStream();
                 ArraySegment<byte> bufferReceive = new ArraySegment<byte>(new byte[bufferSize]);
                 WebSocketReceiveResult? result;
                 do
                 {
-                    result = await webSocket.ReceiveAsync(bufferReceive, CancellationToken.None);
+                    try
+                    {
+                        result = await webSocket.ReceiveAsync(bufferReceive, CancellationToken.None);    
+                    }
+                    catch (WebSocketException wse)
+                    {
+                        // The remote party closed the WebSocket connection without completing the close handshake.
+                        if (wse.ErrorCode == 333514224)
+                        {
+                            return;
+                        }
+                        throw;
+                    }
                     if (bufferReceive.Array != null)
                     {
                         msRequest.Write(bufferReceive.Array!, bufferReceive.Offset, result.Count);
@@ -65,7 +77,7 @@ namespace NETCoreSyncServer
                 }
                 if (result.MessageType == WebSocketMessageType.Binary)
                 {
-                    requestMessage = await SyncMessages.Decompress(msRequest, bufferSize);
+                    request = await SyncMessages.Decompress(msRequest, bufferSize);
                 }
                 else
                 {
@@ -74,36 +86,36 @@ namespace NETCoreSyncServer
 
                 byte[]? responseBytes = null;
 
-                if (requestMessage != null && requestMessage.Action == PayloadActions.echoRequest.ToString())
+                if (request != null && request.Action == PayloadActions.echoRequest.ToString())
                 {
-                    EchoRequestPayload echoRequestPayload = BasePayload.FromPayload<EchoRequestPayload>(requestMessage.Payload);
-                    String echoMessage = echoRequestPayload.Message;
-                    EchoResponsePayload echoResponsePayload = new EchoResponsePayload() { Message = echoMessage };
-                    ResponseMessage echoResponse = ResponseMessage.FromPayload<EchoResponsePayload>(true, null, echoResponsePayload);
-                    responseBytes = await SyncMessages.Compress(echoResponse);
+                    EchoRequestPayload requestPayload = BasePayload.FromPayload<EchoRequestPayload>(request.Payload);
+                    String echoMessage = requestPayload.Message;
+                    EchoResponsePayload responsePayload = new EchoResponsePayload() { Message = echoMessage };
+                    ResponseMessage response = ResponseMessage.FromPayload<EchoResponsePayload>(true, null, responsePayload);
+                    responseBytes = await SyncMessages.Compress(response);
                 }
 
-                if (requestMessage != null && requestMessage.Action == PayloadActions.handshakeRequest.ToString())
+                if (request != null && request.Action == PayloadActions.handshakeRequest.ToString())
                 {
-                    HandshakeResponsePayload handshakeResponsePayload = new HandshakeResponsePayload()
+                    HandshakeResponsePayload responsePayload = new HandshakeResponsePayload()
                     {
                         OrderedClassNames = new List<string>() { "A", "B", "C" }
                     };
-                    ResponseMessage handshakeResponse = ResponseMessage.FromPayload<HandshakeResponsePayload>(true, null, handshakeResponsePayload);
-                    responseBytes = await SyncMessages.Compress(handshakeResponse);
+                    ResponseMessage response = ResponseMessage.FromPayload<HandshakeResponsePayload>(true, null, responsePayload);
+                    responseBytes = await SyncMessages.Compress(response);
                 }
 
                 if (responseBytes != null)
                 {
-                    using var msEncoded = new MemoryStream(responseBytes);
+                    using var msResponse = new MemoryStream(responseBytes);
                     byte[] bufferResponse = new byte[bufferSize];
                     int totalBytesRead = 0;
                     int bytesRead = 0;
-                    while ((bytesRead = await msEncoded.ReadAsync(bufferResponse, 0, bufferSize)) > 0)
+                    while ((bytesRead = await msResponse.ReadAsync(bufferResponse, 0, bufferSize)) > 0)
                     {
                         ArraySegment<byte> bufferSend = new ArraySegment<byte>(bufferResponse, 0, bytesRead);
                         totalBytesRead += bytesRead;
-                        bool endOfMessage = totalBytesRead == msEncoded.Length;
+                        bool endOfMessage = totalBytesRead == msResponse.Length;
                         await webSocket.SendAsync(bufferSend, WebSocketMessageType.Binary, endOfMessage, CancellationToken.None);
                     }
                 }
