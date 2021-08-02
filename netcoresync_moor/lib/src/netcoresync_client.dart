@@ -77,8 +77,9 @@ mixin NetCoreSyncClient on GeneratedDatabase {
     return dataAccess.syncIdInfo?.allSyncIds ?? "";
   }
 
-  Future<void> netCoreSyncSynchronize({
+  Future<SyncResult> netCoreSyncSynchronize({
     required String url,
+    SyncEvent? syncEvent,
     Map<String, dynamic> customInfo = const {},
   }) async {
     if (!netCoreSyncInitialized) throw NetCoreSyncNotInitializedException();
@@ -94,10 +95,11 @@ mixin NetCoreSyncClient on GeneratedDatabase {
         url: url,
       ),
       dataAccess: dataAccess,
+      syncEvent: syncEvent,
       customInfo: customInfo,
     );
 
-    await syncSession.synchronize();
+    return syncSession.synchronize();
   }
 
   SyncSimpleSelectStatement<T, R> syncSelect<T extends HasResultSet, R>(

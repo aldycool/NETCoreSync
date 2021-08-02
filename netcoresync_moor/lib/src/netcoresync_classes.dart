@@ -29,6 +29,21 @@ class SyncIdInfo {
   }
 }
 
+class SyncEvent {
+  void Function(String message, double current, double min, double max)?
+      progressEvent;
+
+  SyncEvent({this.progressEvent});
+}
+
+class SyncResult {
+  String? errorMessage;
+
+  SyncResult({
+    this.errorMessage,
+  });
+}
+
 abstract class SyncBaseTable<T extends HasResultSet, D> {
   Type get type;
 }

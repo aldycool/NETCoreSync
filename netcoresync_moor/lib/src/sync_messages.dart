@@ -57,13 +57,11 @@ class RequestMessage {
 class ResponseMessage {
   String id;
   String action;
-  bool isOk;
   String? errorMessage;
   Map<String, dynamic> payload;
 
   ResponseMessage({
     required this.id,
-    required this.isOk,
     this.errorMessage,
     required BasePayload basePayload,
   })  : action = basePayload.action,
@@ -73,7 +71,6 @@ class ResponseMessage {
     return <String, dynamic>{
       "id": id,
       "action": action,
-      "isOk": isOk,
       "errorMessage": errorMessage,
       "payload": payload,
     };
@@ -82,7 +79,6 @@ class ResponseMessage {
   ResponseMessage.fromJson(Map<String, dynamic> json)
       : id = json["id"],
         action = json["action"],
-        isOk = json["isOk"],
         errorMessage = json["errorMessage"],
         payload = Map.from(json["payload"]);
 }

@@ -8,6 +8,7 @@ namespace NETCoreSyncServer
     {
         public List<Type> Types { get; set; } = new List<Type>();
         public Dictionary<Type, TableInfo> TableInfos { get; set; } = new Dictionary<Type, TableInfo>();
+        public SyncEvent? SyncEvent { get; set; }
     }
 
     internal class TableInfo 

@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using System.Collections.Generic;
 using System.IO;
 using System.Threading;
@@ -35,11 +36,11 @@ namespace NETCoreSyncServer
 
             using (WebSocket webSocket = await httpContext.WebSockets.AcceptWebSocketAsync())
             {
-                await RunAsync(webSocket);
+                await RunAsync(webSocket, syncService);
             }
         }
 
-        private async Task RunAsync(WebSocket webSocket)
+        private async Task RunAsync(WebSocket webSocket, SyncService syncService)
         {
             Log("Server Opened");
             int bufferSize = netCoreSyncServerOptions.SendReceiveBufferSizeInBytes;            
@@ -85,30 +86,28 @@ namespace NETCoreSyncServer
                     throw new Exception($"Unexpected {nameof(result.MessageType)}: {result.MessageType.ToString()}");
                 }
 
-                byte[]? responseBytes = null;
+                ResponseMessage? response = null;
 
                 if (request != null && request.Action == PayloadActions.echoRequest.ToString())
                 {
-                    EchoRequestPayload requestPayload = BasePayload.FromPayload<EchoRequestPayload>(request.Payload);
-                    String echoMessage = requestPayload.Message;
-                    EchoResponsePayload responsePayload = new EchoResponsePayload() { Message = echoMessage };
-                    ResponseMessage response = ResponseMessage.FromPayload<EchoResponsePayload>(request.Id, true, null, responsePayload);
-                    responseBytes = await SyncMessages.Compress(response);
+                    response = HandleEcho(request);
+                } 
+                else if (request != null && request.Action == PayloadActions.handshakeRequest.ToString())
+                {
+                    response = HandleHandshake(request, syncService);
+                } 
+                else if (request != null)
+                {
+                    throw new Exception($"Unexpected {nameof(request.Action)}: {request.Action}");
+                }
+                else
+                {
+                    throw new Exception($"Unexpected {nameof(request)}: null");
                 }
 
-                if (request != null && request.Action == PayloadActions.handshakeRequest.ToString())
+                if (response != null)
                 {
-                    HandshakeRequestPayload requestPayload = BasePayload.FromPayload<HandshakeRequestPayload>(request.Payload);
-                    HandshakeResponsePayload responsePayload = new HandshakeResponsePayload()
-                    {
-                        OrderedClassNames = new List<string>() { "A", "B", "C" }
-                    };
-                    ResponseMessage response = ResponseMessage.FromPayload<HandshakeResponsePayload>(request.Id, true, null, responsePayload);
-                    responseBytes = await SyncMessages.Compress(response);
-                }
-
-                if (responseBytes != null)
-                {
+                    byte[] responseBytes = await SyncMessages.Compress(response);
                     using var msResponse = new MemoryStream(responseBytes);
                     byte[] bufferResponse = new byte[bufferSize];
                     int totalBytesRead = 0;
@@ -122,6 +121,30 @@ namespace NETCoreSyncServer
                     }
                 }
             }
+        }
+
+        private ResponseMessage? HandleEcho(RequestMessage request)
+        {
+            EchoRequestPayload requestPayload = BasePayload.FromPayload<EchoRequestPayload>(request.Payload);
+            String echoMessage = requestPayload.Message;
+            EchoResponsePayload responsePayload = new EchoResponsePayload() { Message = echoMessage };
+            return ResponseMessage.FromPayload<EchoResponsePayload>(request.Id, null, responsePayload);
+        }
+
+        private ResponseMessage? HandleHandshake(RequestMessage request, SyncService syncService)
+        {
+            HandshakeRequestPayload requestPayload = BasePayload.FromPayload<HandshakeRequestPayload>(request.Payload);
+            HandshakeResponsePayload responsePayload = new HandshakeResponsePayload()
+            {
+                OrderedClassNames = new List<string>(syncService.Types.Select(s => syncService.TableInfos[s].SyncTable.ClientClassName).ToArray())
+            };
+            string? errorMessage = null;
+            if (syncService.SyncEvent != null && syncService.SyncEvent.OnHandshake != null) 
+            {
+                errorMessage = syncService.SyncEvent.OnHandshake.Invoke(requestPayload, responsePayload);
+            }
+
+            return ResponseMessage.FromPayload<HandshakeResponsePayload>(request.Id, errorMessage, responsePayload);
         }
 
         void Log(string message)

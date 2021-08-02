@@ -46,7 +46,7 @@ namespace NETCoreSyncServer
         }   
     }
 
-    internal class SyncIdInfo
+    public class SyncIdInfo
     {
         public string SyncId { get; set; } = null!;
         public List<string> LinkedSyncIds { get; set; } = null!;
@@ -81,24 +81,22 @@ namespace NETCoreSyncServer
     {
         public string Id { get; set; } = null!;
         public string Action { get; set; } = null!;
-        public bool IsOk { get; set; }
         public string? ErrorMessage { get; set; }
         public Dictionary<string, object?> Payload { get; set; } = null!;
 
-        public static ResponseMessage FromPayload<T>(string id, bool isOk, string? errorMessage, T basePayload) where T : BasePayload
+        public static ResponseMessage FromPayload<T>(string id,  string? errorMessage, T basePayload) where T : BasePayload
         {
             return new ResponseMessage() 
             { 
                 Id = id,
                 Action = basePayload.Action, 
-                IsOk = isOk, 
                 ErrorMessage = errorMessage, 
                 Payload = basePayload.ToPayload<T>() 
             };
         }
     }
 
-    internal abstract class BasePayload
+    public abstract class BasePayload
     {
         abstract public string Action { get; }
         public Dictionary<string, object?> ToPayload<T>() where T : BasePayload
@@ -130,7 +128,7 @@ namespace NETCoreSyncServer
         public String Message { get; set; } = null!;
     }
 
-    internal class HandshakeRequestPayload : BasePayload
+    public class HandshakeRequestPayload : BasePayload
     {
         override public string Action => PayloadActions.handshakeRequest.ToString();
 
@@ -138,7 +136,7 @@ namespace NETCoreSyncServer
         public SyncIdInfo SyncIdInfo { get; set; } = null!;
     }
 
-    internal class HandshakeResponsePayload : BasePayload
+    public class HandshakeResponsePayload : BasePayload
     {
         override public string Action => PayloadActions.handshakeResponse.ToString();
 

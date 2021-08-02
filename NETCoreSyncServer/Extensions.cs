@@ -16,20 +16,20 @@ namespace Microsoft.Extensions.DependencyInjection
 {
     public static class NETCoreSyncServerServiceCollectionExtensions
     {
-        public static IServiceCollection AddNETCoreSyncServer(this IServiceCollection services)
+        public static IServiceCollection AddNETCoreSyncServer(this IServiceCollection services, SyncEvent? syncEvent = null)
         {
             Assembly? assembly = Assembly.GetEntryAssembly();
             if (assembly == null) throw new NETCoreSyncServerException("Unexpected null return value from Assembly.GetEntryAssembly(), are you calling from unmanaged code?");
-            return AddNETCoreSyncServer(services, new [] { (Assembly)assembly });
+            return AddNETCoreSyncServer(services, new [] { (Assembly)assembly }, syncEvent);
         }
 
-        public static IServiceCollection AddNETCoreSyncServer(this IServiceCollection services, Assembly[] assemblies)
+        public static IServiceCollection AddNETCoreSyncServer(this IServiceCollection services, Assembly[] assemblies, SyncEvent? syncEvent = null)
         {
             Type[] types = assemblies.SelectMany(sm => sm.GetTypes()).Where(w => Attribute.IsDefined(w, typeof(SyncTableAttribute))).ToArray();
-            return AddNETCoreSyncServer(services, types);
+            return AddNETCoreSyncServer(services, types, syncEvent);
         }
 
-        public static IServiceCollection AddNETCoreSyncServer(this IServiceCollection services, Type[] types)
+        public static IServiceCollection AddNETCoreSyncServer(this IServiceCollection services, Type[] types, SyncEvent? syncEvent = null)
         {
             if (types.Length == 0) throw new NETCoreSyncServerException("Cannot find classes annotated with SyncTableAttribute");
             Type[] invalidTypes = types.Where(w => !Attribute.IsDefined(w, typeof(SyncTableAttribute))).ToArray();
@@ -68,6 +68,7 @@ namespace Microsoft.Extensions.DependencyInjection
                 if (propertyInfoDeleted.PropertyType != typeof(bool)) throw new NETCoreSyncServerMismatchPropertyTypeException(propertyInfoDeleted, typeof(bool), type);
                 tableInfo.PropertyInfoDeleted = propertyInfoDeleted;
             }
+            syncService.SyncEvent = syncEvent;
             services.AddSingleton(syncService);
             return services;
         }

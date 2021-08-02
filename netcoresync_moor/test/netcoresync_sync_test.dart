@@ -31,9 +31,18 @@ void main() async {
         syncId: "abc",
       ));
 
-      await database.netCoreSyncSynchronize(
-        url: "wss://localhost:5001/netcoresyncserver",
+      final syncEvent = SyncEvent(
+        progressEvent: (message, current, min, max) =>
+            print("Progress message: $message, current: $current, min: $min, "
+                "max: $max"),
       );
+
+      final syncResult = await database.netCoreSyncSynchronize(
+        url: "wss://localhost:5001/netcoresyncserver",
+        syncEvent: syncEvent,
+      );
+
+      print("errorMessage: ${syncResult.errorMessage}");
     });
   });
 }

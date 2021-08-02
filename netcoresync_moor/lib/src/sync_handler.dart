@@ -11,7 +11,7 @@ class SyncHandler {
 
   late WebSocketChannel _channel;
   late StreamSubscription _subscription;
-  final Map<String, Completer<BasePayload>> _requests = {};
+  final Map<String, Completer<CompleterResult>> _requests = {};
 
   bool _connected = false;
   Completer _completerDone = Completer();
@@ -57,26 +57,26 @@ class SyncHandler {
     await _completerDone.future;
   }
 
-  Future<EchoResponsePayload> echo(
+  Future<CompleterResult> echo(
       {EchoRequestPayload payload =
           const EchoRequestPayload(message: "This is an echo message")}) async {
     _throwIfNotConnected();
     final request = RequestMessage(
       basePayload: payload,
     );
-    final completer = Completer<EchoResponsePayload>();
+    final completer = Completer<CompleterResult>();
     _requests[request.id] = completer;
     _channel.sink.add(SyncMessages.compress(request));
     return completer.future;
   }
 
-  Future<HandshakeResponsePayload> handshake(
+  Future<CompleterResult> handshake(
       {required HandshakeRequestPayload payload}) async {
     _throwIfNotConnected();
     final request = RequestMessage(
       basePayload: payload,
     );
-    final completer = Completer<HandshakeResponsePayload>();
+    final completer = Completer<CompleterResult>();
     _requests[request.id] = completer;
     _channel.sink.add(SyncMessages.compress(request));
     return completer.future;
@@ -100,7 +100,10 @@ class SyncHandler {
     }
 
     if (_requests.containsKey(response.id)) {
-      _requests[response.id]!.complete(responsePayload);
+      _requests[response.id]!.complete(CompleterResult(
+        errorMessage: response.errorMessage,
+        payload: responsePayload,
+      ));
       _requests.remove(response.id);
     }
   }
@@ -108,4 +111,14 @@ class SyncHandler {
   void _log(Object? object) {
     print(object);
   }
+}
+
+class CompleterResult {
+  String? errorMessage;
+  BasePayload payload;
+
+  CompleterResult({
+    this.errorMessage,
+    required this.payload,
+  });
 }

@@ -26,13 +26,32 @@ namespace WebSample
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
-            services.AddDbContext<DatabaseContext>(options => 
+            services.AddDbContext<DatabaseContext>(options =>
             {
                 options.UseNpgsql("Host=localhost;Database=NETCoreSyncServerTimeStampDB;Username=NETCoreSyncServerTimeStamp_User;Password=NETCoreSyncServerTimeStamp_Password");
             });
 
             services.AddControllersWithViews();
-            services.AddNETCoreSyncServer();
+
+            SyncEvent syncEvent = new SyncEvent();
+            syncEvent.OnHandshake = (request, response) => 
+            {
+                // This is a chance to force your users to upgrade their app first before continuing the sync process.
+                // App features shall evolve over time, along with its database, so the schema may also be changed.
+                // Server's database will always likely to represent the latest version, so forcing users to upgrade first
+                // seems the correct move to do. User upgrades (using Moor's Migration techniques) should bring existing
+                // databases to the latest changes, therefore it will be safe to continue the sync with the server's database.
+                // NOTE: Scenarios for supporting backward-compatibility (support older database schemas) seems too complicated,
+                // and will likely require NETCoreSyncServer component to do complex work + deeper integration, so this is not
+                // supported (for now).
+                // The following example shows what Moor's schemaVersion that is supported by the server's database.
+                if (request.SchemaVersion <= 0)
+                {
+                    return "Please update your application first before performing synchronization";
+                }
+                return null;
+            };
+            services.AddNETCoreSyncServer(syncEvent: syncEvent);
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
