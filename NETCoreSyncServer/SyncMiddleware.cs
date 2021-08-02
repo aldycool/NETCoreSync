@@ -35,13 +35,13 @@ namespace NETCoreSyncServer
 
             using (WebSocket webSocket = await httpContext.WebSockets.AcceptWebSocketAsync())
             {
-                
                 await RunAsync(webSocket);
             }
         }
 
         private async Task RunAsync(WebSocket webSocket)
         {
+            Log("Server Opened");
             int bufferSize = netCoreSyncServerOptions.SendReceiveBufferSizeInBytes;            
             while (true)
             {
@@ -58,9 +58,9 @@ namespace NETCoreSyncServer
                     }
                     catch (WebSocketException wse)
                     {
-                        // The remote party closed the WebSocket connection without completing the close handshake.
-                        if (wse.ErrorCode == 333514224)
+                        if (wse.Message == "The remote party closed the WebSocket connection without completing the close handshake.")
                         {
+                            Log("Server Forced Closed");
                             return;
                         }
                         throw;
@@ -73,6 +73,7 @@ namespace NETCoreSyncServer
                 if (result.CloseStatus.HasValue)
                 {
                     await webSocket.CloseAsync(result.CloseStatus.Value, result.CloseStatusDescription, CancellationToken.None);
+                    Log("Server Normal Closed");
                     return;
                 }
                 if (result.MessageType == WebSocketMessageType.Binary)
@@ -91,17 +92,18 @@ namespace NETCoreSyncServer
                     EchoRequestPayload requestPayload = BasePayload.FromPayload<EchoRequestPayload>(request.Payload);
                     String echoMessage = requestPayload.Message;
                     EchoResponsePayload responsePayload = new EchoResponsePayload() { Message = echoMessage };
-                    ResponseMessage response = ResponseMessage.FromPayload<EchoResponsePayload>(true, null, responsePayload);
+                    ResponseMessage response = ResponseMessage.FromPayload<EchoResponsePayload>(request.Id, true, null, responsePayload);
                     responseBytes = await SyncMessages.Compress(response);
                 }
 
                 if (request != null && request.Action == PayloadActions.handshakeRequest.ToString())
                 {
+                    HandshakeRequestPayload requestPayload = BasePayload.FromPayload<HandshakeRequestPayload>(request.Payload);
                     HandshakeResponsePayload responsePayload = new HandshakeResponsePayload()
                     {
                         OrderedClassNames = new List<string>() { "A", "B", "C" }
                     };
-                    ResponseMessage response = ResponseMessage.FromPayload<HandshakeResponsePayload>(true, null, responsePayload);
+                    ResponseMessage response = ResponseMessage.FromPayload<HandshakeResponsePayload>(request.Id, true, null, responsePayload);
                     responseBytes = await SyncMessages.Compress(response);
                 }
 
@@ -120,6 +122,11 @@ namespace NETCoreSyncServer
                     }
                 }
             }
+        }
+
+        void Log(string message)
+        {
+            System.Diagnostics.Debug.WriteLine(message);
         }
     }
 }

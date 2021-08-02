@@ -62,18 +62,16 @@ namespace NETCoreSyncServer
 
     internal class RequestMessage
     {
+        public string Id { get; set; } = Guid.NewGuid().ToString();
         public string Action { get; set; } = null!;
-        public int SchemaVersion { get; set; }
-        public SyncIdInfo SyncIdInfo { get; set; } = null!;
         public Dictionary<string, object?> Payload { get; set; } = null!;
 
-        public static RequestMessage FromPayload<T>(int schemaVersion, SyncIdInfo syncIdInfo, T basePayload) where T : BasePayload
+        public static RequestMessage FromPayload<T>(string id, T basePayload) where T : BasePayload
         {
             return new RequestMessage() 
             { 
+                Id = id,
                 Action = basePayload.Action, 
-                SchemaVersion = schemaVersion, 
-                SyncIdInfo = syncIdInfo, 
                 Payload = basePayload.ToPayload<T>() 
             };
         }
@@ -81,15 +79,17 @@ namespace NETCoreSyncServer
 
     internal class ResponseMessage
     {
+        public string Id { get; set; } = null!;
         public string Action { get; set; } = null!;
         public bool IsOk { get; set; }
         public string? ErrorMessage { get; set; }
         public Dictionary<string, object?> Payload { get; set; } = null!;
 
-        public static ResponseMessage FromPayload<T>(bool isOk, string? errorMessage, T basePayload) where T : BasePayload
+        public static ResponseMessage FromPayload<T>(string id, bool isOk, string? errorMessage, T basePayload) where T : BasePayload
         {
             return new ResponseMessage() 
             { 
+                Id = id,
                 Action = basePayload.Action, 
                 IsOk = isOk, 
                 ErrorMessage = errorMessage, 
@@ -133,6 +133,9 @@ namespace NETCoreSyncServer
     internal class HandshakeRequestPayload : BasePayload
     {
         override public string Action => PayloadActions.handshakeRequest.ToString();
+
+        public int SchemaVersion { get; set; }
+        public SyncIdInfo SyncIdInfo { get; set; } = null!;
     }
 
     internal class HandshakeResponsePayload : BasePayload

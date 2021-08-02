@@ -10,6 +10,7 @@ import 'client_insert.dart';
 import 'client_update.dart';
 import 'client_delete.dart';
 import 'sync_handler.dart';
+import 'sync_session.dart';
 
 mixin NetCoreSyncClient on GeneratedDatabase {
   DataAccess? _dataAccess;
@@ -76,16 +77,27 @@ mixin NetCoreSyncClient on GeneratedDatabase {
     return dataAccess.syncIdInfo?.allSyncIds ?? "";
   }
 
-  Future netCoreSyncSynchronize({
+  Future<void> netCoreSyncSynchronize({
     required String url,
     Map<String, dynamic> customInfo = const {},
   }) async {
     if (!netCoreSyncInitialized) throw NetCoreSyncNotInitializedException();
-    final syncHandler = SyncHandler(dataAccess);
-    await syncHandler.synchronize(
-      url: url,
+    if (dataAccess.syncIdInfo == null) {
+      throw NetCoreSyncSyncIdInfoNotSetException();
+    }
+    if (dataAccess.inTransaction()) {
+      throw NetCoreSyncMustNotInsideTransactionException();
+    }
+
+    SyncSession syncSession = SyncSession(
+      syncHandler: SyncHandler(
+        url: url,
+      ),
+      dataAccess: dataAccess,
       customInfo: customInfo,
     );
+
+    await syncSession.synchronize();
   }
 
   SyncSimpleSelectStatement<T, R> syncSelect<T extends HasResultSet, R>(

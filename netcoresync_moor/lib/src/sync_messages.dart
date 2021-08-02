@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:uuid/uuid.dart';
 import 'package:archive/archive.dart';
 import 'package:enum_to_string/enum_to_string.dart';
 import 'netcoresync_classes.dart';
@@ -29,41 +30,39 @@ enum PayloadActions {
 }
 
 class RequestMessage {
+  String id;
   String action;
-  int schemaVersion;
-  SyncIdInfo syncIdInfo;
   Map<String, dynamic> payload;
 
   RequestMessage({
-    required this.schemaVersion,
-    required this.syncIdInfo,
     required BasePayload basePayload,
-  })  : action = basePayload.action,
+  })  : id = Uuid().v4(),
+        action = basePayload.action,
         payload = basePayload.toJson();
 
   Map<String, dynamic> toJson() {
     return <String, dynamic>{
+      "id": id,
       "action": action,
-      "schemaVersion": schemaVersion,
-      "syncIdInfo": syncIdInfo.toJson(),
       "payload": payload,
     };
   }
 
   RequestMessage.fromJson(Map<String, dynamic> json)
-      : action = json["action"],
-        schemaVersion = json["schemaVersion"],
-        syncIdInfo = SyncIdInfo.fromJson(json["syncIdInfo"]),
+      : id = json["id"],
+        action = json["action"],
         payload = Map.from(json["payload"]);
 }
 
 class ResponseMessage {
+  String id;
   String action;
   bool isOk;
   String? errorMessage;
   Map<String, dynamic> payload;
 
   ResponseMessage({
+    required this.id,
     required this.isOk,
     this.errorMessage,
     required BasePayload basePayload,
@@ -72,6 +71,7 @@ class ResponseMessage {
 
   Map<String, dynamic> toJson() {
     return <String, dynamic>{
+      "id": id,
       "action": action,
       "isOk": isOk,
       "errorMessage": errorMessage,
@@ -80,7 +80,8 @@ class ResponseMessage {
   }
 
   ResponseMessage.fromJson(Map<String, dynamic> json)
-      : action = json["action"],
+      : id = json["id"],
+        action = json["action"],
         isOk = json["isOk"],
         errorMessage = json["errorMessage"],
         payload = Map.from(json["payload"]);
@@ -89,15 +90,17 @@ class ResponseMessage {
 abstract class BasePayload {
   String get action;
   Map<String, dynamic> toJson();
+
+  const BasePayload();
 }
 
 class EchoRequestPayload extends BasePayload {
   @override
   String get action => EnumToString.convertToString(PayloadActions.echoRequest);
 
-  String message;
+  final String message;
 
-  EchoRequestPayload({
+  const EchoRequestPayload({
     required this.message,
   });
 
@@ -117,9 +120,9 @@ class EchoResponsePayload extends BasePayload {
   String get action =>
       EnumToString.convertToString(PayloadActions.echoResponse);
 
-  String message;
+  final String message;
 
-  EchoResponsePayload({
+  const EchoResponsePayload({
     required this.message,
   });
 
@@ -139,14 +142,25 @@ class HandshakeRequestPayload extends BasePayload {
   String get action =>
       EnumToString.convertToString(PayloadActions.handshakeRequest);
 
-  HandshakeRequestPayload();
+  final int schemaVersion;
+  final SyncIdInfo syncIdInfo;
+
+  const HandshakeRequestPayload({
+    required this.schemaVersion,
+    required this.syncIdInfo,
+  });
 
   @override
   Map<String, dynamic> toJson() {
-    return <String, dynamic>{};
+    return <String, dynamic>{
+      "schemaVersion": schemaVersion,
+      "syncIdInfo": syncIdInfo.toJson(),
+    };
   }
 
-  HandshakeRequestPayload.fromJson(Map<String, dynamic> json);
+  HandshakeRequestPayload.fromJson(Map<String, dynamic> json)
+      : schemaVersion = json["schemaVersion"],
+        syncIdInfo = SyncIdInfo.fromJson(json["syncIdInfo"]);
 }
 
 class HandshakeResponsePayload extends BasePayload {
@@ -154,9 +168,9 @@ class HandshakeResponsePayload extends BasePayload {
   String get action =>
       EnumToString.convertToString(PayloadActions.handshakeResponse);
 
-  List<String> orderedClassNames;
+  final List<String> orderedClassNames;
 
-  HandshakeResponsePayload({
+  const HandshakeResponsePayload({
     required this.orderedClassNames,
   });
 
