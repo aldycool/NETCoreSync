@@ -5,20 +5,47 @@ import 'data_access.dart';
 import 'sync_messages.dart';
 
 class SyncSession {
-  final SyncHandler syncHandler;
+  late SyncHandler syncHandler;
   final DataAccess dataAccess;
   final SyncEvent? syncEvent;
   final Map<String, dynamic> customInfo;
 
   SyncSession({
-    required this.syncHandler,
     required this.dataAccess,
+    required String url,
     this.syncEvent,
     this.customInfo = const {},
-  });
+  }) {
+    syncHandler = SyncHandler(
+      url: url,
+    );
+  }
 
   Future<SyncResult> synchronize() async {
     final syncResult = SyncResult();
+
+    Future<void> localDisconnect() async {
+      progress("Disconnecting...");
+      if (syncHandler.connected) {
+        await syncHandler.disconnect();
+      }
+    }
+
+    Future<bool> localShouldTerminate({
+      required CompleterResult completerResult,
+      bool shouldDisconnect = true,
+    }) async {
+      if (completerResult.errorMessage != null ||
+          completerResult.error != null) {
+        syncResult.errorMessage = completerResult.errorMessage;
+        syncResult.error = completerResult.error;
+        if (shouldDisconnect) {
+          await localDisconnect();
+        }
+        return true;
+      }
+      return false;
+    }
 
     progress("Connecting...");
     syncHandler.connect();
@@ -30,8 +57,16 @@ class SyncSession {
     final echoResult = await syncHandler.echo(
       payload: echoRequestPayload,
     );
-    if (echoResult.errorMessage != null) {
-      syncResult.errorMessage = echoResult.errorMessage;
+    // Do not call disconnect if should terminate here, or else this will be
+    // stuck in syncHandler's await _channel.sink.close(). This is because this
+    // "Echo" call is the first request to validate connection, therefore, by
+    // the nature of web_socket_channel implementation, the connection is not
+    // actually "opened" (or established) yet. Read more here:
+    // https://github.com/dart-lang/web_socket_channel/issues/70
+    if (await localShouldTerminate(
+      completerResult: echoResult,
+      shouldDisconnect: false,
+    )) {
       return syncResult;
     }
     final echoResponsePayload = echoResult.payload as EchoResponsePayload;
@@ -66,16 +101,27 @@ class SyncSession {
     // read this: https://stevetalkscode.co.uk/middleware-styles
     final handshakeResult =
         await syncHandler.handshake(payload: handshakeRequestPayload);
-    if (handshakeResult.errorMessage != null) {
-      syncResult.errorMessage = handshakeResult.errorMessage;
+    if (await localShouldTerminate(
+      completerResult: handshakeResult,
+    )) {
       return syncResult;
     }
     final handshakeResponsePayload =
         handshakeResult.payload as HandshakeResponsePayload;
     print(handshakeResponsePayload.orderedClassNames);
 
-    progress("Disconnecting...");
-    await syncHandler.disconnect();
+    progress("Test send log...");
+    final logRequestPayload = LogRequestPayload(
+      message: "This is a [LOREM-IPSUM] test log, you should catch it!",
+    );
+    final logResult = await syncHandler.log(payload: logRequestPayload);
+    if (await localShouldTerminate(
+      completerResult: logResult,
+    )) {
+      return syncResult;
+    }
+
+    await localDisconnect();
 
     return syncResult;
   }

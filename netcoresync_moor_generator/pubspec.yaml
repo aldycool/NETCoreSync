@@ -19,6 +19,7 @@ dependencies:
   
 dev_dependencies:
   lints: ^1.0.1 # https://pub.dev/packages/lints
+  test: ^1.17.10 # https://pub.dev/packages/test
   build_runner: ^2.0.6 # https://pub.dev/packages/build_runner
 
 dependency_overrides:

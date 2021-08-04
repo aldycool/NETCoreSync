@@ -38,10 +38,7 @@ class SyncEvent {
 
 class SyncResult {
   String? errorMessage;
-
-  SyncResult({
-    this.errorMessage,
-  });
+  Object? error;
 }
 
 abstract class SyncBaseTable<T extends HasResultSet, D> {

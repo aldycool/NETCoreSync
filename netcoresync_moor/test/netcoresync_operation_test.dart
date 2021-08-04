@@ -10,7 +10,6 @@ import 'utils/helper.dart';
 
 void main() async {
   String testFilesFolder = ".test_files";
-  String databaseFileName = "netcoresync_moor_test.db";
   bool useInMemoryDatabase = true;
   bool logSqlStatements = false;
 
@@ -18,7 +17,7 @@ void main() async {
   // to skip
   Version currentVersion = await Helper.getLibraryVersion(
     testFilesFolder: testFilesFolder,
-    databaseFileName: databaseFileName,
+    databaseFileName: "netcoresync_operation_test_root.db",
     useInMemoryDatabase: useInMemoryDatabase,
     logSqlStatements: logSqlStatements,
   );
@@ -29,7 +28,7 @@ void main() async {
     setUp(() async {
       database = await Helper.setUpDatabase(
         testFilesFolder: testFilesFolder,
-        databaseFileName: databaseFileName,
+        databaseFileName: "netcoresync_operation_test_uninitialized.db",
         useInMemoryDatabase: useInMemoryDatabase,
         logSqlStatements: logSqlStatements,
       );
@@ -208,7 +207,7 @@ void main() async {
     setUp(() async {
       database = await Helper.setUpDatabase(
         testFilesFolder: testFilesFolder,
-        databaseFileName: databaseFileName,
+        databaseFileName: "netcoresync_operation_test_single.db",
         useInMemoryDatabase: useInMemoryDatabase,
         logSqlStatements: logSqlStatements,
       );
@@ -995,7 +994,7 @@ void main() async {
     setUp(() async {
       database = await Helper.setUpDatabase(
         testFilesFolder: testFilesFolder,
-        databaseFileName: databaseFileName,
+        databaseFileName: "netcoresync_operation_test_multi.db",
         useInMemoryDatabase: useInMemoryDatabase,
         logSqlStatements: logSqlStatements,
       );

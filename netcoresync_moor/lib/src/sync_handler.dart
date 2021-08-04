@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:netcoresync_moor/netcoresync_moor.dart';
+import 'package:uuid/uuid.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
 import 'package:web_socket_channel/status.dart' as socket_channel_status;
 import 'package:enum_to_string/enum_to_string.dart';
@@ -9,6 +10,7 @@ import 'sync_messages.dart';
 class SyncHandler {
   final String url;
 
+  final String _connectionId = Uuid().v4();
   late WebSocketChannel _channel;
   late StreamSubscription _subscription;
   final Map<String, Completer<CompleterResult>> _requests = {};
@@ -19,6 +21,8 @@ class SyncHandler {
   SyncHandler({
     required this.url,
   });
+
+  bool get connected => _connected;
 
   void _throwIfNotConnected() {
     if (!_connected) {
@@ -34,20 +38,46 @@ class SyncHandler {
     _channel = WebSocketChannel.connect(Uri.parse(url));
     _connected = true;
     _completerDone = Completer();
-    _log("Client Opened");
+    _log("Client Opened, connectionId: $_connectionId");
     _subscription = _channel.stream.listen(
       (message) => _onData(message),
+      onError: (error) {
+        _terminateActiveRequests(
+          error: error,
+        );
+      },
       onDone: () async => await _onDone(),
     );
   }
 
   Future<void> _onDone() async {
-    _log("Client Closed");
+    _log("Client Closed, connectionId: $_connectionId");
     _connected = false;
     await _subscription.cancel();
-    _requests.clear();
+    _terminateActiveRequests(
+      errorMessage: "Server is unresponsive by an unknown reason",
+    );
     if (!_completerDone.isCompleted) {
       _completerDone.complete();
+    }
+  }
+
+  void _terminateActiveRequests({
+    String? errorMessage,
+    Object? error,
+  }) {
+    assert(errorMessage != null || error != null);
+    if (_requests.isNotEmpty) {
+      for (var item in _requests.entries) {
+        if (!item.value.isCompleted) {
+          CompleterResult errorCompleterResult = CompleterResult(
+            errorMessage: errorMessage,
+            error: error,
+          );
+          item.value.complete(errorCompleterResult);
+        }
+      }
+      _requests.clear();
     }
   }
 
@@ -57,11 +87,11 @@ class SyncHandler {
     await _completerDone.future;
   }
 
-  Future<CompleterResult> echo(
-      {EchoRequestPayload payload =
-          const EchoRequestPayload(message: "This is an echo message")}) async {
+  Future<CompleterResult> handshake(
+      {required HandshakeRequestPayload payload}) async {
     _throwIfNotConnected();
     final request = RequestMessage(
+      connectionId: _connectionId,
       basePayload: payload,
     );
     final completer = Completer<CompleterResult>();
@@ -70,10 +100,24 @@ class SyncHandler {
     return completer.future;
   }
 
-  Future<CompleterResult> handshake(
-      {required HandshakeRequestPayload payload}) async {
+  Future<CompleterResult> echo(
+      {EchoRequestPayload payload =
+          const EchoRequestPayload(message: "This is an echo message")}) async {
     _throwIfNotConnected();
     final request = RequestMessage(
+      connectionId: _connectionId,
+      basePayload: payload,
+    );
+    final completer = Completer<CompleterResult>();
+    _requests[request.id] = completer;
+    _channel.sink.add(SyncMessages.compress(request));
+    return completer.future;
+  }
+
+  Future<CompleterResult> log({required LogRequestPayload payload}) async {
+    _throwIfNotConnected();
+    final request = RequestMessage(
+      connectionId: _connectionId,
       basePayload: payload,
     );
     final completer = Completer<CompleterResult>();
@@ -88,12 +132,16 @@ class SyncHandler {
     BasePayload responsePayload;
 
     if (EnumToString.fromString(PayloadActions.values, response.action) ==
+        PayloadActions.handshakeResponse) {
+      responsePayload = HandshakeResponsePayload.fromJson(response.payload);
+    } else if (EnumToString.fromString(
+            PayloadActions.values, response.action) ==
         PayloadActions.echoResponse) {
       responsePayload = EchoResponsePayload.fromJson(response.payload);
     } else if (EnumToString.fromString(
             PayloadActions.values, response.action) ==
-        PayloadActions.handshakeResponse) {
-      responsePayload = HandshakeResponsePayload.fromJson(response.payload);
+        PayloadActions.logResponse) {
+      responsePayload = LogResponsePayload.fromJson(response.payload);
     } else {
       throw NetCoreSyncException(
           "Unexpected response action: ${response.action}");
@@ -115,10 +163,28 @@ class SyncHandler {
 
 class CompleterResult {
   String? errorMessage;
-  BasePayload payload;
+  Object? error;
+  BasePayload? payload;
 
   CompleterResult({
     this.errorMessage,
-    required this.payload,
-  });
+    this.error,
+    this.payload,
+  }) {
+    assert(
+        (payload != null && errorMessage == null && error == null) ||
+            (payload == null && (errorMessage != null || error != null)),
+        "It's either a successful completer (indicated by payload without "
+        "errorMessage or error exception) or a failed completer (indicated "
+        "with null payload with either errorMessage (coming from Server) or "
+        "error exception (coming from internals)). On failed completer, if the "
+        "errorMessage is null and the error exception is not, then the "
+        "errorMessage will be taken from the error exception's message. This "
+        "is just for convenience during development. In production, error "
+        "exception should be checked first whether it carries sensitive "
+        "information to be presented to the end-users or not.");
+    if (errorMessage == null && error != null) {
+      errorMessage = error.toString();
+    }
+  }
 }

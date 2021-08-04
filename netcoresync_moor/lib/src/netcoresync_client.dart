@@ -9,7 +9,6 @@ import 'client_select.dart';
 import 'client_insert.dart';
 import 'client_update.dart';
 import 'client_delete.dart';
-import 'sync_handler.dart';
 import 'sync_session.dart';
 
 mixin NetCoreSyncClient on GeneratedDatabase {
@@ -91,10 +90,8 @@ mixin NetCoreSyncClient on GeneratedDatabase {
     }
 
     SyncSession syncSession = SyncSession(
-      syncHandler: SyncHandler(
-        url: url,
-      ),
       dataAccess: dataAccess,
+      url: url,
       syncEvent: syncEvent,
       customInfo: customInfo,
     );

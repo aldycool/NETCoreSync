@@ -54,22 +54,27 @@ namespace NETCoreSyncServer
 
     internal enum PayloadActions
     {
+        errorNotification,
         echoRequest,
         echoResponse,
         handshakeRequest,
-        handshakeResponse
+        handshakeResponse,
+        logRequest,
+        logResponse
     }
-
+    
     internal class RequestMessage
     {
+        public string ConnectionId { get; set; } = null!;
         public string Id { get; set; } = Guid.NewGuid().ToString();
         public string Action { get; set; } = null!;
         public Dictionary<string, object?> Payload { get; set; } = null!;
 
-        public static RequestMessage FromPayload<T>(string id, T basePayload) where T : BasePayload
+        public static RequestMessage FromPayload<T>(string connectionId, string id, T basePayload) where T : BasePayload
         {
             return new RequestMessage() 
             { 
+                ConnectionId = connectionId,
                 Id = id,
                 Action = basePayload.Action, 
                 Payload = basePayload.ToPayload<T>() 
@@ -114,18 +119,11 @@ namespace NETCoreSyncServer
         }
     }
 
-    internal class EchoRequestPayload : BasePayload
+    internal class ErrorNotificationPayload : BasePayload
     {
-        override public string Action => PayloadActions.echoRequest.ToString();
+        override public string Action => PayloadActions.errorNotification.ToString();
 
-        public String Message { get; set; } = null!;
-    }
-
-    internal class EchoResponsePayload : BasePayload
-    {
-        override public string Action => PayloadActions.echoResponse.ToString();
-
-        public String Message { get; set; } = null!;
+        public string Message { get; set; } = null!;
     }
 
     public class HandshakeRequestPayload : BasePayload
@@ -141,5 +139,31 @@ namespace NETCoreSyncServer
         override public string Action => PayloadActions.handshakeResponse.ToString();
 
         public List<string> OrderedClassNames { get; set; } = null!;
+    }
+
+    internal class EchoRequestPayload : BasePayload
+    {
+        override public string Action => PayloadActions.echoRequest.ToString();
+
+        public String Message { get; set; } = null!;
+    }
+
+    internal class EchoResponsePayload : BasePayload
+    {
+        override public string Action => PayloadActions.echoResponse.ToString();
+
+        public String Message { get; set; } = null!;
+    }
+
+    internal class LogRequestPayload : BasePayload
+    {
+        override public string Action => PayloadActions.logRequest.ToString();
+
+        public String Message { get; set; } = null!;
+    }
+
+    internal class LogResponsePayload : BasePayload
+    {
+        override public string Action => PayloadActions.logResponse.ToString();
     }
 }

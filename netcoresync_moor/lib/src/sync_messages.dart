@@ -23,18 +23,23 @@ class SyncMessages {
 }
 
 enum PayloadActions {
+  errorNotification,
   echoRequest,
   echoResponse,
   handshakeRequest,
   handshakeResponse,
+  logRequest,
+  logResponse,
 }
 
 class RequestMessage {
+  String connectionId;
   String id;
   String action;
   Map<String, dynamic> payload;
 
   RequestMessage({
+    required this.connectionId,
     required BasePayload basePayload,
   })  : id = Uuid().v4(),
         action = basePayload.action,
@@ -42,6 +47,7 @@ class RequestMessage {
 
   Map<String, dynamic> toJson() {
     return <String, dynamic>{
+      "connectionId": connectionId,
       "id": id,
       "action": action,
       "payload": payload,
@@ -49,7 +55,8 @@ class RequestMessage {
   }
 
   RequestMessage.fromJson(Map<String, dynamic> json)
-      : id = json["id"],
+      : connectionId = json["connectionId"],
+        id = json["id"],
         action = json["action"],
         payload = Map.from(json["payload"]);
 }
@@ -90,35 +97,15 @@ abstract class BasePayload {
   const BasePayload();
 }
 
-class EchoRequestPayload extends BasePayload {
-  @override
-  String get action => EnumToString.convertToString(PayloadActions.echoRequest);
-
-  final String message;
-
-  const EchoRequestPayload({
-    required this.message,
-  });
-
-  @override
-  Map<String, dynamic> toJson() {
-    return <String, dynamic>{
-      "message": message,
-    };
-  }
-
-  EchoRequestPayload.fromJson(Map<String, dynamic> json)
-      : message = json["message"];
-}
-
-class EchoResponsePayload extends BasePayload {
+// TODO: ErrorNotificationPayload is for Server informing uncaught exception to client (is this NECESSARY?)
+class ErrorNotificationPayload extends BasePayload {
   @override
   String get action =>
-      EnumToString.convertToString(PayloadActions.echoResponse);
+      EnumToString.convertToString(PayloadActions.errorNotification);
 
   final String message;
 
-  const EchoResponsePayload({
+  const ErrorNotificationPayload({
     required this.message,
   });
 
@@ -129,7 +116,7 @@ class EchoResponsePayload extends BasePayload {
     };
   }
 
-  EchoResponsePayload.fromJson(Map<String, dynamic> json)
+  ErrorNotificationPayload.fromJson(Map<String, dynamic> json)
       : message = json["message"];
 }
 
@@ -179,4 +166,82 @@ class HandshakeResponsePayload extends BasePayload {
 
   HandshakeResponsePayload.fromJson(Map<String, dynamic> json)
       : orderedClassNames = List.from(json["orderedClassNames"]);
+}
+
+class EchoRequestPayload extends BasePayload {
+  @override
+  String get action => EnumToString.convertToString(PayloadActions.echoRequest);
+
+  final String message;
+
+  const EchoRequestPayload({
+    required this.message,
+  });
+
+  @override
+  Map<String, dynamic> toJson() {
+    return <String, dynamic>{
+      "message": message,
+    };
+  }
+
+  EchoRequestPayload.fromJson(Map<String, dynamic> json)
+      : message = json["message"];
+}
+
+class EchoResponsePayload extends BasePayload {
+  @override
+  String get action =>
+      EnumToString.convertToString(PayloadActions.echoResponse);
+
+  final String message;
+
+  const EchoResponsePayload({
+    required this.message,
+  });
+
+  @override
+  Map<String, dynamic> toJson() {
+    return <String, dynamic>{
+      "message": message,
+    };
+  }
+
+  EchoResponsePayload.fromJson(Map<String, dynamic> json)
+      : message = json["message"];
+}
+
+class LogRequestPayload extends BasePayload {
+  @override
+  String get action => EnumToString.convertToString(PayloadActions.logRequest);
+
+  final String message;
+
+  const LogRequestPayload({
+    required this.message,
+  });
+
+  @override
+  Map<String, dynamic> toJson() {
+    return <String, dynamic>{
+      "message": message,
+    };
+  }
+
+  LogRequestPayload.fromJson(Map<String, dynamic> json)
+      : message = json["message"];
+}
+
+class LogResponsePayload extends BasePayload {
+  @override
+  String get action => EnumToString.convertToString(PayloadActions.logResponse);
+
+  const LogResponsePayload();
+
+  @override
+  Map<String, dynamic> toJson() {
+    return <String, dynamic>{};
+  }
+
+  LogResponsePayload.fromJson(Map<String, dynamic> json);
 }
