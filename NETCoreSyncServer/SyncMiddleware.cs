@@ -1,5 +1,6 @@
 using System;
 using System.Linq;
+using System.Text.Json;
 using System.Collections.Generic;
 using System.Collections.Concurrent;
 using System.IO;
@@ -49,7 +50,7 @@ namespace NETCoreSyncServer
 
         private async Task RunAsync(WebSocket webSocket, SyncService syncService)
         {
-            Log("Server Opened");
+            LogConnectionState(true, false);
             int bufferSize = netCoreSyncServerOptions.SendReceiveBufferSizeInBytes;
             string? connectionId = null;
             try
@@ -71,7 +72,7 @@ namespace NETCoreSyncServer
                         {
                             if (wse.Message == "The remote party closed the WebSocket connection without completing the close handshake.")
                             {
-                                Log("Server Forced Closed");
+                                LogConnectionState(false, true);
                                 return;
                             }
                             throw;
@@ -84,7 +85,7 @@ namespace NETCoreSyncServer
                     if (result.CloseStatus.HasValue)
                     {
                         await webSocket.CloseAsync(result.CloseStatus.Value, result.CloseStatusDescription, CancellationToken.None);
-                        Log("Server Normal Closed");
+                        LogConnectionState(false, false);
                         return;
                     }
                     if (result.MessageType == WebSocketMessageType.Binary)
@@ -106,6 +107,14 @@ namespace NETCoreSyncServer
                     else if (request != null && request.Action == PayloadActions.echoRequest.ToString())
                     {
                         response = HandleEcho(request);
+                    } 
+                    else if (request != null && request.Action == PayloadActions.delayRequest.ToString())
+                    {
+                        response = HandleDelay(request);
+                    } 
+                    else if (request != null && request.Action == PayloadActions.exceptionRequest.ToString())
+                    {
+                        response = HandleException(request);
                     } 
                     else if (request != null && request.Action == PayloadActions.logRequest.ToString())
                     {
@@ -156,7 +165,7 @@ namespace NETCoreSyncServer
                 {
                     throw new Exception("Connection is still active");    
                 }
-                Log($"Register ConnectionId: {request.ConnectionId}, activeConnections: {activeConnections.Count()}");
+                LogRegistrationState(true, request.ConnectionId, activeConnections.Count());
                 return request.ConnectionId;
             }
         }
@@ -168,7 +177,7 @@ namespace NETCoreSyncServer
                 {
                     activeConnections.Remove(connectionId, out _);
                 }
-                Log($"Unregister ConnectionId: {connectionId ?? "null"}, activeConnections: {activeConnections.Count()}");
+                LogRegistrationState(false, connectionId ?? "null", activeConnections.Count());
             }
         }
 
@@ -184,7 +193,6 @@ namespace NETCoreSyncServer
             {
                 errorMessage = syncService.SyncEvent.OnHandshake.Invoke(requestPayload, responsePayload);
             }
-
             return ResponseMessage.FromPayload<HandshakeResponsePayload>(request.Id, errorMessage, responsePayload);
         }
 
@@ -196,23 +204,68 @@ namespace NETCoreSyncServer
             return ResponseMessage.FromPayload<EchoResponsePayload>(request.Id, null, responsePayload);
         }
 
+        private ResponseMessage? HandleDelay(RequestMessage request)
+        {
+            DelayRequestPayload requestPayload = BasePayload.FromPayload<DelayRequestPayload>(request.Payload);
+            var t = Task.Run(async delegate
+            {
+                await Task.Delay(requestPayload.DelayInMs);
+            });
+            t.Wait();            
+            DelayResponsePayload responsePayload = new DelayResponsePayload();
+            return ResponseMessage.FromPayload<DelayResponsePayload>(request.Id, null, responsePayload);
+        }
+
+        private ResponseMessage? HandleException(RequestMessage request)
+        {
+            ExceptionRequestPayload requestPayload = BasePayload.FromPayload<ExceptionRequestPayload>(request.Payload);
+            if (requestPayload.RaiseOnRemote) {
+                throw new Exception(requestPayload.ErrorMessage);
+            }
+            DelayResponsePayload responsePayload = new DelayResponsePayload();
+            return ResponseMessage.FromPayload<DelayResponsePayload>(request.Id, null, responsePayload);
+        }
+
         private ResponseMessage? HandleLog(RequestMessage request)
         {
             LogRequestPayload requestPayload = BasePayload.FromPayload<LogRequestPayload>(request.Payload);
-            Log(requestPayload.Message);
+            Log(requestPayload.Log);
             LogResponsePayload responsePayload = new LogResponsePayload();
             return ResponseMessage.FromPayload<LogResponsePayload>(request.Id, null, responsePayload);
         }
 
-        void Log(string message)
+        void LogConnectionState(bool isOpened,  bool isForced)
         {
+            Log(new Dictionary<string, object?>() 
+            { 
+                ["Type"] = "ConnectionState", 
+                ["State"] = isOpened ? "Open" : "Closed",
+                ["Forced"] = isForced 
+            });
+        }
+
+        void LogRegistrationState(bool isRegistered, string connectionId, int activeConnections)
+        {
+            Log(new Dictionary<string, object?>() 
+            { 
+                ["Type"] = "RegistrationState", 
+                ["State"] = isRegistered ? "Registered" : "Unregistered",
+                ["ConnectionId"] = connectionId,
+                ["ActiveConnections"] = activeConnections  
+            });
+        }
+
+        void Log(Dictionary<string, object?> log)
+        {
+            string jsonLog = JsonSerializer.Serialize(log, SyncMessages.serializeOptions);
             if (logger != null)
             {
-                logger.LogDebug(message);
+                
+                logger.LogDebug(jsonLog);
             }
             else
             {
-                System.Diagnostics.Debug.WriteLine(message);
+                System.Diagnostics.Debug.WriteLine(log);
             }
         }
     }

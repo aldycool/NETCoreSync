@@ -33,6 +33,11 @@ namespace WebSample
 
             services.AddControllersWithViews();
 
+            // We can pass arguments to dotnet run (or dotnet myprogram.dll) like:
+            // If using "dotnet run" project root directory: dotnet run -- minimumSchemaVersion=100
+            // If executing dll: dotnet myprogram.dll minimumSchemaVersion=100
+            // If argument is not passed, then the default value will be used (int will be zero)
+            var testMinimumSchemaVersion = Configuration.GetValue<int>("minimumSchemaVersion");
             SyncEvent syncEvent = new SyncEvent();
             syncEvent.OnHandshake = (request, response) => 
             {
@@ -45,7 +50,7 @@ namespace WebSample
                 // and will likely require NETCoreSyncServer component to do complex work + deeper integration, so this is not
                 // supported (for now).
                 // The following example shows what Moor's schemaVersion that is supported by the server's database.
-                if (request.SchemaVersion <= 0)
+                if (request.SchemaVersion <= testMinimumSchemaVersion)
                 {
                     return "Please update your application first before performing synchronization";
                 }

@@ -23,11 +23,14 @@ class SyncMessages {
 }
 
 enum PayloadActions {
-  errorNotification,
-  echoRequest,
-  echoResponse,
   handshakeRequest,
   handshakeResponse,
+  echoRequest,
+  echoResponse,
+  delayRequest,
+  delayResponse,
+  exceptionRequest,
+  exceptionResponse,
   logRequest,
   logResponse,
 }
@@ -95,29 +98,6 @@ abstract class BasePayload {
   Map<String, dynamic> toJson();
 
   const BasePayload();
-}
-
-// TODO: ErrorNotificationPayload is for Server informing uncaught exception to client (is this NECESSARY?)
-class ErrorNotificationPayload extends BasePayload {
-  @override
-  String get action =>
-      EnumToString.convertToString(PayloadActions.errorNotification);
-
-  final String message;
-
-  const ErrorNotificationPayload({
-    required this.message,
-  });
-
-  @override
-  Map<String, dynamic> toJson() {
-    return <String, dynamic>{
-      "message": message,
-    };
-  }
-
-  ErrorNotificationPayload.fromJson(Map<String, dynamic> json)
-      : message = json["message"];
 }
 
 class HandshakeRequestPayload extends BasePayload {
@@ -211,25 +191,103 @@ class EchoResponsePayload extends BasePayload {
       : message = json["message"];
 }
 
-class LogRequestPayload extends BasePayload {
+class DelayRequestPayload extends BasePayload {
   @override
-  String get action => EnumToString.convertToString(PayloadActions.logRequest);
+  String get action =>
+      EnumToString.convertToString(PayloadActions.delayRequest);
 
-  final String message;
+  final int delayInMs;
 
-  const LogRequestPayload({
-    required this.message,
+  const DelayRequestPayload({
+    required this.delayInMs,
   });
 
   @override
   Map<String, dynamic> toJson() {
     return <String, dynamic>{
-      "message": message,
+      "delayInMs": delayInMs,
+    };
+  }
+
+  DelayRequestPayload.fromJson(Map<String, dynamic> json)
+      : delayInMs = json["delayInMs"];
+}
+
+class DelayResponsePayload extends BasePayload {
+  @override
+  String get action =>
+      EnumToString.convertToString(PayloadActions.delayResponse);
+
+  const DelayResponsePayload();
+
+  @override
+  Map<String, dynamic> toJson() {
+    return <String, dynamic>{};
+  }
+
+  DelayResponsePayload.fromJson(Map<String, dynamic> json);
+}
+
+class ExceptionRequestPayload extends BasePayload {
+  @override
+  String get action =>
+      EnumToString.convertToString(PayloadActions.exceptionRequest);
+
+  final bool raiseOnRemote;
+  final String errorMessage;
+
+  const ExceptionRequestPayload({
+    required this.raiseOnRemote,
+    required this.errorMessage,
+  });
+
+  @override
+  Map<String, dynamic> toJson() {
+    return <String, dynamic>{
+      "raiseOnRemote": raiseOnRemote,
+      "errorMessage": errorMessage,
+    };
+  }
+
+  ExceptionRequestPayload.fromJson(Map<String, dynamic> json)
+      : raiseOnRemote = json["raiseOnRemote"],
+        errorMessage = json["errorMessage"];
+}
+
+class ExceptionResponsePayload extends BasePayload {
+  @override
+  String get action =>
+      EnumToString.convertToString(PayloadActions.exceptionResponse);
+
+  const ExceptionResponsePayload();
+
+  @override
+  Map<String, dynamic> toJson() {
+    return <String, dynamic>{};
+  }
+
+  ExceptionResponsePayload.fromJson(Map<String, dynamic> json);
+}
+
+class LogRequestPayload extends BasePayload {
+  @override
+  String get action => EnumToString.convertToString(PayloadActions.logRequest);
+
+  final Map<String, dynamic> log;
+
+  const LogRequestPayload({
+    required this.log,
+  });
+
+  @override
+  Map<String, dynamic> toJson() {
+    return <String, dynamic>{
+      "message": log,
     };
   }
 
   LogRequestPayload.fromJson(Map<String, dynamic> json)
-      : message = json["message"];
+      : log = Map.from(json["message"]);
 }
 
 class LogResponsePayload extends BasePayload {

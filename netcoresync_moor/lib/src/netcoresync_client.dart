@@ -1,6 +1,5 @@
 import 'package:meta/meta.dart';
 import 'package:moor/moor.dart';
-import 'package:netcoresync_moor/netcoresync_moor.dart';
 import 'netcoresync_exceptions.dart';
 import 'netcoresync_engine.dart';
 import 'netcoresync_classes.dart';
@@ -32,6 +31,10 @@ mixin NetCoreSyncClient on GeneratedDatabase {
   }
 
   dynamic get netCoreSyncResolvedEngine => dataAccess.resolvedEngine;
+
+  void netCoreSyncSetLogger(void Function(Object? object) logger) {
+    dataAccess.logger = logger;
+  }
 
   SyncIdInfo? netCoreSyncGetSyncIdInfo() => dataAccess.syncIdInfo;
 

@@ -10,8 +10,15 @@ namespace NETCoreSyncServer
 {
     internal class SyncMessages
     {
-        public static JsonSerializerOptions serializeOptions => new JsonSerializerOptions() { PropertyNamingPolicy = JsonNamingPolicy.CamelCase };
-        public static JsonSerializerOptions deserializeOptions => new JsonSerializerOptions() { PropertyNameCaseInsensitive = true };
+        public static JsonSerializerOptions serializeOptions => new JsonSerializerOptions() 
+        { 
+            PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+            DictionaryKeyPolicy = JsonNamingPolicy.CamelCase,
+        };
+        public static JsonSerializerOptions deserializeOptions => new JsonSerializerOptions() 
+        { 
+            PropertyNameCaseInsensitive = true,
+        };
 
         public async static Task<byte[]> Compress(ResponseMessage responseMessage)
         {
@@ -54,11 +61,14 @@ namespace NETCoreSyncServer
 
     internal enum PayloadActions
     {
-        errorNotification,
-        echoRequest,
-        echoResponse,
         handshakeRequest,
         handshakeResponse,
+        echoRequest,
+        echoResponse,
+        delayRequest,
+        delayResponse,
+        exceptionRequest,
+        exceptionResponse,
         logRequest,
         logResponse
     }
@@ -119,13 +129,6 @@ namespace NETCoreSyncServer
         }
     }
 
-    internal class ErrorNotificationPayload : BasePayload
-    {
-        override public string Action => PayloadActions.errorNotification.ToString();
-
-        public string Message { get; set; } = null!;
-    }
-
     public class HandshakeRequestPayload : BasePayload
     {
         override public string Action => PayloadActions.handshakeRequest.ToString();
@@ -155,11 +158,36 @@ namespace NETCoreSyncServer
         public String Message { get; set; } = null!;
     }
 
+    internal class DelayRequestPayload : BasePayload
+    {
+        override public string Action => PayloadActions.delayRequest.ToString();
+
+        public int DelayInMs { get; set; }
+    }
+
+    internal class DelayResponsePayload : BasePayload
+    {
+        override public string Action => PayloadActions.delayResponse.ToString();
+    }
+
+    internal class ExceptionRequestPayload : BasePayload
+    {
+        override public string Action => PayloadActions.exceptionRequest.ToString();
+
+        public bool RaiseOnRemote { get; set; }
+        public String ErrorMessage { get; set; } = null!;
+    }
+
+    internal class ExceptionResponsePayload : BasePayload
+    {
+        override public string Action => PayloadActions.exceptionResponse.ToString();
+    }
+
     internal class LogRequestPayload : BasePayload
     {
         override public string Action => PayloadActions.logRequest.ToString();
 
-        public String Message { get; set; } = null!;
+        public Dictionary<string, object?> Log { get; set; } = null!;
     }
 
     internal class LogResponsePayload : BasePayload

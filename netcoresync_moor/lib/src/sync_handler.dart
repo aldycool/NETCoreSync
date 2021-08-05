@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'package:netcoresync_moor/netcoresync_moor.dart';
 import 'package:uuid/uuid.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
 import 'package:web_socket_channel/status.dart' as socket_channel_status;
@@ -9,50 +8,140 @@ import 'sync_messages.dart';
 
 class SyncHandler {
   final String url;
+  final void Function(Object?)? logger;
 
   final String _connectionId = Uuid().v4();
   late WebSocketChannel _channel;
   late StreamSubscription _subscription;
   final Map<String, Completer<CompleterResult>> _requests = {};
 
+  bool _connectRequested = false;
   bool _connected = false;
   Completer _completerDone = Completer();
 
   SyncHandler({
     required this.url,
+    this.logger,
   });
+
+  String get connectionId => _connectionId;
 
   bool get connected => _connected;
 
   void _throwIfNotConnected() {
+    if (!_connectRequested) {
+      throw NetCoreSyncException("WebSocket connection is not requested yet");
+    }
     if (!_connected) {
       throw NetCoreSyncException("WebSocket is not connected yet");
     }
   }
 
+  void _log(Object? object) {
+    if (logger != null) {
+      logger!(object);
+    }
+  }
+
+  void _logConnectionState({
+    String? message,
+    required String connectionId,
+    required bool connectRequested,
+    required bool connected,
+  }) {
+    _log({
+      "source": "syncHandler",
+      "type": "connectionState",
+      "message": message,
+      "connectionId": connectionId,
+      "connectRequested": connectRequested,
+      "connected": connected,
+    });
+  }
+
   void connect() {
+    if (_connectRequested) {
+      throw NetCoreSyncException("WebSocket connection is already requested");
+    }
     if (_connected) {
       throw NetCoreSyncException("WebSocket is already connected");
     }
-
     _channel = WebSocketChannel.connect(Uri.parse(url));
-    _connected = true;
+    _connectRequested = true;
     _completerDone = Completer();
-    _log("Client Opened, connectionId: $_connectionId");
+    _logConnectionState(
+      message: "Client connection requested",
+      connectionId: _connectionId,
+      connectRequested: _connectRequested,
+      connected: _connected,
+    );
     _subscription = _channel.stream.listen(
       (message) => _onData(message),
-      onError: (error) {
-        _terminateActiveRequests(
-          error: error,
-        );
-      },
+      onError: _onError,
       onDone: () async => await _onDone(),
     );
   }
 
+  void _onData(dynamic message) {
+    final response = SyncMessages.decompress(message);
+
+    BasePayload responsePayload;
+
+    if (EnumToString.fromString(PayloadActions.values, response.action) ==
+        PayloadActions.handshakeResponse) {
+      _connected = true;
+      _logConnectionState(
+        message: "Client connection opened",
+        connectionId: _connectionId,
+        connectRequested: _connectRequested,
+        connected: _connected,
+      );
+      responsePayload = HandshakeResponsePayload.fromJson(response.payload);
+    } else if (EnumToString.fromString(
+            PayloadActions.values, response.action) ==
+        PayloadActions.echoResponse) {
+      responsePayload = EchoResponsePayload.fromJson(response.payload);
+    } else if (EnumToString.fromString(
+            PayloadActions.values, response.action) ==
+        PayloadActions.delayResponse) {
+      responsePayload = DelayResponsePayload.fromJson(response.payload);
+    } else if (EnumToString.fromString(
+            PayloadActions.values, response.action) ==
+        PayloadActions.exceptionResponse) {
+      responsePayload = ExceptionResponsePayload.fromJson(response.payload);
+    } else if (EnumToString.fromString(
+            PayloadActions.values, response.action) ==
+        PayloadActions.logResponse) {
+      responsePayload = LogResponsePayload.fromJson(response.payload);
+    } else {
+      throw NetCoreSyncException(
+          "Unexpected response action: ${response.action}");
+    }
+
+    if (_requests.containsKey(response.id)) {
+      _requests[response.id]!.complete(CompleterResult(
+        errorMessage: response.errorMessage,
+        payload: responsePayload,
+      ));
+      _requests.remove(response.id);
+    }
+  }
+
+  void _onError(Object error) {
+    _terminateActiveRequests(
+      error: error,
+    );
+  }
+
   Future<void> _onDone() async {
-    _log("Client Closed, connectionId: $_connectionId");
+    _connectRequested = false;
     _connected = false;
+    _logConnectionState(
+      message: "Client connection closed",
+      connectionId: _connectionId,
+      connectRequested: _connectRequested,
+      connected: _connected,
+    );
     await _subscription.cancel();
     _terminateActiveRequests(
       errorMessage: "Server is unresponsive by an unknown reason",
@@ -81,14 +170,33 @@ class SyncHandler {
     }
   }
 
+  Future<CompleterResult> handshake(
+      {required HandshakeRequestPayload payload}) async {
+    if (!_connectRequested) {
+      throw NetCoreSyncException("WebSocket connection is not requested yet");
+    }
+    if (_connected) {
+      throw NetCoreSyncException("WebSocket is already connected");
+    }
+    final request = RequestMessage(
+      connectionId: _connectionId,
+      basePayload: payload,
+    );
+    final completer = Completer<CompleterResult>();
+    _requests[request.id] = completer;
+    _channel.sink.add(SyncMessages.compress(request));
+    return completer.future;
+  }
+
   Future<void> disconnect() async {
     _throwIfNotConnected();
     await _channel.sink.close(socket_channel_status.goingAway);
     await _completerDone.future;
   }
 
-  Future<CompleterResult> handshake(
-      {required HandshakeRequestPayload payload}) async {
+  Future<CompleterResult> echo(
+      {EchoRequestPayload payload =
+          const EchoRequestPayload(message: "This is an echo message")}) async {
     _throwIfNotConnected();
     final request = RequestMessage(
       connectionId: _connectionId,
@@ -100,10 +208,24 @@ class SyncHandler {
     return completer.future;
   }
 
-  Future<CompleterResult> echo(
-      {EchoRequestPayload payload =
-          const EchoRequestPayload(message: "This is an echo message")}) async {
+  Future<CompleterResult> delay({required DelayRequestPayload payload}) async {
     _throwIfNotConnected();
+    final request = RequestMessage(
+      connectionId: _connectionId,
+      basePayload: payload,
+    );
+    final completer = Completer<CompleterResult>();
+    _requests[request.id] = completer;
+    _channel.sink.add(SyncMessages.compress(request));
+    return completer.future;
+  }
+
+  Future<CompleterResult> exception(
+      {required ExceptionRequestPayload payload}) async {
+    _throwIfNotConnected();
+    if (!payload.raiseOnRemote) {
+      throw Exception(payload.errorMessage);
+    }
     final request = RequestMessage(
       connectionId: _connectionId,
       basePayload: payload,
@@ -125,40 +247,6 @@ class SyncHandler {
     _channel.sink.add(SyncMessages.compress(request));
     return completer.future;
   }
-
-  void _onData(dynamic message) {
-    final response = SyncMessages.decompress(message);
-
-    BasePayload responsePayload;
-
-    if (EnumToString.fromString(PayloadActions.values, response.action) ==
-        PayloadActions.handshakeResponse) {
-      responsePayload = HandshakeResponsePayload.fromJson(response.payload);
-    } else if (EnumToString.fromString(
-            PayloadActions.values, response.action) ==
-        PayloadActions.echoResponse) {
-      responsePayload = EchoResponsePayload.fromJson(response.payload);
-    } else if (EnumToString.fromString(
-            PayloadActions.values, response.action) ==
-        PayloadActions.logResponse) {
-      responsePayload = LogResponsePayload.fromJson(response.payload);
-    } else {
-      throw NetCoreSyncException(
-          "Unexpected response action: ${response.action}");
-    }
-
-    if (_requests.containsKey(response.id)) {
-      _requests[response.id]!.complete(CompleterResult(
-        errorMessage: response.errorMessage,
-        payload: responsePayload,
-      ));
-      _requests.remove(response.id);
-    }
-  }
-
-  void _log(Object? object) {
-    print(object);
-  }
 }
 
 class CompleterResult {
@@ -172,12 +260,10 @@ class CompleterResult {
     this.payload,
   }) {
     assert(
-        (payload != null && errorMessage == null && error == null) ||
-            (payload == null && (errorMessage != null || error != null)),
-        "It's either a successful completer (indicated by payload without "
-        "errorMessage or error exception) or a failed completer (indicated "
-        "with null payload with either errorMessage (coming from Server) or "
-        "error exception (coming from internals)). On failed completer, if the "
+        !(errorMessage != null && error != null),
+        "Failed completer (indicated with either errorMessage (coming from "
+        "Server) or error exception (coming from internals)) cannot have both "
+        "errorMessage and error specified. On failed completer, if the "
         "errorMessage is null and the error exception is not, then the "
         "errorMessage will be taken from the error exception's message. This "
         "is just for convenience during development. In production, error "

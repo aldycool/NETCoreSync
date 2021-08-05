@@ -1,14 +1,14 @@
-import 'package:netcoresync_moor/netcoresync_moor.dart';
-import 'package:uuid/uuid.dart';
+import 'package:enum_to_string/enum_to_string.dart';
+import 'netcoresync_classes.dart';
 import 'sync_handler.dart';
 import 'data_access.dart';
 import 'sync_messages.dart';
 
 class SyncSession {
-  late SyncHandler syncHandler;
   final DataAccess dataAccess;
   final SyncEvent? syncEvent;
   final Map<String, dynamic> customInfo;
+  late SyncHandler _syncHandler;
 
   SyncSession({
     required this.dataAccess,
@@ -16,68 +16,81 @@ class SyncSession {
     this.syncEvent,
     this.customInfo = const {},
   }) {
-    syncHandler = SyncHandler(
+    _syncHandler = SyncHandler(
       url: url,
+      logger: dataAccess.logger,
     );
   }
 
+  String get connectionId => _syncHandler.connectionId;
+
   Future<SyncResult> synchronize() async {
+    return _perform((
+      syncResult,
+      handshakeResult,
+    ) async {
+      final handshakeResponsePayload =
+          handshakeResult.payload as HandshakeResponsePayload;
+      // TODO: continue main synchronize logic when ready
+      print(handshakeResponsePayload.orderedClassNames);
+    });
+  }
+
+  Future<SyncResult> request({required BasePayload payload}) {
+    return _perform((
+      syncResult,
+      handshakeResult,
+    ) async {
+      // Only support a limited set of requests, mainly for integration tests
+      // only
+      late CompleterResult completerResult;
+      if (EnumToString.fromString(PayloadActions.values, payload.action) ==
+          PayloadActions.echoRequest) {
+        completerResult = await _syncHandler.echo(
+          payload: (payload as EchoRequestPayload),
+        );
+      } else if (EnumToString.fromString(
+              PayloadActions.values, payload.action) ==
+          PayloadActions.delayRequest) {
+        completerResult = await _syncHandler.delay(
+          payload: (payload as DelayRequestPayload),
+        );
+      } else if (EnumToString.fromString(
+              PayloadActions.values, payload.action) ==
+          PayloadActions.exceptionRequest) {
+        completerResult = await _syncHandler.exception(
+          payload: (payload as ExceptionRequestPayload),
+        );
+      } else if (EnumToString.fromString(
+              PayloadActions.values, payload.action) ==
+          PayloadActions.logRequest) {
+        completerResult = await _syncHandler.log(
+          payload: (payload as LogRequestPayload),
+        );
+      } else {
+        throw Exception("Unexpected payload.action: ${payload.action}");
+      }
+      if (await _shouldTerminate(
+        completerResult: completerResult,
+        syncResult: syncResult,
+      )) {
+        return;
+      }
+    });
+  }
+
+  Future<SyncResult> _perform(
+      Future<void> Function(
+    SyncResult syncResult,
+    CompleterResult handshakeResult,
+  )
+          action) async {
     final syncResult = SyncResult();
 
-    Future<void> localDisconnect() async {
-      progress("Disconnecting...");
-      if (syncHandler.connected) {
-        await syncHandler.disconnect();
-      }
-    }
+    _progress("Connecting...");
+    _syncHandler.connect();
 
-    Future<bool> localShouldTerminate({
-      required CompleterResult completerResult,
-      bool shouldDisconnect = true,
-    }) async {
-      if (completerResult.errorMessage != null ||
-          completerResult.error != null) {
-        syncResult.errorMessage = completerResult.errorMessage;
-        syncResult.error = completerResult.error;
-        if (shouldDisconnect) {
-          await localDisconnect();
-        }
-        return true;
-      }
-      return false;
-    }
-
-    progress("Connecting...");
-    syncHandler.connect();
-
-    progress("Validating connection...");
-    final echoRequestPayload = EchoRequestPayload(
-      message: Uuid().v4(),
-    );
-    final echoResult = await syncHandler.echo(
-      payload: echoRequestPayload,
-    );
-    // Do not call disconnect if should terminate here, or else this will be
-    // stuck in syncHandler's await _channel.sink.close(). This is because this
-    // "Echo" call is the first request to validate connection, therefore, by
-    // the nature of web_socket_channel implementation, the connection is not
-    // actually "opened" (or established) yet. Read more here:
-    // https://github.com/dart-lang/web_socket_channel/issues/70
-    if (await localShouldTerminate(
-      completerResult: echoResult,
-      shouldDisconnect: false,
-    )) {
-      return syncResult;
-    }
-    final echoResponsePayload = echoResult.payload as EchoResponsePayload;
-    if (echoResponsePayload.message != echoRequestPayload.message) {
-      syncResult.errorMessage =
-          "Response echoMessage: ${echoResponsePayload.message} is different "
-          "than Request echoMessage: ${echoRequestPayload.message}";
-      return syncResult;
-    }
-
-    progress("Acquiring access...");
+    _progress("Acquiring access...");
     final handshakeRequestPayload = HandshakeRequestPayload(
       schemaVersion: dataAccess.database.schemaVersion,
       syncIdInfo: dataAccess.syncIdInfo!,
@@ -100,33 +113,40 @@ class SyncSession {
     // linkedSyncIds. To know more the nature of the Middleware scope of life,
     // read this: https://stevetalkscode.co.uk/middleware-styles
     final handshakeResult =
-        await syncHandler.handshake(payload: handshakeRequestPayload);
-    if (await localShouldTerminate(
+        await _syncHandler.handshake(payload: handshakeRequestPayload);
+    // Do not call disconnect if should terminate here, or else this will be
+    // stuck in syncHandler's await _channel.sink.close(). This is because this
+    // "handshake" call is the first request that tries to send data to the
+    // server (by calling _channel.sink.add() for the first time). So any calls
+    // to sink.close() (the disconnect method) before establishing that the
+    // sink.add() is connected to the server, will not work and will await
+    // forever. I think this is the nature of web_socket_channel implementation,
+    // where the connection is not really "opened" (or established) yet before
+    // the first successful sink.add(). Read more here:
+    // https://github.com/dart-lang/web_socket_channel/issues/70. But, if the
+    // "handshake" call has already successfully send data, but returns an
+    // error (for example, an errorMessage is returned from the server handler
+    // OnHandshake), we should do disconnect here.
+    if (await _shouldTerminate(
       completerResult: handshakeResult,
+      syncResult: syncResult,
     )) {
-      return syncResult;
-    }
-    final handshakeResponsePayload =
-        handshakeResult.payload as HandshakeResponsePayload;
-    print(handshakeResponsePayload.orderedClassNames);
-
-    progress("Test send log...");
-    final logRequestPayload = LogRequestPayload(
-      message: "This is a [LOREM-IPSUM] test log, you should catch it!",
-    );
-    final logResult = await syncHandler.log(payload: logRequestPayload);
-    if (await localShouldTerminate(
-      completerResult: logResult,
-    )) {
+      if (_syncHandler.connected) {
+        await disconnect();
+      }
       return syncResult;
     }
 
-    await localDisconnect();
+    try {
+      await action(syncResult, handshakeResult);
+    } finally {
+      await disconnect();
+    }
 
     return syncResult;
   }
 
-  void progress(
+  void _progress(
     String message, {
     double current = 0,
     double min = 0,
@@ -138,5 +158,24 @@ class SyncSession {
       min,
       max,
     );
+  }
+
+  Future<bool> _shouldTerminate({
+    required CompleterResult completerResult,
+    required SyncResult syncResult,
+  }) async {
+    if (completerResult.errorMessage != null || completerResult.error != null) {
+      syncResult.errorMessage = completerResult.errorMessage;
+      syncResult.error = completerResult.error;
+      return true;
+    }
+    return false;
+  }
+
+  Future<void> disconnect() async {
+    _progress("Disconnecting...");
+    if (_syncHandler.connected) {
+      await _syncHandler.disconnect();
+    }
   }
 }

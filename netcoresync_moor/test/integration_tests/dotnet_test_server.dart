@@ -81,8 +81,9 @@ class DotnetTestServer {
 
   late Process _processServer;
   final Map<String, CaptureOutputListener> _listeners = {};
+  List<String> logs = [];
 
-  Future<bool> start() async {
+  Future<bool> start({List<String> args = const []}) async {
     log(
       "dotnet executable path: $dotnetExecutablePath",
       printStdout,
@@ -97,6 +98,7 @@ class DotnetTestServer {
       dotnetExecutablePath,
       [
         dllFileName,
+        ...args,
       ],
       workingDirectory: dllDirectory,
       environment: {
@@ -133,10 +135,12 @@ class DotnetTestServer {
         }
         return;
       }
+      String cleanedLine = line.replaceAll(_ansiPattern, "").trim();
+      logs.add(cleanedLine);
       List<String> listenerKeys = _listeners.keys.toList();
       for (var i = 0; i < listenerKeys.length; i++) {
         String id = listenerKeys[i];
-        _listeners[id]!.add(line.replaceAll(_ansiPattern, "").trim());
+        _listeners[id]!.add(cleanedLine);
       }
     });
     await completerStartup.future;

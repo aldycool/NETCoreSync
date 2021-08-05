@@ -12,6 +12,7 @@ class DataAccess<G extends GeneratedDatabase> extends DatabaseAccessor<G> {
 
   SyncIdInfo? syncIdInfo;
   late String activeSyncId;
+  void Function(Object? object)? logger;
 
   DataAccess(
     G generatedDatabase,
