@@ -9,6 +9,7 @@ using System.Threading.Tasks;
 using System.Net.WebSockets;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Hosting;
 
 
 namespace NETCoreSyncServer
@@ -17,7 +18,8 @@ namespace NETCoreSyncServer
     {
         private readonly RequestDelegate next;
         private readonly NETCoreSyncServerOptions netCoreSyncServerOptions;
-        private ConcurrentDictionary<string, SyncIdInfo> activeConnections = new ConcurrentDictionary<string, SyncIdInfo>();
+        private ConcurrentDictionary<string, SyncIdInfo> activeConnectionsOld = new ConcurrentDictionary<string, SyncIdInfo>();
+        private ConcurrentDictionary<string, Dictionary<string, Object>> activeConnections = new ConcurrentDictionary<string, Dictionary<string, object>>();
         ILogger<SyncMiddleware>? logger;
 
         public SyncMiddleware(RequestDelegate next, NETCoreSyncServerOptions options)
@@ -26,7 +28,7 @@ namespace NETCoreSyncServer
             netCoreSyncServerOptions = options;
         }
 
-        public async Task Invoke(HttpContext httpContext, SyncService syncService, ILogger<SyncMiddleware> logger)
+        public async Task Invoke(HttpContext httpContext, IHostApplicationLifetime hostApplicationLifetime, SyncService syncService, ILogger<SyncMiddleware> logger)
         {
             this.logger = logger;
 
@@ -44,39 +46,34 @@ namespace NETCoreSyncServer
 
             using (WebSocket webSocket = await httpContext.WebSockets.AcceptWebSocketAsync())
             {
-                await RunAsync(webSocket, syncService);
+                await RunAsync(hostApplicationLifetime, syncService, webSocket);
             }
         }
 
-        private async Task RunAsync(WebSocket webSocket, SyncService syncService)
+        private async Task RunAsync(IHostApplicationLifetime hostApplicationLifetime, SyncService syncService, WebSocket webSocket)
         {
-            LogConnectionState(true, false);
             int bufferSize = netCoreSyncServerOptions.SendReceiveBufferSizeInBytes;
-            string? connectionId = null;
+            string connectionId = Guid.NewGuid().ToString();
+            AddConnection(connectionId);
+            bool notifyConnected = false;
             try
             {
-                while (true)
+                while (webSocket.State.HasFlag(WebSocketState.Open))
                 {
-                    RequestMessage? request = null;
+                    if (!notifyConnected)
+                    {
+                        var connectedResponse = ResponseMessage.FromPayload<ConnectedNotificationPayload>(connectionId, null, new ConnectedNotificationPayload());
+                        await Send(webSocket, connectedResponse, bufferSize, hostApplicationLifetime.ApplicationStopping);
+                        notifyConnected = true;
+                    }
 
+                    RequestMessage? request = null;
                     using var msRequest = new MemoryStream();
                     ArraySegment<byte> bufferReceive = new ArraySegment<byte>(new byte[bufferSize]);
                     WebSocketReceiveResult? result;
                     do
                     {
-                        try
-                        {
-                            result = await webSocket.ReceiveAsync(bufferReceive, CancellationToken.None);    
-                        }
-                        catch (WebSocketException wse)
-                        {
-                            if (wse.Message == "The remote party closed the WebSocket connection without completing the close handshake.")
-                            {
-                                LogConnectionState(false, true);
-                                return;
-                            }
-                            throw;
-                        }
+                        result = await webSocket.ReceiveAsync(bufferReceive, hostApplicationLifetime.ApplicationStopping);    
                         if (bufferReceive.Array != null)
                         {
                             msRequest.Write(bufferReceive.Array!, bufferReceive.Offset, result.Count);
@@ -84,9 +81,7 @@ namespace NETCoreSyncServer
                     } while (!result.CloseStatus.HasValue && !result.EndOfMessage);
                     if (result.CloseStatus.HasValue)
                     {
-                        await webSocket.CloseAsync(result.CloseStatus.Value, result.CloseStatusDescription, CancellationToken.None);
-                        LogConnectionState(false, false);
-                        return;
+                        break;
                     }
                     if (result.MessageType == WebSocketMessageType.Binary)
                     {
@@ -98,28 +93,46 @@ namespace NETCoreSyncServer
                     }
 
                     ResponseMessage? response = null;
-
-                    if (request != null && request.Action == PayloadActions.handshakeRequest.ToString())
+                    if (request != null && request.Action == PayloadActions.commandRequest.ToString())
                     {
-                        connectionId = RegisterConnection(request);
-                        response = HandleHandshake(request, syncService);
+                        CommandRequestPayload requestPayload = BasePayload.FromPayload<CommandRequestPayload>(request.Payload);
+                        if (requestPayload.Data.ContainsKey("commandName")) 
+                        {
+                            string commandName = Convert.ToString(requestPayload.Data["commandName"]) ?? "";
+                            if (commandName == "delay")
+                            {
+                                if (int.TryParse(Convert.ToString(requestPayload.Data["delayInMs"]), out int delayInMs))
+                                {
+                                    LogRequestState(connectionId, request.Id, request.Action, $"commandName: {commandName}, delayInMs: {delayInMs}", false);
+                                    await Task.Delay(delayInMs, hostApplicationLifetime.ApplicationStopping);
+                                    LogRequestState(connectionId, request.Id, request.Action, $"commandName: {commandName}, delayInMs: {delayInMs}", true);
+                                }
+                            }
+                            if (commandName == "exception")
+                            {
+                                string commandErrorMessage = Convert.ToString(requestPayload.Data["errorMessage"]) ?? "null";
+                                LogRequestState(connectionId, request.Id, request.Action, $"commandName: {commandName}, errorMessage: {commandErrorMessage}", false);
+                                throw new Exception(commandErrorMessage);
+                            }
+                        }
+                        CommandResponsePayload responsePayload = new CommandResponsePayload();
+                        responsePayload.Data = new Dictionary<string, object?>(requestPayload.Data);
+                        response = ResponseMessage.FromPayload<CommandResponsePayload>(request.Id, null, responsePayload);
                     }
-                    else if (request != null && request.Action == PayloadActions.echoRequest.ToString())
+                    else if (request != null && request.Action == PayloadActions.handshakeRequest.ToString())
                     {
-                        response = HandleEcho(request);
-                    } 
-                    else if (request != null && request.Action == PayloadActions.delayRequest.ToString())
-                    {
-                        response = HandleDelay(request);
-                    } 
-                    else if (request != null && request.Action == PayloadActions.exceptionRequest.ToString())
-                    {
-                        response = HandleException(request);
-                    } 
-                    else if (request != null && request.Action == PayloadActions.logRequest.ToString())
-                    {
-                        response = HandleLog(request);
-                    } 
+                        HandshakeRequestPayload requestPayload = BasePayload.FromPayload<HandshakeRequestPayload>(request.Payload);
+                        HandshakeResponsePayload responsePayload = new HandshakeResponsePayload()
+                        {
+                            OrderedClassNames = new List<string>(syncService.Types.Select(s => syncService.TableInfos[s].SyncTable.ClientClassName).ToArray())
+                        };
+                        string? errorMessage = null;
+                        if (syncService.SyncEvent != null && syncService.SyncEvent.OnHandshake != null) 
+                        {
+                            errorMessage = syncService.SyncEvent.OnHandshake.Invoke(requestPayload, responsePayload);
+                        }
+                        response = ResponseMessage.FromPayload<HandshakeResponsePayload>(request.Id, errorMessage, responsePayload);                        
+                    }
                     else if (request != null)
                     {
                         throw new Exception($"Unexpected {nameof(request.Action)}: {request.Action}");
@@ -131,128 +144,101 @@ namespace NETCoreSyncServer
 
                     if (response != null)
                     {
-                        byte[] responseBytes = await SyncMessages.Compress(response);
-                        using var msResponse = new MemoryStream(responseBytes);
-                        byte[] bufferResponse = new byte[bufferSize];
-                        int totalBytesRead = 0;
-                        int bytesRead = 0;
-                        while ((bytesRead = await msResponse.ReadAsync(bufferResponse, 0, bufferSize)) > 0)
-                        {
-                            ArraySegment<byte> bufferSend = new ArraySegment<byte>(bufferResponse, 0, bytesRead);
-                            totalBytesRead += bytesRead;
-                            bool endOfMessage = totalBytesRead == msResponse.Length;
-                            await webSocket.SendAsync(bufferSend, WebSocketMessageType.Binary, endOfMessage, CancellationToken.None);
-                        }
+                        await Send(webSocket, response, bufferSize, hostApplicationLifetime.ApplicationStopping);
                     }
                 }
             }
-            catch (System.Exception)
+            catch(Exception ex)
             {
-                throw;
+                if (ex is WebSocketException && ex.Message == "The remote party closed the WebSocket connection without completing the close handshake.")
+                {
+                    LogPrematureClosure(connectionId);
+                }
+                else if (ex is OperationCanceledException)
+                {
+                    LogCanceledOperation(connectionId);
+                }
+                else
+                {
+                    throw;
+                }
             }
             finally
             {
-                UnregisterConnection(connectionId);
-            }           
-        }
-
-        private string RegisterConnection(RequestMessage request)
-        {
-            lock (this)
-            {
-                HandshakeRequestPayload requestPayload = BasePayload.FromPayload<HandshakeRequestPayload>(request.Payload);
-                if (!activeConnections.TryAdd(request.ConnectionId, requestPayload.SyncIdInfo))
+                RemoveConnection(connectionId);
+                try
                 {
-                    throw new Exception("Connection is still active");    
+                    await webSocket.CloseAsync(WebSocketCloseStatus.NormalClosure, "Socket Closed", hostApplicationLifetime.ApplicationStopping);
                 }
-                LogRegistrationState(true, request.ConnectionId, activeConnections.Count());
-                return request.ConnectionId;
-            }
-        }
-        private void UnregisterConnection(string? connectionId)
-        {
-            lock (this)
-            {
-                if (connectionId != null)
-                {
-                    activeConnections.Remove(connectionId, out _);
-                }
-                LogRegistrationState(false, connectionId ?? "null", activeConnections.Count());
+                catch {}
             }
         }
 
-        private ResponseMessage? HandleHandshake(RequestMessage request, SyncService syncService)
+        void AddConnection(String connectionId)
         {
-            HandshakeRequestPayload requestPayload = BasePayload.FromPayload<HandshakeRequestPayload>(request.Payload);
-            HandshakeResponsePayload responsePayload = new HandshakeResponsePayload()
+            activeConnections.TryAdd(connectionId, new Dictionary<string, object>());
+            LogConnectionState(connectionId, true);
+        }
+
+        void RemoveConnection(String connectionId)
+        {
+            activeConnections.Remove(connectionId, out _);
+            LogConnectionState(connectionId, false);
+        }
+
+        async Task Send(WebSocket webSocket, ResponseMessage response, int bufferSize, CancellationToken cancellationToken) {
+            byte[] responseBytes = await SyncMessages.Compress(response);
+            using var msResponse = new MemoryStream(responseBytes);
+            byte[] bufferResponse = new byte[bufferSize];
+            int totalBytesRead = 0;
+            int bytesRead = 0;
+            while ((bytesRead = await msResponse.ReadAsync(bufferResponse, 0, bufferSize)) > 0)
             {
-                OrderedClassNames = new List<string>(syncService.Types.Select(s => syncService.TableInfos[s].SyncTable.ClientClassName).ToArray())
-            };
-            string? errorMessage = null;
-            if (syncService.SyncEvent != null && syncService.SyncEvent.OnHandshake != null) 
-            {
-                errorMessage = syncService.SyncEvent.OnHandshake.Invoke(requestPayload, responsePayload);
+                ArraySegment<byte> bufferSend = new ArraySegment<byte>(bufferResponse, 0, bytesRead);
+                totalBytesRead += bytesRead;
+                bool endOfMessage = totalBytesRead == msResponse.Length;
+                await webSocket.SendAsync(bufferSend, WebSocketMessageType.Binary, endOfMessage, cancellationToken);
             }
-            return ResponseMessage.FromPayload<HandshakeResponsePayload>(request.Id, errorMessage, responsePayload);
         }
-
-        private ResponseMessage? HandleEcho(RequestMessage request)
-        {
-            EchoRequestPayload requestPayload = BasePayload.FromPayload<EchoRequestPayload>(request.Payload);
-            String echoMessage = requestPayload.Message;
-            EchoResponsePayload responsePayload = new EchoResponsePayload() { Message = echoMessage };
-            return ResponseMessage.FromPayload<EchoResponsePayload>(request.Id, null, responsePayload);
-        }
-
-        private ResponseMessage? HandleDelay(RequestMessage request)
-        {
-            DelayRequestPayload requestPayload = BasePayload.FromPayload<DelayRequestPayload>(request.Payload);
-            var t = Task.Run(async delegate
-            {
-                await Task.Delay(requestPayload.DelayInMs);
-            });
-            t.Wait();            
-            DelayResponsePayload responsePayload = new DelayResponsePayload();
-            return ResponseMessage.FromPayload<DelayResponsePayload>(request.Id, null, responsePayload);
-        }
-
-        private ResponseMessage? HandleException(RequestMessage request)
-        {
-            ExceptionRequestPayload requestPayload = BasePayload.FromPayload<ExceptionRequestPayload>(request.Payload);
-            if (requestPayload.RaiseOnRemote) {
-                throw new Exception(requestPayload.ErrorMessage);
-            }
-            DelayResponsePayload responsePayload = new DelayResponsePayload();
-            return ResponseMessage.FromPayload<DelayResponsePayload>(request.Id, null, responsePayload);
-        }
-
-        private ResponseMessage? HandleLog(RequestMessage request)
-        {
-            LogRequestPayload requestPayload = BasePayload.FromPayload<LogRequestPayload>(request.Payload);
-            Log(requestPayload.Log);
-            LogResponsePayload responsePayload = new LogResponsePayload();
-            return ResponseMessage.FromPayload<LogResponsePayload>(request.Id, null, responsePayload);
-        }
-
-        void LogConnectionState(bool isOpened,  bool isForced)
+        void LogRequestState(String connectionId, String requestId, String action, String data, bool isFinished)
         {
             Log(new Dictionary<string, object?>() 
             { 
-                ["Type"] = "ConnectionState", 
-                ["State"] = isOpened ? "Open" : "Closed",
-                ["Forced"] = isForced 
-            });
-        }
-
-        void LogRegistrationState(bool isRegistered, string connectionId, int activeConnections)
-        {
-            Log(new Dictionary<string, object?>() 
-            { 
-                ["Type"] = "RegistrationState", 
-                ["State"] = isRegistered ? "Registered" : "Unregistered",
+                ["Type"] = "RequestState",
                 ["ConnectionId"] = connectionId,
-                ["ActiveConnections"] = activeConnections  
+                ["RequestId"] = requestId,
+                ["Action"] = action,
+                ["Data"] = data,
+                ["State"] = isFinished ? "Finished" : "Started"
             });
+        }
+
+        void LogConnectionState(String connectionId, bool isOpened)
+        {
+            Log(new Dictionary<string, object?>() 
+            { 
+                ["Type"] = "ConnectionState",
+                ["ConnectionId"] = connectionId,
+                ["State"] = isOpened ? "Open" : "Closed",
+            });
+        }
+
+        void LogPrematureClosure(String connectionId)
+        {
+            Log(new Dictionary<string, object?>() 
+            { 
+                ["Type"] = "PrematureClosure",
+                ["ConnectionId"] = connectionId
+            });
+        }
+
+        void LogCanceledOperation(String connectionId)
+        {
+            Log(new Dictionary<string, object?>()
+            {
+                ["Type"] = "CanceledOperation",
+                ["ConnectionId"] = connectionId,
+        });
         }
 
         void Log(Dictionary<string, object?> log)
@@ -268,5 +254,5 @@ namespace NETCoreSyncServer
                 System.Diagnostics.Debug.WriteLine(log);
             }
         }
-    }
+   }
 }

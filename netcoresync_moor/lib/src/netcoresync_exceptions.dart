@@ -5,6 +5,10 @@ class NetCoreSyncException implements Exception {
   String toString() => "NetCoreSyncException: $message";
 }
 
+class NetCoreSyncSocketException extends NetCoreSyncException {
+  NetCoreSyncSocketException(String message) : super(message);
+}
+
 class NetCoreSyncNotInitializedException extends NetCoreSyncException {
   NetCoreSyncNotInitializedException() : super("Client is not initialized yet");
 }
@@ -16,7 +20,7 @@ class NetCoreSyncSyncIdInfoNotSetException extends NetCoreSyncException {
 class NetCoreSyncMustNotInsideTransactionException
     extends NetCoreSyncException {
   NetCoreSyncMustNotInsideTransactionException()
-      : super("This method call must NOT be wrapped inside Transaction");
+      : super("This method call must not be wrapped inside Transaction");
 }
 
 class NetCoreSyncTypeNotRegisteredException extends NetCoreSyncException {

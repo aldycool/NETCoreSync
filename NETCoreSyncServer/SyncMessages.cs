@@ -61,16 +61,11 @@ namespace NETCoreSyncServer
 
     internal enum PayloadActions
     {
+        connectedNotification,
+        commandRequest,
+        commandResponse,
         handshakeRequest,
-        handshakeResponse,
-        echoRequest,
-        echoResponse,
-        delayRequest,
-        delayResponse,
-        exceptionRequest,
-        exceptionResponse,
-        logRequest,
-        logResponse
+        handshakeResponse
     }
     
     internal class RequestMessage
@@ -129,6 +124,25 @@ namespace NETCoreSyncServer
         }
     }
 
+    internal class ConnectedNotificationPayload : BasePayload
+    {
+        override public string Action => PayloadActions.connectedNotification.ToString();
+    }
+
+    internal class CommandRequestPayload : BasePayload
+    {
+        override public string Action => PayloadActions.commandRequest.ToString();
+
+        public Dictionary<string, object?> Data { get; set; } = new Dictionary<string, object?>();
+    }
+
+    internal class CommandResponsePayload : BasePayload
+    {
+        override public string Action => PayloadActions.commandResponse.ToString();
+
+        public Dictionary<string, object?> Data { get; set; } = new Dictionary<string, object?>();
+    }    
+
     public class HandshakeRequestPayload : BasePayload
     {
         override public string Action => PayloadActions.handshakeRequest.ToString();
@@ -142,56 +156,5 @@ namespace NETCoreSyncServer
         override public string Action => PayloadActions.handshakeResponse.ToString();
 
         public List<string> OrderedClassNames { get; set; } = null!;
-    }
-
-    internal class EchoRequestPayload : BasePayload
-    {
-        override public string Action => PayloadActions.echoRequest.ToString();
-
-        public String Message { get; set; } = null!;
-    }
-
-    internal class EchoResponsePayload : BasePayload
-    {
-        override public string Action => PayloadActions.echoResponse.ToString();
-
-        public String Message { get; set; } = null!;
-    }
-
-    internal class DelayRequestPayload : BasePayload
-    {
-        override public string Action => PayloadActions.delayRequest.ToString();
-
-        public int DelayInMs { get; set; }
-    }
-
-    internal class DelayResponsePayload : BasePayload
-    {
-        override public string Action => PayloadActions.delayResponse.ToString();
-    }
-
-    internal class ExceptionRequestPayload : BasePayload
-    {
-        override public string Action => PayloadActions.exceptionRequest.ToString();
-
-        public bool RaiseOnRemote { get; set; }
-        public String ErrorMessage { get; set; } = null!;
-    }
-
-    internal class ExceptionResponsePayload : BasePayload
-    {
-        override public string Action => PayloadActions.exceptionResponse.ToString();
-    }
-
-    internal class LogRequestPayload : BasePayload
-    {
-        override public string Action => PayloadActions.logRequest.ToString();
-
-        public Dictionary<string, object?> Log { get; set; } = null!;
-    }
-
-    internal class LogResponsePayload : BasePayload
-    {
-        override public string Action => PayloadActions.logResponse.ToString();
     }
 }

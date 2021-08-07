@@ -1,6 +1,5 @@
-import 'package:enum_to_string/enum_to_string.dart';
 import 'netcoresync_classes.dart';
-import 'sync_handler.dart';
+import 'sync_socket.dart';
 import 'data_access.dart';
 import 'sync_messages.dart';
 
@@ -8,7 +7,8 @@ class SyncSession {
   final DataAccess dataAccess;
   final SyncEvent? syncEvent;
   final Map<String, dynamic> customInfo;
-  late SyncHandler _syncHandler;
+  late SyncSocket _syncSocket;
+  String? connectionId;
 
   SyncSession({
     required this.dataAccess,
@@ -16,85 +16,43 @@ class SyncSession {
     this.syncEvent,
     this.customInfo = const {},
   }) {
-    _syncHandler = SyncHandler(
+    _syncSocket = SyncSocket(
       url: url,
       logger: dataAccess.logger,
     );
   }
 
-  String get connectionId => _syncHandler.connectionId;
-
   Future<SyncResult> synchronize() async {
-    return _perform((
-      syncResult,
-      handshakeResult,
-    ) async {
-      final handshakeResponsePayload =
-          handshakeResult.payload as HandshakeResponsePayload;
-      // TODO: continue main synchronize logic when ready
-      print(handshakeResponsePayload.orderedClassNames);
-    });
-  }
-
-  Future<SyncResult> request({required BasePayload payload}) {
-    return _perform((
-      syncResult,
-      handshakeResult,
-    ) async {
-      // Only support a limited set of requests, mainly for integration tests
-      // only
-      late CompleterResult completerResult;
-      if (EnumToString.fromString(PayloadActions.values, payload.action) ==
-          PayloadActions.echoRequest) {
-        completerResult = await _syncHandler.echo(
-          payload: (payload as EchoRequestPayload),
-        );
-      } else if (EnumToString.fromString(
-              PayloadActions.values, payload.action) ==
-          PayloadActions.delayRequest) {
-        completerResult = await _syncHandler.delay(
-          payload: (payload as DelayRequestPayload),
-        );
-      } else if (EnumToString.fromString(
-              PayloadActions.values, payload.action) ==
-          PayloadActions.exceptionRequest) {
-        completerResult = await _syncHandler.exception(
-          payload: (payload as ExceptionRequestPayload),
-        );
-      } else if (EnumToString.fromString(
-              PayloadActions.values, payload.action) ==
-          PayloadActions.logRequest) {
-        completerResult = await _syncHandler.log(
-          payload: (payload as LogRequestPayload),
-        );
-      } else {
-        throw Exception("Unexpected payload.action: ${payload.action}");
-      }
-      if (await _shouldTerminate(
-        completerResult: completerResult,
-        syncResult: syncResult,
-      )) {
-        return;
-      }
-    });
-  }
-
-  Future<SyncResult> _perform(
-      Future<void> Function(
-    SyncResult syncResult,
-    CompleterResult handshakeResult,
-  )
-          action) async {
     final syncResult = SyncResult();
 
     _progress("Connecting...");
-    _syncHandler.connect();
+    final connectResult = await _syncSocket.connect();
+    if (connectResult.errorMessage != null || connectResult.error != null) {
+      syncResult.errorMessage = connectResult.errorMessage;
+      syncResult.error = connectResult.error;
+      await _syncSocket.close();
+      return syncResult;
+    }
+    connectionId = connectResult.connectionId;
+
+    late ResponseResult responseResult;
 
     _progress("Acquiring access...");
-    final handshakeRequestPayload = HandshakeRequestPayload(
-      schemaVersion: dataAccess.database.schemaVersion,
-      syncIdInfo: dataAccess.syncIdInfo!,
+    responseResult = await _syncSocket.request(
+      payload: HandshakeRequestPayload(
+        schemaVersion: dataAccess.database.schemaVersion,
+        syncIdInfo: dataAccess.syncIdInfo!,
+      ),
     );
+    if (await _shouldTerminate(
+      responseResult: responseResult,
+      syncResult: syncResult,
+    )) {
+      return syncResult;
+    }
+
+    // TODO: continue main synchronize logic when ready
+
     // TODO: On Server's handshake handler (after user's syncEvent), pay
     // attention to perform .NET thread locking on:
     // 1. The same device tries to sync again (although this is highly
@@ -112,36 +70,6 @@ class SyncSession {
     // lockObject, use Dictionary to calculate the overlapped syncIds +
     // linkedSyncIds. To know more the nature of the Middleware scope of life,
     // read this: https://stevetalkscode.co.uk/middleware-styles
-    final handshakeResult =
-        await _syncHandler.handshake(payload: handshakeRequestPayload);
-    // Do not call disconnect if should terminate here, or else this will be
-    // stuck in syncHandler's await _channel.sink.close(). This is because this
-    // "handshake" call is the first request that tries to send data to the
-    // server (by calling _channel.sink.add() for the first time). So any calls
-    // to sink.close() (the disconnect method) before establishing that the
-    // sink.add() is connected to the server, will not work and will await
-    // forever. I think this is the nature of web_socket_channel implementation,
-    // where the connection is not really "opened" (or established) yet before
-    // the first successful sink.add(). Read more here:
-    // https://github.com/dart-lang/web_socket_channel/issues/70. But, if the
-    // "handshake" call has already successfully send data, but returns an
-    // error (for example, an errorMessage is returned from the server handler
-    // OnHandshake), we should do disconnect here.
-    if (await _shouldTerminate(
-      completerResult: handshakeResult,
-      syncResult: syncResult,
-    )) {
-      if (_syncHandler.connected) {
-        await disconnect();
-      }
-      return syncResult;
-    }
-
-    try {
-      await action(syncResult, handshakeResult);
-    } finally {
-      await disconnect();
-    }
 
     return syncResult;
   }
@@ -161,21 +89,15 @@ class SyncSession {
   }
 
   Future<bool> _shouldTerminate({
-    required CompleterResult completerResult,
+    required ResponseResult responseResult,
     required SyncResult syncResult,
   }) async {
-    if (completerResult.errorMessage != null || completerResult.error != null) {
-      syncResult.errorMessage = completerResult.errorMessage;
-      syncResult.error = completerResult.error;
+    if (responseResult.errorMessage != null || responseResult.error != null) {
+      syncResult.errorMessage = responseResult.errorMessage;
+      syncResult.error = responseResult.error;
+      await _syncSocket.close();
       return true;
     }
     return false;
-  }
-
-  Future<void> disconnect() async {
-    _progress("Disconnecting...");
-    if (_syncHandler.connected) {
-      await _syncHandler.disconnect();
-    }
   }
 }

@@ -4,7 +4,7 @@ import 'dart:io';
 import 'package:async/async.dart';
 import 'package:uuid/uuid.dart';
 
-class DotnetTestServer {
+class NetCoreTestServer {
   static const String _defaultPrintPrefix =
       "\x1B[1;94mDotnetTestServer:\x1B[0m ";
 
@@ -68,7 +68,7 @@ class DotnetTestServer {
   String printPrefix;
   String printPrefixAdditionalText;
 
-  DotnetTestServer({
+  NetCoreTestServer({
     required this.dotnetExecutablePath,
     required this.dllFileName,
     required this.dllDirectory,
@@ -79,7 +79,7 @@ class DotnetTestServer {
     this.printPrefixAdditionalText = "",
   });
 
-  late Process _processServer;
+  late Process _serverProcess;
   final Map<String, CaptureOutputListener> _listeners = {};
   List<String> logs = [];
 
@@ -92,9 +92,9 @@ class DotnetTestServer {
 
     bool checkStartup = true;
     bool applicationStarted = false;
-    Completer completerStartup = Completer();
+    Completer startupCompleter = Completer();
 
-    _processServer = await Process.start(
+    _serverProcess = await Process.start(
       dotnetExecutablePath,
       [
         dllFileName,
@@ -107,17 +107,17 @@ class DotnetTestServer {
       },
     );
     log(
-      "dotnet pid: ${_processServer.pid}",
+      "dotnet pid: ${_serverProcess.pid}",
       printStdout,
       printPrefix + printPrefixAdditionalText,
     );
-    _processServer.exitCode.whenComplete(() {
-      if (checkStartup && !completerStartup.isCompleted) {
-        completerStartup.complete();
+    _serverProcess.exitCode.whenComplete(() {
+      if (checkStartup && !startupCompleter.isCompleted) {
+        startupCompleter.complete();
       }
     });
     utf8.decoder
-        .bind(_processServer.stdout)
+        .bind(_serverProcess.stdout)
         .transform(const LineSplitter())
         .listen((line) {
       log(
@@ -129,8 +129,8 @@ class DotnetTestServer {
         if (line.contains("Application started. Press Ctrl+C to shut down.")) {
           applicationStarted = true;
           checkStartup = false;
-          if (!completerStartup.isCompleted) {
-            completerStartup.complete();
+          if (!startupCompleter.isCompleted) {
+            startupCompleter.complete();
           }
         }
         return;
@@ -143,7 +143,7 @@ class DotnetTestServer {
         _listeners[id]!.add(cleanedLine);
       }
     });
-    await completerStartup.future;
+    await startupCompleter.future;
     return applicationStarted;
   }
 
@@ -178,8 +178,8 @@ class DotnetTestServer {
   }
 
   Future<void> stop() async {
-    _processServer.kill();
-    await _processServer.exitCode;
+    _serverProcess.kill();
+    await _serverProcess.exitCode;
   }
 }
 
