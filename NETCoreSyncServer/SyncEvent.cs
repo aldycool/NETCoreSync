@@ -4,7 +4,7 @@ namespace NETCoreSyncServer
 {
     public class SyncEvent
     {
-        public Func<HandshakeRequestPayload, HandshakeResponsePayload, string?>? OnHandshake { get; set; }
+        public Func<HandshakeRequestPayload, string?>? OnHandshake { get; set; }
     }
 }
 

@@ -33,6 +33,14 @@ void main() {
   bool useInMemoryDatabase = true;
   bool logSqlStatements = false;
 
+  void logClient(String printPrefixAdditionalText, Object? object,
+      TestCaptureLog? captureLog) {
+    if (captureLog != null && object != null) {
+      captureLog.logs.add(object as Map<String, dynamic>);
+    }
+    logTest(printPrefixAdditionalText + "[CLIENT] " + object.toString());
+  }
+
   // For obtaining unique .NET Core server port (to avoid port already used)
   int currentPort = 5000;
   int getNetCoreUrlPort() => ++currentPort;
@@ -53,11 +61,10 @@ void main() {
         reason: "dotnet build has failed, check the print output.");
   });
 
-  group("Auto Server with SyncSocket Tests", () {
+  group("Tests with Auto NetCore Server", () {
     String printPrefixAdditionalText = "[AUTO] ";
-
-    void log(Object? object) {
-      logTest(printPrefixAdditionalText + object.toString());
+    void log(Object? object, TestCaptureLog? captureLog) {
+      logClient(printPrefixAdditionalText, object, captureLog);
     }
 
     late NetCoreTestServer netCoreTestServer;
@@ -65,13 +72,6 @@ void main() {
     late Database database;
     String databaseFileName = "netcoresync_sync_test_auto.db";
     late String wsUrl;
-    TestCaptureLog? groupCaptureLog;
-    void logClient(Object? object, TestCaptureLog? captureLog) {
-      if (captureLog != null && object != null) {
-        captureLog.logs.add(object as Map<String, dynamic>);
-      }
-      log("[CLIENT] " + object.toString());
-    }
 
     setUpAll(() async {
       int netCoreUrlPort = getNetCoreUrlPort();
@@ -99,12 +99,6 @@ void main() {
         logSqlStatements: logSqlStatements,
       );
       await database.netCoreSyncInitialize();
-      database.netCoreSyncSetLogger(
-        (object) => logClient(
-          object,
-          groupCaptureLog,
-        ),
-      );
       database.netCoreSyncSetSyncIdInfo(SyncIdInfo(
         syncId: "abc",
       ));
@@ -150,7 +144,7 @@ void main() {
     test("SyncSocket connected and connect again", () async {
       SyncSocket syncSocket = SyncSocket(
         url: wsUrl,
-        logger: (object) => logClient(object, null),
+        logger: (object) => log(object, null),
       );
       await syncSocket.connect();
       try {
@@ -171,10 +165,25 @@ void main() {
     test("SyncSocket connects to wrong url", () async {
       TestCaptureLog captureLog = TestCaptureLog();
       SyncSocket syncSocket = SyncSocket(
-        url: "wss://nonexistenturl123456.com",
-        logger: (object) => logClient(object, captureLog),
+        url: "wss://non-existent-url-123456.com",
+        logger: (object) => log(object, captureLog),
       );
-      final connectResult = await syncSocket.connect();
+      final connectResult = await syncSocket.connect().timeout(
+        Duration(seconds: 5),
+        onTimeout: () {
+          // if this is reached, that means the DNS resolve of the current OS
+          //is taking much longer time, just skip this test by simulating the
+          // return of identical response.
+          captureLog.logs.add({
+            "type": "ConnectionState",
+            "state": "Closed",
+          });
+          return ConnectResult(
+            error: WebSocketChannelException(),
+            errorMessage: ConnectResult.defaultErrorMessage,
+          );
+        },
+      );
       await pumpEventQueue();
       expect(connectResult.error, isA<WebSocketChannelException>());
       expect(connectResult.errorMessage,
@@ -187,7 +196,7 @@ void main() {
       TestCaptureLog captureLog = TestCaptureLog();
       SyncSocket syncSocket = SyncSocket(
         url: wsUrl + "/nonexistentpath",
-        logger: (object) => logClient(object, captureLog),
+        logger: (object) => log(object, captureLog),
       );
       final connectResult = await syncSocket.connect();
       await pumpEventQueue();
@@ -202,7 +211,7 @@ void main() {
       TestCaptureLog captureLog = TestCaptureLog();
       SyncSocket syncSocket = SyncSocket(
         url: wsUrl,
-        logger: (object) => logClient(object, captureLog),
+        logger: (object) => log(object, captureLog),
       );
       final connectResult = await syncSocket.connect();
       String captureId = netCoreTestServer.startCaptureOutput(
@@ -225,7 +234,7 @@ void main() {
       TestCaptureLog captureLog = TestCaptureLog();
       SyncSocket syncSocket = SyncSocket(
         url: wsUrl,
-        logger: (object) => logClient(object, captureLog),
+        logger: (object) => log(object, captureLog),
       );
       await syncSocket.close();
       await syncSocket.close();
@@ -249,7 +258,7 @@ void main() {
       TestCaptureLog captureLog = TestCaptureLog();
       SyncSocket syncSocket = SyncSocket(
         url: wsUrl,
-        logger: (object) => logClient(object, captureLog),
+        logger: (object) => log(object, captureLog),
       );
       final connectResult = await syncSocket.connect();
       String captureId = netCoreTestServer.startCaptureOutput(
@@ -278,7 +287,7 @@ void main() {
       TestCaptureLog captureLog = TestCaptureLog();
       SyncSocket syncSocket = SyncSocket(
         url: wsUrl,
-        logger: (object) => logClient(object, captureLog),
+        logger: (object) => log(object, captureLog),
       );
       final connectResult = await syncSocket.connect();
       String captureId = netCoreTestServer.startCaptureOutput(
@@ -298,13 +307,65 @@ void main() {
       expect(lastServerLog["type"], equals("ConnectionState"));
       expect(lastServerLog["state"], equals("Closed"));
     });
+
+    test("Two SyncSessions handshake with overlapped SyncInfoId", () async {
+      Future launchSyncSession(SyncIdInfo syncIdInfo, bool shouldExpect) async {
+        SyncSocket syncSocket = SyncSocket(
+          url: wsUrl,
+          logger: (object) => log(object, null),
+        );
+        await syncSocket.connect();
+        final handshakeResult = await syncSocket.request(
+          payload: HandshakeRequestPayload(
+            schemaVersion: 1,
+            syncIdInfo: syncIdInfo,
+          ),
+        );
+        log({
+          "handshakeResult.errorMessage": handshakeResult.errorMessage,
+          "handshakeResult.error": handshakeResult.error,
+          "shouldExpect": shouldExpect,
+        }, null);
+        if (shouldExpect) {
+          expect(handshakeResult.error,
+              isA<NetCoreSyncServerSyncIdInfoOverlappedException>());
+          return;
+        }
+        await syncSocket.request(
+          payload: CommandRequestPayload(
+            data: {
+              "commandName": "delay",
+              "delayInMs": 2000,
+            },
+          ),
+        );
+      }
+
+      final f1 = launchSyncSession(
+          SyncIdInfo(syncId: "abc", linkedSyncIds: [
+            "def",
+            "ghi",
+          ]),
+          false);
+      final f2 = launchSyncSession(
+          SyncIdInfo(
+            syncId: "jkl",
+          ),
+          false);
+      await Future.delayed(Duration(milliseconds: 500));
+      final f3 = launchSyncSession(
+          SyncIdInfo(syncId: "mno", linkedSyncIds: [
+            "ghi",
+          ]),
+          true);
+      await Future.wait([f1, f2, f3]);
+    });
   });
 
-  group("Manual Server with SyncSocket Tests", () {
+  group("Tests with Manual NetCore Server", () {
     String printPrefixAdditionalText = "[MANUAL] ";
-
-    void log(Object? object) {
-      logTest(printPrefixAdditionalText + object.toString());
+    void log(Object? object, TestCaptureLog? captureLog) {
+      logClient(printPrefixAdditionalText, object, captureLog);
     }
 
     late NetCoreTestServer netCoreTestServer;
@@ -312,13 +373,6 @@ void main() {
     late Database database;
     String databaseFileName = "netcoresync_sync_test_manual.db";
     late String wsUrl;
-    TestCaptureLog? groupCaptureLog;
-    void logClient(Object? object, TestCaptureLog? captureLog) {
-      if (captureLog != null && object != null) {
-        captureLog.logs.add(object as Map<String, dynamic>);
-      }
-      log("[CLIENT] " + object.toString());
-    }
 
     Future<void> startServer({List<String> args = const []}) async {
       int netCoreUrlPort = getNetCoreUrlPort();
@@ -346,12 +400,6 @@ void main() {
         logSqlStatements: logSqlStatements,
       );
       await database.netCoreSyncInitialize();
-      database.netCoreSyncSetLogger(
-        (object) => logClient(
-          object,
-          groupCaptureLog,
-        ),
-      );
       database.netCoreSyncSetSyncIdInfo(SyncIdInfo(
         syncId: "abc",
       ));
@@ -371,7 +419,7 @@ void main() {
         TestCaptureLog captureLog = TestCaptureLog();
         SyncSocket syncSocket = SyncSocket(
           url: wsUrl,
-          logger: (object) => logClient(object, captureLog),
+          logger: (object) => log(object, captureLog),
         );
         final connectResult = await syncSocket.connect();
         String captureId = netCoreTestServer.startCaptureOutput(

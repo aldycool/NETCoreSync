@@ -39,7 +39,7 @@ namespace WebSample
             // If argument is not passed, then the default value will be used (int will be zero)
             var testMinimumSchemaVersion = Configuration.GetValue<int>("minimumSchemaVersion");
             SyncEvent syncEvent = new SyncEvent();
-            syncEvent.OnHandshake = (request, response) => 
+            syncEvent.OnHandshake = (request) => 
             {
                 // This is a chance to force your users to upgrade their app first before continuing the sync process.
                 // App features shall evolve over time, along with its database, so the schema may also be changed.

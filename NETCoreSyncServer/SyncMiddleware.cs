@@ -129,7 +129,11 @@ namespace NETCoreSyncServer
                         string? errorMessage = null;
                         if (syncService.SyncEvent != null && syncService.SyncEvent.OnHandshake != null) 
                         {
-                            errorMessage = syncService.SyncEvent.OnHandshake.Invoke(requestPayload, responsePayload);
+                            errorMessage = syncService.SyncEvent.OnHandshake.Invoke(requestPayload);
+                        }
+                        if (string.IsNullOrEmpty(errorMessage))
+                        {
+                            errorMessage = HandshakeSyncIdInfo(connectionId, requestPayload.SyncIdInfo);
                         }
                         response = ResponseMessage.FromPayload<HandshakeResponsePayload>(request.Id, errorMessage, responsePayload);                        
                     }
@@ -200,6 +204,32 @@ namespace NETCoreSyncServer
                 await webSocket.SendAsync(bufferSend, WebSocketMessageType.Binary, endOfMessage, cancellationToken);
             }
         }
+
+        string? HandshakeSyncIdInfo(string connectionId, SyncIdInfo syncIdInfo)
+        {
+            lock(this)
+            {
+                if (!activeConnections.ContainsKey(connectionId))
+                {
+                    Dictionary<string, object> serverException = new Dictionary<string, object>();
+                    serverException["type"] = "NetCoreSyncServerException";
+                    serverException["message"] = $"Unable to find the current connectionId: ${connectionId} in the server's active connections. Most probably the client connection has been dropped.";
+                    return JsonSerializer.Serialize(serverException, SyncMessages.serializeOptions);
+                }
+                List<String> allSyncIds = syncIdInfo.GetAllSyncIds();
+                var overlappedSyncIdInfo = activeConnections.Where(w => w.Value.ContainsKey("SyncIdInfo") && ((SyncIdInfo)(w.Value["SyncIdInfo"])).GetAllSyncIds().Intersect(allSyncIds).Count() > 0).Select(s => (SyncIdInfo)s.Value["SyncIdInfo"]).ToList();
+                if (overlappedSyncIdInfo != null && overlappedSyncIdInfo.Count > 0)
+                {
+                    Dictionary<string, object> serverException = new Dictionary<string, object>();
+                    serverException["type"] = "NetCoreSyncServerSyncIdInfoOverlappedException";
+                    serverException["overlappedSyncIds"] = overlappedSyncIdInfo;
+                    return JsonSerializer.Serialize(serverException, SyncMessages.serializeOptions);
+                }
+                activeConnections[connectionId]["SyncIdInfo"] = syncIdInfo;
+                return null;
+            }
+        }
+
         void LogRequestState(String connectionId, String requestId, String action, String data, bool isFinished)
         {
             Log(new Dictionary<string, object?>() 

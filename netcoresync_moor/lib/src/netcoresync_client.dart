@@ -76,7 +76,11 @@ mixin NetCoreSyncClient on GeneratedDatabase {
   }
 
   String netCoreSyncAllSyncIds() {
-    return dataAccess.syncIdInfo?.allSyncIds ?? "";
+    if (dataAccess.syncIdInfo == null) {
+      return "";
+    }
+    List<String> allSyncIds = dataAccess.syncIdInfo!.getAllSyncIds();
+    return allSyncIds.join(", ");
   }
 
   Future<SyncResult> netCoreSyncSynchronize({

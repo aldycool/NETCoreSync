@@ -19,13 +19,15 @@ class SyncIdInfo {
     };
   }
 
-  String get allSyncIds {
-    StringBuffer buffer = StringBuffer();
-    buffer.write("'$syncId'");
+  List<String> getAllSyncIds({
+    String enclosure = "'",
+  }) {
+    List<String> syncIds = [];
+    syncIds.add("$enclosure$syncId$enclosure");
     for (var i = 0; i < linkedSyncIds.length; i++) {
-      buffer.write(", '${linkedSyncIds[i]}'");
+      syncIds.add("$enclosure${linkedSyncIds[i]}$enclosure");
     }
-    return buffer.toString();
+    return syncIds;
   }
 }
 

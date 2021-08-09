@@ -57,6 +57,13 @@ namespace NETCoreSyncServer
     {
         public string SyncId { get; set; } = null!;
         public List<string> LinkedSyncIds { get; set; } = null!;
+
+        public List<String> GetAllSyncIds()
+        {
+            List<String> allSyncIds = new List<string>() { SyncId };
+            allSyncIds.AddRange(LinkedSyncIds);
+            return allSyncIds;
+        }
     }
 
     internal enum PayloadActions

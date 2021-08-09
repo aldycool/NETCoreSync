@@ -1,6 +1,8 @@
 import 'dart:async';
+import 'dart:convert';
 import 'package:web_socket_channel/web_socket_channel.dart';
 import 'package:enum_to_string/enum_to_string.dart';
+import 'netcoresync_classes.dart';
 import 'netcoresync_exceptions.dart';
 import 'sync_messages.dart';
 
@@ -331,6 +333,32 @@ class ResponseResult {
         "information to be presented to the end-users or not.");
     if (errorMessage == null && error != null) {
       errorMessage = error.toString();
+    } else if (errorMessage != null && error == null) {
+      try {
+        Map<String, dynamic> serverError = jsonDecode(errorMessage!);
+        if (serverError.containsKey("type") &&
+            serverError["type"] == "NetCoreSyncServerException") {
+          String message = serverError["message"];
+          error = NetCoreSyncServerException(message);
+          errorMessage = null;
+        } else if (serverError.containsKey("type") &&
+            serverError["type"] ==
+                "NetCoreSyncServerSyncIdInfoOverlappedException") {
+          List<dynamic> overlappedSyncIdsMap = serverError["overlappedSyncIds"];
+          List<String> overlappedSyncIds = [];
+          for (var item in overlappedSyncIdsMap) {
+            final list = SyncIdInfo.fromJson(item).getAllSyncIds(enclosure: "");
+            for (var syncId in list) {
+              if (!overlappedSyncIds.contains(syncId)) {
+                overlappedSyncIds.add(syncId);
+              }
+            }
+          }
+          error =
+              NetCoreSyncServerSyncIdInfoOverlappedException(overlappedSyncIds);
+          errorMessage = null;
+        }
+      } catch (_) {}
     }
   }
 }
