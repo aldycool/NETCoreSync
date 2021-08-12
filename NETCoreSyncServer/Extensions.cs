@@ -68,6 +68,10 @@ namespace Microsoft.Extensions.DependencyInjection
                 if (propertyInfoDeleted.PropertyType != typeof(bool)) throw new NETCoreSyncServerMismatchPropertyTypeException(propertyInfoDeleted, typeof(bool), type);
                 tableInfo.PropertyInfoDeleted = propertyInfoDeleted;
             }
+            if (!services.Any(w => w.ServiceType == (typeof(SyncEngine))))
+            {
+                throw new NETCoreSyncServerException("Cannot find SyncEngine subclass in the registered services. Please subclass SyncEngine first, and register it (with serviceType: SyncEngine, and implementationType: your subclass type) in services.");
+            }
             syncService.SyncEvent = syncEvent;
             services.AddSingleton(syncService);
             return services;

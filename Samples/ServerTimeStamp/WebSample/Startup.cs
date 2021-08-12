@@ -56,6 +56,11 @@ namespace WebSample
                 }
                 return null;
             };
+            // Your subclass of SyncEngine's service lifetime is supposed to follow your AddDbContext's lifetime, therefore
+            // whenever SyncEngine is instantiated by the middleware, it will always have the same lifetime as the database.
+            // The following SyncEngine's subclass uses AddScoped(), because AddDbContext by default also uses AddScoped(),
+            // And the serviceType registered as SyncEngine, while the implementation uses the subclass (CustomSyncEngine) type. 
+            services.AddScoped<SyncEngine, CustomSyncEngine>();
             services.AddNETCoreSyncServer(syncEvent: syncEvent);
         }
 

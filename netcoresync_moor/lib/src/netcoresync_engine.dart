@@ -2,7 +2,6 @@ import 'package:moor/moor.dart';
 import 'netcoresync_annotations.dart';
 
 abstract class NetCoreSyncEngine {
-  List<Type> orderedTypes = [];
   late Map<Type, NetCoreSyncTableUser> tables;
 
   NetCoreSyncEngine(this.tables);

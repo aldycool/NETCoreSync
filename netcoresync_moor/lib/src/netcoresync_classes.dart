@@ -2,6 +2,26 @@ import 'package:meta/meta.dart';
 import 'package:moor/moor.dart';
 import 'data_access.dart';
 
+class CustomJsonValueSerializer extends ValueSerializer {
+  static const defaults = ValueSerializer.defaults();
+
+  @override
+  dynamic toJson<T>(T value) {
+    if (value is DateTime) {
+      return value.toIso8601String();
+    }
+    return defaults.toJson<T>(value);
+  }
+
+  @override
+  T fromJson<T>(dynamic json) {
+    if (T == DateTime) {
+      return DateTime.parse(json as String) as T;
+    }
+    return defaults.fromJson(json);
+  }
+}
+
 class SyncIdInfo {
   String syncId;
   List<String> linkedSyncIds;

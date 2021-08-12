@@ -1539,7 +1539,7 @@ class $SyncEmployeesTable extends $EmployeesTable
   Type get type => Employee;
   @override
   String get entityName =>
-      "(SELECT * FROM ${super.entityName} WHERE ${super.deleted.escapedName} = 0 AND ${super.syncId.escapedName} IN (${_allSyncIds.call()}))";
+      "(SELECT * FROM ${super.entityName} WHERE ${super.deleted.escapedName} = 0 AND ${super.syncId.escapedName} IN (${_allSyncIds()}))";
 }
 
 class $SyncDepartmentsTable extends $DepartmentsTable
@@ -1550,7 +1550,7 @@ class $SyncDepartmentsTable extends $DepartmentsTable
   Type get type => Department;
   @override
   String get entityName =>
-      "(SELECT * FROM ${super.entityName} WHERE ${super.deleted.escapedName} = 0 AND ${super.syncId.escapedName} IN (${_allSyncIds.call()}))";
+      "(SELECT * FROM ${super.entityName} WHERE ${super.deleted.escapedName} = 0 AND ${super.syncId.escapedName} IN (${_allSyncIds()}))";
 }
 
 mixin NetCoreSyncClientUser on NetCoreSyncClient {

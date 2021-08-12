@@ -28,6 +28,10 @@ mixin NetCoreSyncClient on GeneratedDatabase {
       this,
       engine,
     );
+    // To be compatible with NetCoreSyncServer (and also follows general guide
+    // about json DateTime: https://stackoverflow.com/questions/10286204/what-is-the-right-json-date-format
+    // we use custom ValueSerializer to convert json DateTime to/from ISO 8601)
+    moorRuntimeOptions.defaultSerializer = CustomJsonValueSerializer();
   }
 
   dynamic get netCoreSyncResolvedEngine => dataAccess.resolvedEngine;

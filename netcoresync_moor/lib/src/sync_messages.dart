@@ -3,6 +3,7 @@ import 'package:uuid/uuid.dart';
 import 'package:archive/archive.dart';
 import 'package:enum_to_string/enum_to_string.dart';
 import 'netcoresync_classes.dart';
+import 'netcoresync_knowledges.dart';
 
 class SyncMessages {
   static List<int> compress(RequestMessage requestMessage) {
@@ -28,6 +29,8 @@ enum PayloadActions {
   commandResponse,
   handshakeRequest,
   handshakeResponse,
+  syncTableRequest,
+  syncTableResponse,
 }
 
 class RequestMessage {
@@ -200,4 +203,72 @@ class HandshakeResponsePayload extends BasePayload {
 
   HandshakeResponsePayload.fromJson(Map<String, dynamic> json)
       : orderedClassNames = List.from(json["orderedClassNames"]);
+}
+
+class SyncTableRequestPayload extends BasePayload {
+  @override
+  String get action =>
+      EnumToString.convertToString(PayloadActions.syncTableRequest);
+
+  final String className;
+  final Map<String, dynamic> annotations;
+  final List<dynamic> unsyncedRows;
+  final List<NetCoreSyncKnowledge> knowledges;
+
+  const SyncTableRequestPayload({
+    required this.className,
+    required this.annotations,
+    required this.unsyncedRows,
+    required this.knowledges,
+  });
+
+  @override
+  Map<String, dynamic> toJson() {
+    return <String, dynamic>{
+      "className": className,
+      "annotations": annotations,
+      "unsyncedRows": unsyncedRows,
+      "knowledges": knowledges,
+    };
+  }
+
+  SyncTableRequestPayload.fromJson(Map<String, dynamic> json)
+      : className = json["className"],
+        annotations = Map.from(json["annotations"]),
+        unsyncedRows = List.from(json["unsyncedRows"]),
+        knowledges = List<NetCoreSyncKnowledge>.from(
+            (json["knowledges"] as Iterable)
+                .map((model) => NetCoreSyncKnowledge.fromJson(model)));
+}
+
+class SyncTableResponsePayload extends BasePayload {
+  @override
+  String get action =>
+      EnumToString.convertToString(PayloadActions.syncTableResponse);
+
+  final String className;
+  final List<dynamic> unsyncedRows;
+  final List<NetCoreSyncKnowledge> knowledges;
+
+  const SyncTableResponsePayload({
+    required this.className,
+    required this.unsyncedRows,
+    required this.knowledges,
+  });
+
+  @override
+  Map<String, dynamic> toJson() {
+    return <String, dynamic>{
+      "className": className,
+      "unsyncedRows": unsyncedRows,
+      "knowledges": knowledges,
+    };
+  }
+
+  SyncTableResponsePayload.fromJson(Map<String, dynamic> json)
+      : className = json["className"],
+        unsyncedRows = List.from(json["unsyncedRows"]),
+        knowledges = List<NetCoreSyncKnowledge>.from(
+            (json["knowledges"] as Iterable)
+                .map((model) => NetCoreSyncKnowledge.fromJson(model)));
 }

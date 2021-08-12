@@ -297,7 +297,7 @@ class NetCoreSyncClientGenerator extends GeneratorForAnnotation<UseMoor> {
           @override
           Type get type => ${part["dataClassName"]};
           @override
-          String get entityName => "(SELECT * FROM \${super.entityName} WHERE \${super.${part["netCoreSyncTable"]["deletedFieldName"]}.escapedName} = 0 AND \${super.${part["netCoreSyncTable"]["syncIdFieldName"]}.escapedName} IN (\${_allSyncIds.call()}))";
+          String get entityName => "(SELECT * FROM \${super.entityName} WHERE \${super.${part["netCoreSyncTable"]["deletedFieldName"]}.escapedName} = 0 AND \${super.${part["netCoreSyncTable"]["syncIdFieldName"]}.escapedName} IN (\${_allSyncIds()}))";
         }
       ''');
     }

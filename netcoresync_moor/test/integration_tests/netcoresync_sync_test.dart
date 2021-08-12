@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'package:moor/moor.dart';
 import 'package:netcoresync_moor/netcoresync_moor.dart';
 import 'package:test/test.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
@@ -11,10 +12,6 @@ import '../data/database.dart';
 import '../utils/helper.dart';
 
 void main() {
-  // TODO: Unimplemented tests:
-  // SyncSession: Server return error on concurrent SyncIdInfo and Client retries
-  // - [TBD - SyncSession related-tests]
-
   bool testPrint = true;
   void logTest(Object? object) {
     if (testPrint) {
@@ -31,7 +28,7 @@ void main() {
 
   String testFilesFolder = ".test_files";
   bool useInMemoryDatabase = true;
-  bool logSqlStatements = false;
+  bool logSqlStatements = true;
 
   void logClient(String printPrefixAdditionalText, Object? object,
       TestCaptureLog? captureLog) {
@@ -69,8 +66,8 @@ void main() {
 
     late NetCoreTestServer netCoreTestServer;
 
-    late Database database;
-    String databaseFileName = "netcoresync_sync_test_auto.db";
+    // late Database database;
+    // String databaseFileName = "netcoresync_sync_test_auto.db";
     late String wsUrl;
 
     setUpAll(() async {
@@ -89,23 +86,6 @@ void main() {
       bool started = await netCoreTestServer.start();
       expect(started, equals(true),
           reason: "Cannot launch NetCoreTestServer. Check the print output.");
-    });
-
-    setUp(() async {
-      database = await Helper.setUpDatabase(
-        testFilesFolder: testFilesFolder,
-        databaseFileName: databaseFileName,
-        useInMemoryDatabase: useInMemoryDatabase,
-        logSqlStatements: logSqlStatements,
-      );
-      await database.netCoreSyncInitialize();
-      database.netCoreSyncSetSyncIdInfo(SyncIdInfo(
-        syncId: "abc",
-      ));
-    });
-
-    tearDown(() async {
-      await Helper.tearDownDatabase(database);
     });
 
     tearDownAll(() async {
@@ -221,8 +201,8 @@ void main() {
       await syncSocket.close();
       await pumpEventQueue();
       final serverLogs = await netCoreTestServer.stopCaptureOutput(captureId);
-      expect(connectResult.error, isNull);
-      expect(connectResult.errorMessage, isNull);
+      expect(connectResult.error, equals(null));
+      expect(connectResult.errorMessage, equals(null));
       expect(captureLog.logs.last["type"], equals("ConnectionState"));
       expect(captureLog.logs.last["state"], equals("Closed"));
       final lastServerLog = jsonDecode(serverLogs!.last);
@@ -308,8 +288,11 @@ void main() {
       expect(lastServerLog["state"], equals("Closed"));
     });
 
-    test("Two SyncSessions handshake with overlapped SyncInfoId", () async {
-      Future launchSyncSession(SyncIdInfo syncIdInfo, bool shouldExpect) async {
+    test("Multiple SyncSockets handshake with overlapped SyncInfoId", () async {
+      Future launchSyncSocket(
+        SyncIdInfo syncIdInfo,
+        String expectedOverlappedSyncId,
+      ) async {
         SyncSocket syncSocket = SyncSocket(
           url: wsUrl,
           logger: (object) => log(object, null),
@@ -324,11 +307,15 @@ void main() {
         log({
           "handshakeResult.errorMessage": handshakeResult.errorMessage,
           "handshakeResult.error": handshakeResult.error,
-          "shouldExpect": shouldExpect,
+          "expectedOverlappedSyncId": expectedOverlappedSyncId,
         }, null);
-        if (shouldExpect) {
-          expect(handshakeResult.error,
-              isA<NetCoreSyncServerSyncIdInfoOverlappedException>());
+        if (expectedOverlappedSyncId.isNotEmpty) {
+          expect(
+            handshakeResult.error,
+            predicate((f) =>
+                f is NetCoreSyncServerSyncIdInfoOverlappedException &&
+                f.overlappedSyncIds.contains(expectedOverlappedSyncId)),
+          );
           return;
         }
         await syncSocket.request(
@@ -341,24 +328,43 @@ void main() {
         );
       }
 
-      final f1 = launchSyncSession(
-          SyncIdInfo(syncId: "abc", linkedSyncIds: [
-            "def",
-            "ghi",
-          ]),
-          false);
-      final f2 = launchSyncSession(
-          SyncIdInfo(
-            syncId: "jkl",
-          ),
-          false);
+      // This should not raise exception
+      final f1 = launchSyncSocket(
+        SyncIdInfo(syncId: "abc", linkedSyncIds: [
+          "def",
+          "ghi",
+        ]),
+        "",
+      );
+      // This also should not raise exception (no overlapped syncId)
+      final f2 = launchSyncSocket(
+        SyncIdInfo(
+          syncId: "jkl",
+        ),
+        "",
+      );
+      // This should raise exception (overlapped on: ghi with syncId: abc)
       await Future.delayed(Duration(milliseconds: 500));
-      final f3 = launchSyncSession(
-          SyncIdInfo(syncId: "mno", linkedSyncIds: [
-            "ghi",
-          ]),
-          true);
-      await Future.wait([f1, f2, f3]);
+      final f3 = launchSyncSocket(
+        SyncIdInfo(syncId: "mno", linkedSyncIds: [
+          "ghi",
+        ]),
+        "ghi",
+      );
+      // This should raise exception (overlapped on: def with syncId: abc)
+      final f4 = launchSyncSocket(
+        SyncIdInfo(syncId: "def", linkedSyncIds: [
+          "pqr",
+          "stu",
+        ]),
+        "def",
+      );
+      await Future.wait([
+        f1,
+        f2,
+        f3,
+        f4,
+      ]);
     });
   });
 
@@ -369,9 +375,6 @@ void main() {
     }
 
     late NetCoreTestServer netCoreTestServer;
-
-    late Database database;
-    String databaseFileName = "netcoresync_sync_test_manual.db";
     late String wsUrl;
 
     Future<void> startServer({List<String> args = const []}) async {
@@ -392,25 +395,27 @@ void main() {
           reason: "Cannot launch NetCoreTestServer. Check the print output.");
     }
 
-    setUp(() async {
-      database = await Helper.setUpDatabase(
+    Future<void> stopServer() async {
+      await netCoreTestServer.stop();
+    }
+
+    Future<Database> setUpDatabase({
+      required SyncIdInfo syncIdInfo,
+      String databaseFileName = "netcoresync_sync_test_manual.db",
+    }) async {
+      Database database = await Helper.setUpDatabase(
         testFilesFolder: testFilesFolder,
         databaseFileName: databaseFileName,
         useInMemoryDatabase: useInMemoryDatabase,
         logSqlStatements: logSqlStatements,
       );
       await database.netCoreSyncInitialize();
-      database.netCoreSyncSetSyncIdInfo(SyncIdInfo(
-        syncId: "abc",
-      ));
-    });
+      database.netCoreSyncSetSyncIdInfo(syncIdInfo);
+      return database;
+    }
 
-    tearDown(() async {
+    Future tearDownDatabase(Database database) async {
       await Helper.tearDownDatabase(database);
-    });
-
-    Future<void> stopServer() async {
-      await netCoreTestServer.stop();
     }
 
     test("Server stopped while SyncSocket connected", () async {
@@ -454,7 +459,7 @@ void main() {
         final responseResult = await syncSocket.request(
           payload: HandshakeRequestPayload(
             schemaVersion: 1,
-            syncIdInfo: database.dataAccess.syncIdInfo!,
+            syncIdInfo: SyncIdInfo(syncId: "abc"),
           ),
         );
         expect(responseResult.errorMessage, isNotEmpty);
@@ -464,6 +469,30 @@ void main() {
         await stopServer();
       }
     });
+
+    test("SyncSession synchronize", () async {
+      final database =
+          await setUpDatabase(syncIdInfo: SyncIdInfo(syncId: "abc"));
+      try {
+        await database.syncInto(database.areas).syncInsert(AreasCompanion(
+              city: Value("Jakarta"),
+              district: Value("Menteng"),
+            ));
+        final area = await database.syncSelect(database.syncAreas).getSingle();
+        await database.syncInto(database.persons).syncInsert(PersonsCompanion(
+              name: Value("John Doe"),
+              birthday: Value(DateTime(2000, 1, 1)),
+              age: Value(21),
+              vaccinationAreaPk: Value(area.pk),
+            ));
+        wsUrl = "wss://localhost:5001/netcoresyncserver";
+        final syncResult = await database.netCoreSyncSynchronize(url: wsUrl);
+      } catch (_) {
+        rethrow;
+      } finally {
+        await tearDownDatabase(database);
+      }
+    }, skip: "Manual running test only for now");
   });
 }
 

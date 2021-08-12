@@ -72,7 +72,9 @@ namespace NETCoreSyncServer
         commandRequest,
         commandResponse,
         handshakeRequest,
-        handshakeResponse
+        handshakeResponse,
+        syncTableRequest,
+        syncTableResponse
     }
     
     internal class RequestMessage
@@ -163,5 +165,24 @@ namespace NETCoreSyncServer
         override public string Action => PayloadActions.handshakeResponse.ToString();
 
         public List<string> OrderedClassNames { get; set; } = null!;
+    }
+
+    public class SyncTableRequestPayload : BasePayload
+    {
+        override public string Action => PayloadActions.syncTableRequest.ToString();
+
+        public string ClassName { get; set; } = null!;
+        public Dictionary<string, object?> Annotations { get; set; } = null!;
+        public List<Dictionary<string, object?>> UnsyncedRows { get; set; } = null!;
+        public List<Dictionary<string, object?>> Knowledges { get; set; } = null!;
+    }
+
+    public class SyncTableResponsePayload : BasePayload
+    {
+        override public string Action => PayloadActions.syncTableResponse.ToString();
+
+        public string ClassName { get; set; } = null!;
+        public List<Dictionary<string, object?>> UnsyncedRows { get; set; } = null!;
+        public List<Dictionary<string, object?>> Knowledges { get; set; } = null!;
     }
 }

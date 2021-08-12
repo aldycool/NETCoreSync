@@ -1,3 +1,4 @@
+import 'package:moor/moor.dart';
 import 'netcoresync_classes.dart';
 import 'sync_socket.dart';
 import 'data_access.dart';
@@ -49,6 +50,33 @@ class SyncSession {
       syncResult: syncResult,
     )) {
       return syncResult;
+    }
+    final handshake =
+        HandshakeResponsePayload.fromJson(responseResult.payload!.toJson());
+    for (var i = 0; i < handshake.orderedClassNames.length; i++) {
+      final className = handshake.orderedClassNames[i];
+      final classType = dataAccess.engine.tables.keys.firstWhere(
+          (element) => element.toString() == className,
+          orElse: () => Null);
+      if (classType == Null) {
+        continue;
+      }
+      final tableUser = dataAccess.engine.tables[classType]!;
+      final unsyncedRows = await (dataAccess.select(tableUser.tableInfo)
+            ..where((tbl) => CustomExpression(
+                "${tableUser.syncIdEscapedName} IN "
+                "(${dataAccess.syncIdInfo!.getAllSyncIds().join(", ")}) AND "
+                "${tableUser.syncedEscapedName} = 0")))
+          .get();
+      final knowledges = await dataAccess.select(dataAccess.knowledges).get();
+      final syncTableResponse = _syncSocket.request(
+          payload: SyncTableRequestPayload(
+        className: className,
+        annotations: tableUser.tableAnnotation.toJson(),
+        unsyncedRows: unsyncedRows,
+        knowledges: knowledges,
+      ));
+      print("");
     }
 
     // TODO: continue main synchronize logic when ready

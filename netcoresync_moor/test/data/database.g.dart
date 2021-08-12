@@ -2064,7 +2064,7 @@ class $SyncAreasTable extends $AreasTable
   Type get type => AreaData;
   @override
   String get entityName =>
-      "(SELECT * FROM ${super.entityName} WHERE ${super.syncDeleted.escapedName} = 0 AND ${super.syncSyncId.escapedName} IN (${_allSyncIds.call()}))";
+      "(SELECT * FROM ${super.entityName} WHERE ${super.syncDeleted.escapedName} = 0 AND ${super.syncSyncId.escapedName} IN (${_allSyncIds()}))";
 }
 
 class $SyncCustomObjectsTable extends $CustomObjectsTable
@@ -2075,7 +2075,7 @@ class $SyncCustomObjectsTable extends $CustomObjectsTable
   Type get type => CustomObject;
   @override
   String get entityName =>
-      "(SELECT * FROM ${super.entityName} WHERE ${super.deleted.escapedName} = 0 AND ${super.syncId.escapedName} IN (${_allSyncIds.call()}))";
+      "(SELECT * FROM ${super.entityName} WHERE ${super.deleted.escapedName} = 0 AND ${super.syncId.escapedName} IN (${_allSyncIds()}))";
 }
 
 class $SyncPersonsTable extends $PersonsTable
@@ -2086,7 +2086,7 @@ class $SyncPersonsTable extends $PersonsTable
   Type get type => Person;
   @override
   String get entityName =>
-      "(SELECT * FROM ${super.entityName} WHERE ${super.deleted.escapedName} = 0 AND ${super.syncId.escapedName} IN (${_allSyncIds.call()}))";
+      "(SELECT * FROM ${super.entityName} WHERE ${super.deleted.escapedName} = 0 AND ${super.syncId.escapedName} IN (${_allSyncIds()}))";
 }
 
 mixin NetCoreSyncClientUser on NetCoreSyncClient {

@@ -20,14 +20,14 @@ dependencies:
 dev_dependencies:
   lints: ^1.0.1 # https://pub.dev/packages/lints
   test: ^1.17.10 # https://pub.dev/packages/test
-  build_runner: ^2.0.6 # https://pub.dev/packages/build_runner
+  build_runner: ^2.1.1 # https://pub.dev/packages/build_runner
   moor_generator: ^4.4.1 # https://pub.dev/packages/moor_generator
   netcoresync_moor_generator: any
   # For test only:
   path: ^1.8.0 # https://pub.dev/packages/path
   sqlite3_flutter_libs: ^0.5.0 # https://pub.dev/packages/sqlite3_flutter_libs
   version: ^2.0.0 # https://pub.dev/packages/version
-  async: ^2.8.1 # https://pub.dev/packages/async
+  async: ^2.8.2 # https://pub.dev/packages/async
 
 dependency_overrides:
   netcoresync_moor_generator:
