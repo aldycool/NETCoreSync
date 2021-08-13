@@ -302,6 +302,7 @@ void main() {
           payload: HandshakeRequestPayload(
             schemaVersion: 1,
             syncIdInfo: syncIdInfo,
+            customInfo: {},
           ),
         );
         log({
@@ -460,6 +461,7 @@ void main() {
           payload: HandshakeRequestPayload(
             schemaVersion: 1,
             syncIdInfo: SyncIdInfo(syncId: "abc"),
+            customInfo: {},
           ),
         );
         expect(responseResult.errorMessage, isNotEmpty);
@@ -471,28 +473,147 @@ void main() {
     });
 
     test("SyncSession synchronize", () async {
-      final database =
-          await setUpDatabase(syncIdInfo: SyncIdInfo(syncId: "abc"));
+      await startServer(
+        args: [
+          "clearDatabase=true",
+        ],
+      );
+      // wsUrl = "wss://localhost:5001/netcoresyncserver";
+      final dbAbc1 = await setUpDatabase(
+        syncIdInfo: SyncIdInfo(syncId: "abc"),
+        databaseFileName: "netcoresync_sync_test_manual_abc1.db",
+      );
+      dbAbc1.netCoreSyncSetLogger((object) {
+        (object as Map<String, dynamic>)["db"] = "abc1";
+        log(object, null);
+      });
+      final dbAbc2 = await setUpDatabase(
+        syncIdInfo: SyncIdInfo(syncId: "abc"),
+        databaseFileName: "netcoresync_sync_test_manual_abc2.db",
+      );
+      dbAbc2.netCoreSyncSetLogger((object) {
+        (object as Map<String, dynamic>)["db"] = "abc2";
+        log(object, null);
+      });
       try {
-        await database.syncInto(database.areas).syncInsert(AreasCompanion(
+        // Insert one AreaData and one Person, and Sync
+        await dbAbc1.syncInto(dbAbc1.areas).syncInsert(AreasCompanion(
               city: Value("Jakarta"),
               district: Value("Menteng"),
             ));
-        final area = await database.syncSelect(database.syncAreas).getSingle();
-        await database.syncInto(database.persons).syncInsert(PersonsCompanion(
+        final area = await dbAbc1.syncSelect(dbAbc1.syncAreas).getSingle();
+        await dbAbc1.syncInto(dbAbc1.persons).syncInsert(PersonsCompanion(
               name: Value("John Doe"),
               birthday: Value(DateTime(2000, 1, 1)),
               age: Value(21),
+              isForeigner: Value(true),
               vaccinationAreaPk: Value(area.pk),
             ));
-        wsUrl = "wss://localhost:5001/netcoresyncserver";
-        final syncResult = await database.netCoreSyncSynchronize(url: wsUrl);
+        final syncResult1 = await dbAbc1.netCoreSyncSynchronize(url: wsUrl);
+        expect(syncResult1.error, equals(null));
+        expect(syncResult1.errorMessage, equals(null));
+        final syncedArea1 =
+            await dbAbc1.syncSelect(dbAbc1.syncAreas).getSingle();
+        expect(syncedArea1.syncSynced, equals(true));
+        final syncedPerson1 =
+            await dbAbc1.syncSelect(dbAbc1.syncPersons).getSingle();
+        expect(syncedPerson1.synced, equals(true));
+        var serverDataArea1 = syncResult1.logs
+            .where((element) =>
+                element["action"] == "syncTableResponse" &&
+                element["data"]["className"] == "AreaData" &&
+                (element["data"]["logs"] as Iterable).length == 1 &&
+                (element["data"]["logs"] as Iterable).elementAt(0)["action"] ==
+                    "insert" &&
+                (element["data"]["logs"] as Iterable).elementAt(0)["data"]
+                        ["id"] ==
+                    syncedArea1.pk)
+            .toList();
+        expect(serverDataArea1.length, equals(1));
+        var serverDataPerson1 = syncResult1.logs
+            .where((element) =>
+                element["action"] == "syncTableResponse" &&
+                element["data"]["className"] == "Person" &&
+                (element["data"]["logs"] as Iterable).length == 1 &&
+                (element["data"]["logs"] as Iterable).elementAt(0)["action"] ==
+                    "insert" &&
+                (element["data"]["logs"] as Iterable).elementAt(0)["data"]
+                        ["id"] ==
+                    syncedPerson1.id)
+            .toList();
+        expect(serverDataPerson1.length, equals(1));
+
+        // Sync only without any changes
+        final syncResult2 = await dbAbc1.netCoreSyncSynchronize(url: wsUrl);
+        expect(syncResult2.error, equals(null));
+        expect(syncResult2.errorMessage, equals(null));
+        var serverDataArea2 = syncResult2.logs
+            .where((element) =>
+                element["action"] == "syncTableRequest" &&
+                element["data"]["className"] == "AreaData" &&
+                (element["data"]["unsyncedRows"] as Iterable).isEmpty)
+            .toList();
+        expect(serverDataArea2.length, equals(1));
+        var serverDataPerson2 = syncResult2.logs
+            .where((element) =>
+                element["action"] == "syncTableRequest" &&
+                element["data"]["className"] == "Person" &&
+                (element["data"]["unsyncedRows"] as Iterable).isEmpty)
+            .toList();
+        expect(serverDataPerson2.length, equals(1));
+
+        // Update AreaData and Delete Person, and Sync
+        final area3 = await dbAbc1.syncSelect(dbAbc1.syncAreas).getSingle();
+        await dbAbc1
+            .syncUpdate(dbAbc1.areas)
+            .syncReplace(area3.toCompanion(true).copyWith(
+                  district: Value("Kemang"),
+                ));
+        await dbAbc1.syncDelete(dbAbc1.persons).go();
+        final syncResult3 = await dbAbc1.netCoreSyncSynchronize(url: wsUrl);
+        expect(syncResult3.error, equals(null));
+        expect(syncResult3.errorMessage, equals(null));
+        final syncedArea3 =
+            await dbAbc1.syncSelect(dbAbc1.syncAreas).getSingle();
+        expect(syncedArea3.syncSynced, equals(true));
+        final syncedPerson3 = await dbAbc1.select(dbAbc1.persons).getSingle();
+        expect(syncedPerson3.synced, equals(true));
+        expect((await dbAbc1.syncSelect(dbAbc1.syncPersons).get()).length,
+            equals(0));
+        var serverDataArea3 = syncResult3.logs
+            .where((element) =>
+                element["action"] == "syncTableResponse" &&
+                element["data"]["className"] == "AreaData" &&
+                (element["data"]["logs"] as Iterable).length == 1 &&
+                (element["data"]["logs"] as Iterable).elementAt(0)["action"] ==
+                    "update" &&
+                (element["data"]["logs"] as Iterable).elementAt(0)["data"]
+                        ["id"] ==
+                    syncedArea3.pk)
+            .toList();
+        expect(serverDataArea3.length, equals(1));
+        var serverDataPerson3 = syncResult3.logs
+            .where((element) =>
+                element["action"] == "syncTableResponse" &&
+                element["data"]["className"] == "Person" &&
+                (element["data"]["logs"] as Iterable).length == 1 &&
+                (element["data"]["logs"] as Iterable).elementAt(0)["action"] ==
+                    "delete" &&
+                (element["data"]["logs"] as Iterable).elementAt(0)["data"]
+                        ["id"] ==
+                    syncedPerson3.id)
+            .toList();
+        expect(serverDataPerson3.length, equals(1));
+
+        // TODO: Test a single user with two devices
       } catch (_) {
         rethrow;
       } finally {
-        await tearDownDatabase(database);
+        await tearDownDatabase(dbAbc1);
+        await tearDownDatabase(dbAbc2);
+        await stopServer();
       }
-    }, skip: "Manual running test only for now");
+    });
   });
 }
 

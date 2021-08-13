@@ -137,6 +137,9 @@ class SyncSocket {
     } else if (response.action ==
         EnumToString.convertToString(PayloadActions.handshakeResponse)) {
       responsePayload = HandshakeResponsePayload.fromJson(response.payload);
+    } else if (response.action ==
+        EnumToString.convertToString(PayloadActions.syncTableResponse)) {
+      responsePayload = SyncTableResponsePayload.fromJson(response.payload);
     } else {
       throw NetCoreSyncSocketException(
           "Unexpected response action: ${response.action}");

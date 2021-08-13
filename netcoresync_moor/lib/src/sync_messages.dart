@@ -164,10 +164,12 @@ class HandshakeRequestPayload extends BasePayload {
 
   final int schemaVersion;
   final SyncIdInfo syncIdInfo;
+  final Map<String, dynamic> customInfo;
 
   const HandshakeRequestPayload({
     required this.schemaVersion,
     required this.syncIdInfo,
+    required this.customInfo,
   });
 
   @override
@@ -175,12 +177,14 @@ class HandshakeRequestPayload extends BasePayload {
     return <String, dynamic>{
       "schemaVersion": schemaVersion,
       "syncIdInfo": syncIdInfo.toJson(),
+      "customInfo": customInfo,
     };
   }
 
   HandshakeRequestPayload.fromJson(Map<String, dynamic> json)
       : schemaVersion = json["schemaVersion"],
-        syncIdInfo = SyncIdInfo.fromJson(json["syncIdInfo"]);
+        syncIdInfo = SyncIdInfo.fromJson(json["syncIdInfo"]),
+        customInfo = Map.from(json["customInfo"]);
 }
 
 class HandshakeResponsePayload extends BasePayload {
@@ -214,12 +218,14 @@ class SyncTableRequestPayload extends BasePayload {
   final Map<String, dynamic> annotations;
   final List<dynamic> unsyncedRows;
   final List<NetCoreSyncKnowledge> knowledges;
+  final Map<String, dynamic> customInfo;
 
   const SyncTableRequestPayload({
     required this.className,
     required this.annotations,
     required this.unsyncedRows,
     required this.knowledges,
+    required this.customInfo,
   });
 
   @override
@@ -229,6 +235,7 @@ class SyncTableRequestPayload extends BasePayload {
       "annotations": annotations,
       "unsyncedRows": unsyncedRows,
       "knowledges": knowledges,
+      "customInfo": customInfo,
     };
   }
 
@@ -238,7 +245,8 @@ class SyncTableRequestPayload extends BasePayload {
         unsyncedRows = List.from(json["unsyncedRows"]),
         knowledges = List<NetCoreSyncKnowledge>.from(
             (json["knowledges"] as Iterable)
-                .map((model) => NetCoreSyncKnowledge.fromJson(model)));
+                .map((model) => NetCoreSyncKnowledge.fromJson(model))),
+        customInfo = Map.from(json["customInfo"]);
 }
 
 class SyncTableResponsePayload extends BasePayload {
@@ -249,11 +257,15 @@ class SyncTableResponsePayload extends BasePayload {
   final String className;
   final List<dynamic> unsyncedRows;
   final List<NetCoreSyncKnowledge> knowledges;
+  final List<String> deletedIds;
+  final List<Map<String, dynamic>> logs;
 
   const SyncTableResponsePayload({
     required this.className,
     required this.unsyncedRows,
     required this.knowledges,
+    required this.deletedIds,
+    required this.logs,
   });
 
   @override
@@ -262,6 +274,8 @@ class SyncTableResponsePayload extends BasePayload {
       "className": className,
       "unsyncedRows": unsyncedRows,
       "knowledges": knowledges,
+      "deletedIds": deletedIds,
+      "logs": logs,
     };
   }
 
@@ -270,5 +284,7 @@ class SyncTableResponsePayload extends BasePayload {
         unsyncedRows = List.from(json["unsyncedRows"]),
         knowledges = List<NetCoreSyncKnowledge>.from(
             (json["knowledges"] as Iterable)
-                .map((model) => NetCoreSyncKnowledge.fromJson(model)));
+                .map((model) => NetCoreSyncKnowledge.fromJson(model))),
+        deletedIds = List.from(json["deletedIds"]),
+        logs = List.from(json["logs"]);
 }

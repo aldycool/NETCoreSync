@@ -129,7 +129,7 @@ namespace NETCoreSyncServer
                         string? errorMessage = null;
                         if (syncService.SyncEvent != null && syncService.SyncEvent.OnHandshake != null) 
                         {
-                            errorMessage = syncService.SyncEvent.OnHandshake.Invoke(requestPayload);
+                            errorMessage = syncService.SyncEvent.OnHandshake.Invoke(requestPayload, requestPayload.CustomInfo!);
                         }
                         if (string.IsNullOrEmpty(errorMessage))
                         {
@@ -234,31 +234,79 @@ namespace NETCoreSyncServer
         ResponseMessage SyncTable(string connectionId, SyncService syncService, SyncEngine syncEngine, RequestMessage request)
         {
             string? errorMessage = null;
+            SyncTableResponsePayload responsePayload = new SyncTableResponsePayload();
+            responsePayload.UnsyncedRows = new List<Dictionary<string, object?>>();
+            responsePayload.Knowledges = new List<Dictionary<string, object?>>();
+            responsePayload.DeletedIds = new List<string>();
+            responsePayload.Logs = new List<Dictionary<string, object?>>();
 
-            ResponseMessage createResponse(string? errorMessage, SyncTableResponsePayload? responsePayload)
+            ResponseMessage createResponse(string? errorMessage, SyncTableResponsePayload responsePayload)
             {
                 if (responsePayload == null) responsePayload = new SyncTableResponsePayload();
                 return ResponseMessage.FromPayload<SyncTableResponsePayload>(request.Id, errorMessage, responsePayload);
             }
 
+            Dictionary<string, object?> createLog(string action, Dictionary<string, object?> data)
+            {
+                return new Dictionary<string, object?>()
+                {
+                    ["action"] = action,
+                    ["data"] = data
+                };
+            }
+
+            string? updateKnowledges(List<Dictionary<string, object?>> knowledges, object syncId, object knowledgeId, long timeStamp, bool shouldAddIfNotExist)
+            {
+                var knowledgeDict = knowledges.Where(w => Convert.ToString(w["syncId"])!.ToLower() == Convert.ToString(syncId)!.ToLower() && Convert.ToString(w["id"])!.ToLower() == Convert.ToString(knowledgeId)!.ToLower()).FirstOrDefault();
+                if (knowledgeDict == null)
+                {
+                    if (!shouldAddIfNotExist)
+                    {
+                        return GetServerExceptionErrorMessage($"Knowledge is expected to have syncId: {syncId} and knowledgeId: {knowledgeId}");
+                    }
+                    else
+                    {
+                        knowledgeDict = new Dictionary<string, object?>()
+                        {
+                            ["id"] = knowledgeId,
+                            ["syncId"] = syncId,
+                            ["local"] = false,
+                            ["lastTimeStamp"] = 0,
+                            ["meta"] = ""
+                        };
+                    }                        
+                }
+                long lastTimeStamp = Convert.ToInt64(knowledgeDict!["lastTimeStamp"]!);
+                if (lastTimeStamp < timeStamp) knowledgeDict["lastTimeStamp"] = timeStamp;
+                return null;
+            }
+
             if (!activeConnections.ContainsKey(connectionId))
             {
                 errorMessage = GetServerExceptionErrorMessageMissingConnectionId(connectionId);
-                return createResponse(errorMessage, null);
+                return createResponse(errorMessage, responsePayload);
             }
             if (!activeConnections[connectionId].ContainsKey("SyncIdInfo"))
             {
                 errorMessage = GetServerExceptionErrorMessageHandshakeNotPerformed();
-                return createResponse(errorMessage, null);
+                return createResponse(errorMessage, responsePayload);
             }
             SyncIdInfo syncIdInfo = (SyncIdInfo)activeConnections[connectionId]["SyncIdInfo"];
             SyncTableRequestPayload requestPayload = BasePayload.FromPayload<SyncTableRequestPayload>(request.Payload);
+            syncEngine.CustomInfo = requestPayload.CustomInfo;
             Type? classType = syncService.TableInfos.Where(w => w.Value.SyncTable.ClientClassName == requestPayload.ClassName).Select(s => s.Key).FirstOrDefault();
             if (classType == null)
             {
                 errorMessage = GetServerExceptionErrorMessage($"Invalid ClientClassName: {requestPayload.ClassName}");
-                return createResponse(errorMessage, null);
+                return createResponse(errorMessage, responsePayload);
             }
+            responsePayload.ClassName = requestPayload.ClassName;
+            requestPayload.Knowledges.ForEach((item) => 
+            {
+                var knowledgeDict = new Dictionary<string, object?>(item);
+                knowledgeDict["lastTimeStamp"] = ((JsonElement)knowledgeDict!["lastTimeStamp"]!).GetInt64();
+                responsePayload.Knowledges.Add(knowledgeDict);
+            });
             TableInfo tableInfo = syncService.TableInfos[classType];
             IQueryable queryable = syncEngine.GetQueryable(classType!);
             string syncedFieldName = Convert.ToString(requestPayload.Annotations["syncedFieldName"])!;
@@ -266,44 +314,126 @@ namespace NETCoreSyncServer
             string syncIdFieldName = Convert.ToString(requestPayload.Annotations["syncIdFieldName"])!;
             string knowledgeIdFieldName = Convert.ToString(requestPayload.Annotations["knowledgeIdFieldName"])!;
             string deletedFieldName = Convert.ToString(requestPayload.Annotations["deletedFieldName"])!;
+            List<object> processedIds = new List<object>();
             for (int i = 0; i < requestPayload.UnsyncedRows.Count; i++)
             {
-                var clientDict = requestPayload.UnsyncedRows[i];
+                var clientData = requestPayload.UnsyncedRows[i];
                 foreach (var kvp in syncEngine.ClientPropertyNameToServerPropertyName(classType))
                 {
-                    clientDict[kvp.Value] = clientDict[kvp.Key];
-                    clientDict.Remove(kvp.Key);
+                    clientData[kvp.Value] = clientData[kvp.Key];
+                    clientData.Remove(kvp.Key);
                 }
-                clientDict.Remove(syncedFieldName);
-                var id = clientDict[idFieldName];
-                clientDict.Remove(idFieldName);
-                clientDict[tableInfo.PropertyInfoID.Name] = id;
-                var syncId = clientDict[syncIdFieldName];
-                clientDict.Remove(syncIdFieldName);
-                clientDict[tableInfo.PropertyInfoSyncID.Name] = syncId;
-                var knowledgeId = clientDict[knowledgeIdFieldName];
-                clientDict.Remove(knowledgeIdFieldName);
-                clientDict[tableInfo.PropertyInfoKnowledgeID.Name] = knowledgeId;
-                var deleted = clientDict[deletedFieldName];
-                clientDict.Remove(deletedFieldName);
-                clientDict[tableInfo.PropertyInfoDeleted.Name] = deleted;
-                clientDict[tableInfo.PropertyInfoTimeStamp.Name] = syncEngine.GetNextTimeStamp();
-                var clientData = JsonSerializer.Deserialize(JsonSerializer.Serialize(clientDict), classType, new JsonSerializerOptions() { PropertyNameCaseInsensitive = true });
-                var clientId = tableInfo.PropertyInfoID.GetValue(clientData);
-                var serverData = queryable.Where($"{tableInfo.PropertyInfoID.Name} = @0", clientId).FirstOrDefault();
-                bool shouldInsert = serverData == null;
-                serverData = syncEngine.Populate(classType, clientData, serverData);
-                if (shouldInsert)
+                var id = clientData[idFieldName];
+                clientData.Remove(idFieldName);
+                clientData[tableInfo.PropertyInfoID.Name] = id;
+                var syncId = clientData[syncIdFieldName];
+                clientData.Remove(syncIdFieldName);
+                clientData[tableInfo.PropertyInfoSyncID.Name] = syncId;
+                var knowledgeId = clientData[knowledgeIdFieldName];
+                clientData.Remove(knowledgeIdFieldName);
+                clientData[tableInfo.PropertyInfoKnowledgeID.Name] = knowledgeId;
+                var deleted = clientData[deletedFieldName];
+                clientData.Remove(deletedFieldName);
+                clientData[tableInfo.PropertyInfoDeleted.Name] = deleted;
+                clientData[tableInfo.PropertyInfoTimeStamp.Name] = syncEngine.GetNextTimeStamp();
+                clientData.Remove(syncedFieldName);
+                object? parsedId = null;
+                if (clientData[tableInfo.PropertyInfoID.Name] is JsonElement)
                 {
-                    syncEngine.Insert(classType, serverData);
+                    parsedId = JsonSerializer.Deserialize(((JsonElement)clientData[tableInfo.PropertyInfoID.Name]!).GetRawText(), tableInfo.PropertyInfoID.PropertyType);
                 }
                 else
                 {
-                    syncEngine.Update(classType, serverData);
+                    parsedId = clientData[tableInfo.PropertyInfoID.Name];
+                }
+                processedIds.Add(parsedId!);
+                bool parsedDeleted = false;
+                if (clientData[tableInfo.PropertyInfoDeleted.Name] is JsonElement)
+                {
+                    parsedDeleted = Convert.ToBoolean(JsonSerializer.Deserialize(((JsonElement)clientData[tableInfo.PropertyInfoDeleted.Name]!).GetRawText(), tableInfo.PropertyInfoDeleted.PropertyType));
+                }
+                else
+                {
+                    parsedDeleted = Convert.ToBoolean(clientData[tableInfo.PropertyInfoDeleted.Name]);
+                }
+                var serverData = queryable.Where($"{tableInfo.PropertyInfoID.Name} = @0", parsedId).FirstOrDefault();
+                bool shouldInsert = serverData == null;
+                bool shouldIgnore = false;
+                if (!shouldInsert)
+                {
+                    bool serverDeleted = tableInfo.PropertyInfoDeleted.GetValue(serverData);
+                    if (serverDeleted)
+                    {
+                        shouldIgnore = true;
+                        responsePayload.Logs.Add(createLog("ignored", clientData));
+                        if (!parsedDeleted)
+                        {
+                            responsePayload.DeletedIds.Add(Convert.ToString(id)!);
+                        }
+                    }
+                }
+                serverData = syncEngine.PopulateServerData(classType, clientData, serverData);
+                if (shouldInsert)
+                {
+                    if (!shouldIgnore)
+                    {
+                        syncEngine.Insert(classType, serverData);
+                        responsePayload.Logs.Add(createLog("insert", clientData));
+                    }
+                }
+                else
+                {
+                    if (!shouldIgnore)
+                    {
+                        syncEngine.Update(classType, serverData);
+                        if (!parsedDeleted)
+                        {
+                            responsePayload.Logs.Add(createLog("update", clientData));
+                        }
+                        else
+                        {
+                            responsePayload.Logs.Add(createLog("delete", clientData));
+                        }
+                    }
+                }
+                var parsedSyncId = tableInfo.PropertyInfoSyncID.GetValue(serverData);
+                var parsedKnowledgeId = tableInfo.PropertyInfoKnowledgeID.GetValue(serverData);
+                long parsedTimeStamp = Convert.ToInt64(tableInfo.PropertyInfoTimeStamp.GetValue(serverData));
+                errorMessage = updateKnowledges(responsePayload.Knowledges, parsedSyncId, parsedKnowledgeId, parsedTimeStamp, false);
+                if (errorMessage != null)
+                {
+                    return createResponse(errorMessage, responsePayload);
                 }
             }
-            // TODO: Continue server implementation
-            return createResponse(errorMessage, null);
+
+            List<string> knownKnowledgeCriterias = new List<string>();
+            List<string> knowledgeIdsForUnknownQuery = new List<string>();
+            for (int i = 0; i < requestPayload.Knowledges.Count; i++)
+            {
+                var knowledgeDict = requestPayload.Knowledges[i];
+                string knowledgeId = Convert.ToString(knowledgeDict["id"])!.ToLower();
+                knownKnowledgeCriterias.Add($"{tableInfo.PropertyInfoKnowledgeID.Name}.ToLower() = \"{knowledgeId}\" AND {tableInfo.PropertyInfoTimeStamp.Name} > {Convert.ToString(knowledgeDict["lastTimeStamp"])}");
+                knowledgeIdsForUnknownQuery.Add(knowledgeId);
+            }
+            string knowledgeCriteria = $"{string.Join(" OR ", knownKnowledgeCriterias.Select(s => $"({s})").ToList())} OR (!@1.Contains({tableInfo.PropertyInfoKnowledgeID.Name}.ToLower()))";
+            string whereQuery = $"@0.Contains({tableInfo.PropertyInfoSyncID.Name}) AND ({knowledgeCriteria})";
+            var serverDatas = queryable.Where(whereQuery, syncIdInfo.GetAllSyncIds(), knowledgeIdsForUnknownQuery).ToDynamicList();
+            for (int i = 0; i < serverDatas.Count; i++)
+            {
+                var serverData = serverDatas[i];
+                if (processedIds.Contains(tableInfo.PropertyInfoID.GetValue(serverData))) continue;
+                Dictionary<string, object?> serializedServerData = syncEngine.SerializeServerData(serverData);
+                responsePayload.UnsyncedRows.Add(serializedServerData);
+                var parsedSyncId = tableInfo.PropertyInfoSyncID.GetValue(serverData);
+                var parsedKnowledgeId = tableInfo.PropertyInfoKnowledgeID.GetValue(serverData);
+                long parsedTimeStamp = Convert.ToInt64(tableInfo.PropertyInfoTimeStamp.GetValue(serverData));
+                errorMessage = updateKnowledges(responsePayload.Knowledges, parsedSyncId, parsedKnowledgeId, parsedTimeStamp, true);
+                if (errorMessage != null)
+                {
+                    return createResponse(errorMessage, responsePayload);
+                }
+            }
+            return createResponse(errorMessage, responsePayload);
         }
 
         string GetServerExceptionErrorMessageMissingConnectionId(string connectionId)

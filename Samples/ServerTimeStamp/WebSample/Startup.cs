@@ -23,7 +23,6 @@ namespace WebSample
 
         public IConfiguration Configuration { get; }
 
-        // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
             services.AddDbContext<DatabaseContext>(options =>
@@ -39,7 +38,7 @@ namespace WebSample
             // If argument is not passed, then the default value will be used (int will be zero)
             var testMinimumSchemaVersion = Configuration.GetValue<int>("minimumSchemaVersion");
             SyncEvent syncEvent = new SyncEvent();
-            syncEvent.OnHandshake = (request) => 
+            syncEvent.OnHandshake = (request, customInfo) => 
             {
                 // This is a chance to force your users to upgrade their app first before continuing the sync process.
                 // App features shall evolve over time, along with its database, so the schema may also be changed.
@@ -64,9 +63,18 @@ namespace WebSample
             services.AddNETCoreSyncServer(syncEvent: syncEvent);
         }
 
-        // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
-        public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
+        public void Configure(IApplicationBuilder app, IWebHostEnvironment env, DatabaseContext databaseContext)
         {
+            // Helper arguments to clear database for testing
+            var testClearDatabase = Configuration.GetValue<bool>("clearDatabase");
+            if (testClearDatabase)
+            {
+                databaseContext.Persons.RemoveRange(databaseContext.Persons);
+                databaseContext.Areas.RemoveRange(databaseContext.Areas);
+                databaseContext.CustomObjects.RemoveRange(databaseContext.CustomObjects);
+                databaseContext.SaveChanges();
+            }
+
             if (env.IsDevelopment())
             {
                 app.UseDeveloperExceptionPage();

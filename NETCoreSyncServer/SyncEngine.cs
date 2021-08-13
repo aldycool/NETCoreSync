@@ -8,6 +8,8 @@ namespace NETCoreSyncServer
 {
     public abstract class SyncEngine
     {
+        public Dictionary<string, object?> CustomInfo { get; set; } = null!;
+
         abstract public long GetNextTimeStamp();
         abstract public IQueryable GetQueryable(Type type);
         abstract public void Insert(Type type, dynamic serverData);
@@ -18,20 +20,41 @@ namespace NETCoreSyncServer
             return new Dictionary<string, string>();
         }
 
-        public dynamic Populate(Type type, object clientData, dynamic? serverData)
+        virtual public dynamic PopulateServerData(Type type, Dictionary<string, object?> clientData, dynamic? serverData)
         {
             if (serverData == null)
             {
-                serverData = Activator.CreateInstance(type);
+                serverData = Activator.CreateInstance(type)!;
             }
-            Type rowType = serverData!.GetType();
-            List<PropertyInfo> serverProperties = rowType.GetProperties(BindingFlags.Public | BindingFlags.Instance).Where(w => w.CanWrite).ToList();
-            for (int i = 0; i < serverProperties.Count; i++)
+            List<PropertyInfo> properties = type.GetProperties(BindingFlags.Public | BindingFlags.Instance).Where(w => w.CanWrite).ToList();
+            var keys = clientData.Keys.ToList();
+            foreach (var key in keys)
             {
-                var property = serverProperties[i];
-                property.SetValue(serverData, property.GetValue(clientData));
+                var property = properties.Where(w => w.Name.ToLower() == key.ToLower()).FirstOrDefault();
+                if (property == null) continue;
+                var value = clientData[key];
+                if (value is JsonElement)
+                {
+                    // The current Moor's default implementation of toJson() is converting DateTime to epoch milliseconds (in the _DefaultValueSerializer class).
+                    // We now attempt to detect such condition for DateTime type.
+                    if (property.PropertyType == typeof(DateTime) && ((JsonElement)value).ValueKind == JsonValueKind.Number)
+                    {
+                        value = DateTimeOffset.FromUnixTimeMilliseconds(((JsonElement)value).GetInt64()).LocalDateTime;
+                    }
+                    else
+                    {
+                        value = JsonSerializer.Deserialize(((JsonElement)value).GetRawText(), property.PropertyType);    
+                    }
+                }
+                property.SetValue(serverData, value);
             }
             return serverData;
+        }
+
+        virtual public Dictionary<string, object?> SerializeServerData(dynamic serverData)
+        {
+            string json = JsonSerializer.Serialize(serverData, SyncMessages.serializeOptions);
+            return JsonSerializer.Deserialize<Dictionary<string, object?>>(json)!;
         }
     }
 }

@@ -2,6 +2,11 @@ import 'package:meta/meta.dart';
 import 'package:moor/moor.dart';
 import 'data_access.dart';
 
+// To follow general guideline about formatting DateTime to a json element:
+// https://stackoverflow.com/questions/10286204/what-is-the-right-json-date-format
+// this is a custom ValueSerializer to convert json DateTime to/from ISO 8601.
+// Use it with: moorRuntimeOptions.defaultSerializer = CustomJsonValueSerializer();
+// NOTE: At the moment, this class is not used.
 class CustomJsonValueSerializer extends ValueSerializer {
   static const defaults = ValueSerializer.defaults();
 
@@ -61,6 +66,7 @@ class SyncEvent {
 class SyncResult {
   String? errorMessage;
   Object? error;
+  List<Map<String, dynamic>> logs = [];
 }
 
 abstract class SyncBaseTable<T extends HasResultSet, D> {

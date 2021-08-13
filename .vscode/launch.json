@@ -10,7 +10,7 @@
             "request": "launch",
             "preLaunchTask": "buildServerTimeStamp",
             "program": "${workspaceFolder}/Samples/ServerTimeStamp/WebSample/bin/Debug/net5.0/WebSample.dll",
-            "args": [],
+            "args": [ "clearDatabase=true" ],
             "cwd": "${workspaceFolder}/Samples/ServerTimeStamp/WebSample",
             "stopAtEntry": false,
             // "serverReadyAction": {

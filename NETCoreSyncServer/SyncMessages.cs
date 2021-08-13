@@ -158,6 +158,7 @@ namespace NETCoreSyncServer
 
         public int SchemaVersion { get; set; }
         public SyncIdInfo SyncIdInfo { get; set; } = null!;
+        public Dictionary<string, object?> CustomInfo { get; set; } = null!;
     }
 
     public class HandshakeResponsePayload : BasePayload
@@ -175,6 +176,7 @@ namespace NETCoreSyncServer
         public Dictionary<string, object?> Annotations { get; set; } = null!;
         public List<Dictionary<string, object?>> UnsyncedRows { get; set; } = null!;
         public List<Dictionary<string, object?>> Knowledges { get; set; } = null!;
+        public Dictionary<string, object?> CustomInfo { get; set; } = null!;
     }
 
     public class SyncTableResponsePayload : BasePayload
@@ -184,5 +186,7 @@ namespace NETCoreSyncServer
         public string ClassName { get; set; } = null!;
         public List<Dictionary<string, object?>> UnsyncedRows { get; set; } = null!;
         public List<Dictionary<string, object?>> Knowledges { get; set; } = null!;
-    }
+        public List<string> DeletedIds { get; set; } = null!;
+        public List<Dictionary<string, object?>> Logs { get; set; } = null!;
+}
 }
