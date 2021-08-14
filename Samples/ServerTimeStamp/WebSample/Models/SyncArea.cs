@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using System.Text.Json.Serialization;
 using Microsoft.EntityFrameworkCore;
 using NETCoreSyncServer;
 
@@ -20,8 +21,10 @@ namespace WebSample.Models
 
         public string District { get; set; } = null!;
 
+        [JsonIgnore]
         public string CityDistrict { get { return $"{City} - {District}"; } }
 
+        [JsonIgnore]
         [ForeignKey("VaccinationAreaID")]
         public ICollection<SyncPerson> Persons { get; set; } = null!;
 

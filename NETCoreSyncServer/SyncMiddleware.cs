@@ -235,6 +235,7 @@ namespace NETCoreSyncServer
         {
             string? errorMessage = null;
             SyncTableResponsePayload responsePayload = new SyncTableResponsePayload();
+            responsePayload.Annotations = new Dictionary<string, object?>();
             responsePayload.UnsyncedRows = new List<Dictionary<string, object?>>();
             responsePayload.Knowledges = new List<Dictionary<string, object?>>();
             responsePayload.DeletedIds = new List<string>();
@@ -308,6 +309,11 @@ namespace NETCoreSyncServer
                 responsePayload.Knowledges.Add(knowledgeDict);
             });
             TableInfo tableInfo = syncService.TableInfos[classType];
+            responsePayload.Annotations["idFieldName"] = JsonNamingPolicy.CamelCase.ConvertName(tableInfo.PropertyInfoID.Name);
+            responsePayload.Annotations["syncIdFieldName"] = JsonNamingPolicy.CamelCase.ConvertName(tableInfo.PropertyInfoSyncID.Name);
+            responsePayload.Annotations["knowledgeIdFieldName"] = JsonNamingPolicy.CamelCase.ConvertName(tableInfo.PropertyInfoKnowledgeID.Name);
+            responsePayload.Annotations["syncedFieldName"] = Convert.ToString(requestPayload.Annotations["syncedFieldName"])!;
+            responsePayload.Annotations["deletedFieldName"] = JsonNamingPolicy.CamelCase.ConvertName(tableInfo.PropertyInfoDeleted.Name);
             IQueryable queryable = syncEngine.GetQueryable(classType!);
             string syncedFieldName = Convert.ToString(requestPayload.Annotations["syncedFieldName"])!;
             string idFieldName = Convert.ToString(requestPayload.Annotations["idFieldName"])!;
@@ -423,6 +429,8 @@ namespace NETCoreSyncServer
                 var serverData = serverDatas[i];
                 if (processedIds.Contains(tableInfo.PropertyInfoID.GetValue(serverData))) continue;
                 Dictionary<string, object?> serializedServerData = syncEngine.SerializeServerData(serverData);
+                serializedServerData[Convert.ToString(responsePayload.Annotations["syncedFieldName"])!] = true;
+                serializedServerData.Remove(JsonNamingPolicy.CamelCase.ConvertName(tableInfo.PropertyInfoTimeStamp.Name));
                 responsePayload.UnsyncedRows.Add(serializedServerData);
                 var parsedSyncId = tableInfo.PropertyInfoSyncID.GetValue(serverData);
                 var parsedKnowledgeId = tableInfo.PropertyInfoKnowledgeID.GetValue(serverData);

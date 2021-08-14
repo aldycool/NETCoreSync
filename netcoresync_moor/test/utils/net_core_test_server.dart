@@ -15,18 +15,6 @@ class NetCoreTestServer {
     '(?:(?:\\d{1,4}(?:;\\d{0,4})*)?[\\dA-PR-TZcf-ntqry=><~]))'
   ].join('|'));
 
-  static Future<String?> getDotnetExecutablePath() async {
-    var dotnetPathResult = await Process.run(
-      "which",
-      [
-        "dotnet",
-      ],
-    );
-    String dotnetExec =
-        ((await dotnetPathResult.stdout) as String).replaceAll("\n", "");
-    return dotnetExec != "" ? dotnetExec : null;
-  }
-
   static Future<bool> build({
     required String dotnetExecutablePath,
     required String projectRootDirectory,

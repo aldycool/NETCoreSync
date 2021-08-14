@@ -1,6 +1,7 @@
 using System;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using System.Text.Json.Serialization;
 using Microsoft.EntityFrameworkCore;
 using NETCoreSyncServer;
 
@@ -32,6 +33,8 @@ namespace WebSample.Models
         public int? VaccinePhase { get; set; }
 
         public Guid? VaccinationAreaID { get; set; }
+        
+        [JsonIgnore]
         public SyncArea? VaccinationArea { get; set; }
 
         [SyncProperty(SyncPropertyAttribute.PropertyIndicatorEnum.SyncID)]

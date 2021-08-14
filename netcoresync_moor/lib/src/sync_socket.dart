@@ -314,6 +314,8 @@ class ConnectResult {
 class ResponseResult {
   static const String defaultErrorMessage = "Error while commmunicating with "
       "the server. Please check your network connection, or try again later.";
+  static const String payloadNullErrorMessage = "No data received from the "
+      "server. Please try again later.";
 
   String? errorMessage;
   Object? error;

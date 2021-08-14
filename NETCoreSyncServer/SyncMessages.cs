@@ -4,6 +4,7 @@ using System.IO;
 using System.IO.Compression;
 using System.Text;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using System.Threading.Tasks;
 
 namespace NETCoreSyncServer
@@ -13,7 +14,7 @@ namespace NETCoreSyncServer
         public static JsonSerializerOptions serializeOptions => new JsonSerializerOptions() 
         { 
             PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
-            DictionaryKeyPolicy = JsonNamingPolicy.CamelCase,
+            DictionaryKeyPolicy = JsonNamingPolicy.CamelCase
         };
         public static JsonSerializerOptions deserializeOptions => new JsonSerializerOptions() 
         { 
@@ -184,6 +185,7 @@ namespace NETCoreSyncServer
         override public string Action => PayloadActions.syncTableResponse.ToString();
 
         public string ClassName { get; set; } = null!;
+        public Dictionary<string, object?> Annotations { get; set; } = null!;
         public List<Dictionary<string, object?>> UnsyncedRows { get; set; } = null!;
         public List<Dictionary<string, object?>> Knowledges { get; set; } = null!;
         public List<string> DeletedIds { get; set; } = null!;

@@ -1,6 +1,7 @@
 using System;
 using System.Linq;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using System.Collections.Generic;
 using System.Reflection;
 
@@ -53,8 +54,26 @@ namespace NETCoreSyncServer
 
         virtual public Dictionary<string, object?> SerializeServerData(dynamic serverData)
         {
-            string json = JsonSerializer.Serialize(serverData, SyncMessages.serializeOptions);
+            JsonSerializerOptions defaultOptions = new JsonSerializerOptions(SyncMessages.serializeOptions);
+            defaultOptions.Converters.Add(new MoorDateTimeSerializer());
+            string json = JsonSerializer.Serialize(serverData, defaultOptions);
             return JsonSerializer.Deserialize<Dictionary<string, object?>>(json)!;
+        }
+
+        private class MoorDateTimeSerializer : JsonConverter<DateTime>
+        {
+            // The Read converter here is not used because the Moor's DateTime deserialization is not performed automatically by JsonDeserializer.Deserialize(), but manually in the PopulateServerData() default implementation.
+            public override DateTime Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options) =>
+                    DateTimeOffset.FromUnixTimeMilliseconds(reader.GetInt64()).LocalDateTime;
+
+            public override void Write(
+                Utf8JsonWriter writer,
+                DateTime dateTimeValue,
+                JsonSerializerOptions options)
+            {
+                DateTimeOffset dateTimeOffet = DateTime.SpecifyKind(dateTimeValue, DateTimeKind.Local);
+                writer.WriteNumberValue(dateTimeOffet.ToUnixTimeMilliseconds());
+            }
         }
     }
 }

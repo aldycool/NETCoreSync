@@ -255,6 +255,7 @@ class SyncTableResponsePayload extends BasePayload {
       EnumToString.convertToString(PayloadActions.syncTableResponse);
 
   final String className;
+  final Map<String, dynamic> annotations;
   final List<dynamic> unsyncedRows;
   final List<NetCoreSyncKnowledge> knowledges;
   final List<String> deletedIds;
@@ -262,6 +263,7 @@ class SyncTableResponsePayload extends BasePayload {
 
   const SyncTableResponsePayload({
     required this.className,
+    required this.annotations,
     required this.unsyncedRows,
     required this.knowledges,
     required this.deletedIds,
@@ -272,6 +274,7 @@ class SyncTableResponsePayload extends BasePayload {
   Map<String, dynamic> toJson() {
     return <String, dynamic>{
       "className": className,
+      "annotations": annotations,
       "unsyncedRows": unsyncedRows,
       "knowledges": knowledges,
       "deletedIds": deletedIds,
@@ -281,6 +284,7 @@ class SyncTableResponsePayload extends BasePayload {
 
   SyncTableResponsePayload.fromJson(Map<String, dynamic> json)
       : className = json["className"],
+        annotations = Map.from(json["annotations"]),
         unsyncedRows = List.from(json["unsyncedRows"]),
         knowledges = List<NetCoreSyncKnowledge>.from(
             (json["knowledges"] as Iterable)

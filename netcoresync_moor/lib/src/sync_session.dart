@@ -139,15 +139,19 @@ class SyncSession {
       responseResult = await _syncSocket.request(
         payload: syncTableRequest,
       );
-      final syncTableResponse =
-          responseResult.payload! as SyncTableResponsePayload;
-      _logAction(syncResult, payload: syncTableResponse);
+      // Even though there might be errors from server here, try to capture the
+      // incoming logs from server first (if there's any payload from server).
+      if (responseResult.payload != null) {
+        _logAction(syncResult, payload: responseResult.payload);
+      }
       if (await _shouldTerminate(
         responseResult: responseResult,
         syncResult: syncResult,
       )) {
         return syncResult;
       }
+      final syncTableResponse =
+          responseResult.payload! as SyncTableResponsePayload;
       for (var j = 0; j < unsyncedRows.length; j++) {
         var unsyncedRow = unsyncedRows[j];
         unsyncedRow =
@@ -167,6 +171,9 @@ class SyncSession {
           existing.lastTimeStamp = knowledge.lastTimeStamp;
           await dataAccess.update(dataAccess.knowledges).replace(existing);
         }
+      }
+      for (var j = 0; j < syncTableResponse.unsyncedRows.length; j++) {
+        var serverRow = syncTableResponse.unsyncedRows[j];
       }
 
       // TODO: Handle unsynced rows from server response
@@ -211,6 +218,10 @@ class SyncSession {
     if (responseResult.errorMessage != null || responseResult.error != null) {
       syncResult.errorMessage = responseResult.errorMessage;
       syncResult.error = responseResult.error;
+      await _syncSocket.close();
+      return true;
+    } else if (responseResult.payload == null) {
+      syncResult.errorMessage = ResponseResult.payloadNullErrorMessage;
       await _syncSocket.close();
       return true;
     }

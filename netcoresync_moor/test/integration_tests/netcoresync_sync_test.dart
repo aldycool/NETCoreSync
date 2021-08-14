@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:moor/moor.dart';
 import 'package:netcoresync_moor/netcoresync_moor.dart';
 import 'package:test/test.dart';
+import 'package:uuid/uuid.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
 import 'package:netcoresync_moor/src/netcoresync_classes.dart';
 import 'package:netcoresync_moor/src/sync_messages.dart';
@@ -19,12 +20,12 @@ void main() {
     }
   }
 
+  String dotnetExecutableFullPath = "/usr/local/share/dotnet/dotnet";
   bool netCorePrintStdout = true;
   String netCoreProjectRootDirectory = "../Samples/ServerTimeStamp/WebSample";
   String netCoreDllFileName = "WebSample.dll";
   String netCoreDllDirectory =
       "../Samples/ServerTimeStamp/WebSample/bin/Debug/net5.0";
-  late String dotnetExecutablePath;
 
   String testFilesFolder = ".test_files";
   bool useInMemoryDatabase = true;
@@ -43,14 +44,8 @@ void main() {
   int getNetCoreUrlPort() => ++currentPort;
 
   setUpAll(() async {
-    String? dotnetPathResult =
-        await NetCoreTestServer.getDotnetExecutablePath();
-    expect(dotnetPathResult, isNot(equals(null)),
-        reason: "dotnet may not be installed yet");
-    dotnetExecutablePath = dotnetPathResult!;
-
     bool buildResult = await NetCoreTestServer.build(
-      dotnetExecutablePath: dotnetExecutablePath,
+      dotnetExecutablePath: dotnetExecutableFullPath,
       projectRootDirectory: netCoreProjectRootDirectory,
       printStdout: netCorePrintStdout,
     );
@@ -76,7 +71,7 @@ void main() {
       wsUrl = "wss://localhost:$netCoreUrlPort/netcoresyncserver";
 
       netCoreTestServer = NetCoreTestServer(
-        dotnetExecutablePath: dotnetExecutablePath,
+        dotnetExecutablePath: dotnetExecutableFullPath,
         dllFileName: netCoreDllFileName,
         dllDirectory: netCoreDllDirectory,
         aspNetCoreUrls: urls,
@@ -384,7 +379,7 @@ void main() {
       wsUrl = "wss://localhost:$netCoreUrlPort/netcoresyncserver";
 
       netCoreTestServer = NetCoreTestServer(
-        dotnetExecutablePath: dotnetExecutablePath,
+        dotnetExecutablePath: dotnetExecutableFullPath,
         dllFileName: netCoreDllFileName,
         dllDirectory: netCoreDllDirectory,
         aspNetCoreUrls: urls,
@@ -472,13 +467,146 @@ void main() {
       }
     });
 
-    test("SyncSession synchronize", () async {
+    test("SyncSession Synchronize", () async {
       await startServer(
         args: [
           "clearDatabase=true",
         ],
       );
+
       // wsUrl = "wss://localhost:5001/netcoresyncserver";
+
+      // START: Helper methods for repetitive tasks
+
+      AreasCompanion defaultArea() => AreasCompanion(
+            city: Value("Jakarta"),
+            district: Value("Menteng"),
+          );
+
+      PersonsCompanion defaultPerson() => PersonsCompanion(
+            name: Value("John Doe"),
+            birthday: Value(DateTime(2000, 1, 1)),
+            age: Value(21),
+            isForeigner: Value(true),
+          );
+
+      Future<AreaData> doInsertArea(
+        Database db,
+        AreasCompanion entity,
+      ) async {
+        String id = Uuid().v4();
+        entity = entity.copyWith(pk: Value(id));
+        await db.syncInto(db.areas).syncInsert(entity);
+        final data = await (db.select(db.areas)..whereSamePrimaryKey(entity))
+            .getSingle();
+        return data;
+      }
+
+      Future<Person> doInsertPerson(
+        Database db,
+        PersonsCompanion entity,
+      ) async {
+        String id = Uuid().v4();
+        entity = entity.copyWith(id: Value(id));
+        await db.syncInto(db.persons).syncInsert(entity);
+        final data = await (db.select(db.persons)..whereSamePrimaryKey(entity))
+            .getSingle();
+        return data;
+      }
+
+      Future validateClientState(
+        Database db,
+        List<AreaData> areaDatas,
+        List<Person> personDatas,
+      ) async {
+        if (areaDatas.isNotEmpty) {
+          for (var i = 0; i < areaDatas.length; i++) {
+            final data = areaDatas[i];
+            final actuals = await (db.select(db.areas)
+                  ..where((tbl) => tbl.pk.equals(data.pk)))
+                .get();
+            expect(actuals.length, equals(1));
+            expect(actuals[0].city, equals(data.city));
+            expect(actuals[0].district, equals(data.district));
+            expect(actuals[0].syncSynced, equals(true));
+          }
+        }
+        expect(
+            (await db.select(db.areas).get()).length, equals(areaDatas.length));
+        if (personDatas.isNotEmpty) {
+          for (var i = 0; i < personDatas.length; i++) {
+            final data = personDatas[i];
+            final actuals = await (db.select(db.persons)
+                  ..where((tbl) => tbl.id.equals(data.id)))
+                .get();
+            expect(actuals.length, equals(1));
+            expect(actuals[0].name, equals(data.name));
+            expect(actuals[0].birthday, equals(data.birthday));
+            expect(actuals[0].age, equals(data.age));
+            expect(actuals[0].isForeigner, equals(data.isForeigner));
+            expect(actuals[0].synced, equals(true));
+          }
+        }
+        expect((await db.select(db.persons).get()).length,
+            equals(personDatas.length));
+      }
+
+      void validateServerState(
+        SyncResult syncResult,
+        Object? error,
+        String? errorMessage,
+        Map<String, String> areaIdOperations,
+        Map<String, String> personIdOperations,
+      ) {
+        expect(syncResult.error, equals(error));
+        expect(syncResult.errorMessage, equals(errorMessage));
+
+        void validateServerLogs(
+            String className, Map<String, String> operations) {
+          final logLines = syncResult.logs.where((element) =>
+              element["action"] == "syncTableResponse" &&
+              element["data"]["className"] == className);
+          expect(logLines.length, equals(1));
+          final serverLogs = logLines.elementAt(0)["data"]["logs"];
+          expect(serverLogs,
+              allOf(isNot(equals(null)), isA<List<Map<String, dynamic>>>()));
+          operations.forEach((key, value) {
+            expect(
+                (serverLogs as List<Map<String, dynamic>>).any((element) =>
+                    element.containsKey("action") &&
+                    element["action"] == value &&
+                    element["data"]["id"] == key),
+                equals(true));
+          });
+          expect(serverLogs.length, equals(operations.length));
+        }
+
+        validateServerLogs("AreaData", areaIdOperations);
+        validateServerLogs("Person", personIdOperations);
+      }
+
+      Future validateKnowledge(Database db) async {
+        final knowledges = await db.select(db.netCoreSyncKnowledges).get();
+        for (var i = 0; i < knowledges.length; i++) {
+          final knowledge = knowledges[i];
+          final areaExist = (await (db.select(db.areas)
+                    ..where((tbl) =>
+                        tbl.syncSyncId.equals(knowledge.syncId) &
+                        tbl.syncKnowledgeId.equals(knowledge.id)))
+                  .get())
+              .isNotEmpty;
+          final personExist = (await (db.select(db.persons)
+                    ..where((tbl) =>
+                        tbl.syncId.equals(knowledge.syncId) &
+                        tbl.knowledgeId.equals(knowledge.id)))
+                  .get())
+              .isNotEmpty;
+          expect(true, anyOf(areaExist, personExist));
+        }
+      }
+
+      // END: Helper methods for repetitive tasks
+
       final dbAbc1 = await setUpDatabase(
         syncIdInfo: SyncIdInfo(syncId: "abc"),
         databaseFileName: "netcoresync_sync_test_manual_abc1.db",
@@ -495,117 +623,57 @@ void main() {
         (object as Map<String, dynamic>)["db"] = "abc2";
         log(object, null);
       });
+
       try {
-        // Insert one AreaData and one Person, and Sync
-        await dbAbc1.syncInto(dbAbc1.areas).syncInsert(AreasCompanion(
-              city: Value("Jakarta"),
-              district: Value("Menteng"),
-            ));
-        final area = await dbAbc1.syncSelect(dbAbc1.syncAreas).getSingle();
-        await dbAbc1.syncInto(dbAbc1.persons).syncInsert(PersonsCompanion(
-              name: Value("John Doe"),
-              birthday: Value(DateTime(2000, 1, 1)),
-              age: Value(21),
-              isForeigner: Value(true),
-              vaccinationAreaPk: Value(area.pk),
-            ));
-        final syncResult1 = await dbAbc1.netCoreSyncSynchronize(url: wsUrl);
-        expect(syncResult1.error, equals(null));
-        expect(syncResult1.errorMessage, equals(null));
-        final syncedArea1 =
-            await dbAbc1.syncSelect(dbAbc1.syncAreas).getSingle();
-        expect(syncedArea1.syncSynced, equals(true));
-        final syncedPerson1 =
-            await dbAbc1.syncSelect(dbAbc1.syncPersons).getSingle();
-        expect(syncedPerson1.synced, equals(true));
-        var serverDataArea1 = syncResult1.logs
-            .where((element) =>
-                element["action"] == "syncTableResponse" &&
-                element["data"]["className"] == "AreaData" &&
-                (element["data"]["logs"] as Iterable).length == 1 &&
-                (element["data"]["logs"] as Iterable).elementAt(0)["action"] ==
-                    "insert" &&
-                (element["data"]["logs"] as Iterable).elementAt(0)["data"]
-                        ["id"] ==
-                    syncedArea1.pk)
-            .toList();
-        expect(serverDataArea1.length, equals(1));
-        var serverDataPerson1 = syncResult1.logs
-            .where((element) =>
-                element["action"] == "syncTableResponse" &&
-                element["data"]["className"] == "Person" &&
-                (element["data"]["logs"] as Iterable).length == 1 &&
-                (element["data"]["logs"] as Iterable).elementAt(0)["action"] ==
-                    "insert" &&
-                (element["data"]["logs"] as Iterable).elementAt(0)["data"]
-                        ["id"] ==
-                    syncedPerson1.id)
-            .toList();
-        expect(serverDataPerson1.length, equals(1));
+        // Activity #1: abc1 insert AreaData + insert Person + Sync
+        final abc1area1 = await doInsertArea(dbAbc1, defaultArea());
+        final abc1person1 = await doInsertPerson(dbAbc1,
+            defaultPerson().copyWith(vaccinationAreaPk: Value(abc1area1.pk)));
+        final abc1syncResult1 = await dbAbc1.netCoreSyncSynchronize(url: wsUrl);
+        await validateClientState(dbAbc1, [abc1area1], [abc1person1]);
+        validateServerState(abc1syncResult1, null, null,
+            {abc1area1.pk: "insert"}, {abc1person1.id: "insert"});
+        await validateKnowledge(dbAbc1);
 
-        // Sync only without any changes
-        final syncResult2 = await dbAbc1.netCoreSyncSynchronize(url: wsUrl);
-        expect(syncResult2.error, equals(null));
-        expect(syncResult2.errorMessage, equals(null));
-        var serverDataArea2 = syncResult2.logs
-            .where((element) =>
-                element["action"] == "syncTableRequest" &&
-                element["data"]["className"] == "AreaData" &&
-                (element["data"]["unsyncedRows"] as Iterable).isEmpty)
-            .toList();
-        expect(serverDataArea2.length, equals(1));
-        var serverDataPerson2 = syncResult2.logs
-            .where((element) =>
-                element["action"] == "syncTableRequest" &&
-                element["data"]["className"] == "Person" &&
-                (element["data"]["unsyncedRows"] as Iterable).isEmpty)
-            .toList();
-        expect(serverDataPerson2.length, equals(1));
+        // Activity #2: abc1 no changes + Sync
+        final abc1syncResult2 = await dbAbc1.netCoreSyncSynchronize(url: wsUrl);
+        await validateClientState(dbAbc1, [abc1area1], [abc1person1]);
+        validateServerState(abc1syncResult2, null, null, {}, {});
+        await validateKnowledge(dbAbc1);
 
-        // Update AreaData and Delete Person, and Sync
-        final area3 = await dbAbc1.syncSelect(dbAbc1.syncAreas).getSingle();
+        // Activity #3: abc1 update AreaData + update Person + Sync
         await dbAbc1
             .syncUpdate(dbAbc1.areas)
-            .syncReplace(area3.toCompanion(true).copyWith(
-                  district: Value("Kemang"),
+            .syncReplace(abc1area1.toCompanion(true).copyWith(
+                  city: Value("Denpasar"),
+                  district: Value("Nusa Dua"),
                 ));
-        await dbAbc1.syncDelete(dbAbc1.persons).go();
-        final syncResult3 = await dbAbc1.netCoreSyncSynchronize(url: wsUrl);
-        expect(syncResult3.error, equals(null));
-        expect(syncResult3.errorMessage, equals(null));
-        final syncedArea3 =
-            await dbAbc1.syncSelect(dbAbc1.syncAreas).getSingle();
-        expect(syncedArea3.syncSynced, equals(true));
-        final syncedPerson3 = await dbAbc1.select(dbAbc1.persons).getSingle();
-        expect(syncedPerson3.synced, equals(true));
-        expect((await dbAbc1.syncSelect(dbAbc1.syncPersons).get()).length,
-            equals(0));
-        var serverDataArea3 = syncResult3.logs
-            .where((element) =>
-                element["action"] == "syncTableResponse" &&
-                element["data"]["className"] == "AreaData" &&
-                (element["data"]["logs"] as Iterable).length == 1 &&
-                (element["data"]["logs"] as Iterable).elementAt(0)["action"] ==
-                    "update" &&
-                (element["data"]["logs"] as Iterable).elementAt(0)["data"]
-                        ["id"] ==
-                    syncedArea3.pk)
-            .toList();
-        expect(serverDataArea3.length, equals(1));
-        var serverDataPerson3 = syncResult3.logs
-            .where((element) =>
-                element["action"] == "syncTableResponse" &&
-                element["data"]["className"] == "Person" &&
-                (element["data"]["logs"] as Iterable).length == 1 &&
-                (element["data"]["logs"] as Iterable).elementAt(0)["action"] ==
-                    "delete" &&
-                (element["data"]["logs"] as Iterable).elementAt(0)["data"]
-                        ["id"] ==
-                    syncedPerson3.id)
-            .toList();
-        expect(serverDataPerson3.length, equals(1));
+        final abc1area3 = await (dbAbc1.select(dbAbc1.areas)
+              ..where((tbl) => tbl.pk.equals(abc1area1.pk)))
+            .getSingle();
+        await dbAbc1.syncUpdate(dbAbc1.persons).syncReplace(
+            abc1person1.toCompanion(true).copyWith(name: Value("John Doe 2")));
+        final abc1person3 = await (dbAbc1.select(dbAbc1.persons)
+              ..where((tbl) => tbl.id.equals(abc1person1.id)))
+            .getSingle();
+        final abc1syncResult3 = await dbAbc1.netCoreSyncSynchronize(url: wsUrl);
+        await validateClientState(dbAbc1, [abc1area3], [abc1person3]);
+        validateServerState(abc1syncResult3, null, null,
+            {abc1area3.pk: "update"}, {abc1person3.id: "update"});
+        await validateKnowledge(dbAbc1);
 
-        // TODO: Test a single user with two devices
+        // Activity #4: abc2 insert Person + Sync, abc1 Sync
+        final abc2person4 = await doInsertPerson(
+            dbAbc2,
+            defaultPerson().copyWith(
+                name: Value(
+              "Jane Doe",
+            )));
+        final abc2syncResult4 = await dbAbc2.netCoreSyncSynchronize(url: wsUrl);
+        await validateClientState(dbAbc2, [], [abc2person4]);
+        validateServerState(
+            abc2syncResult4, null, null, {}, {abc2person4.id: "insert"});
+        await validateKnowledge(dbAbc2);
       } catch (_) {
         rethrow;
       } finally {
