@@ -79,6 +79,20 @@ class NetCoreSyncClientGenerator extends GeneratorForAnnotation<UseMoor> {
     buffer.writeln(
         "_\$NetCoreSyncEngineUser(Map<Type, NetCoreSyncTableUser> tables) : super(tables);");
 
+    // START METHOD: fromJson
+    buffer.writeln();
+    buffer.writeln("@override");
+    buffer.writeln("dynamic fromJson(Type type, Map<String, dynamic> json) {");
+    for (var jsonPart in jsonParts) {
+      Map<String, dynamic> part = jsonDecode(jsonPart);
+      buffer.writeln("if (type == ${part["dataClassName"]}) {");
+      buffer.writeln("return ${part["dataClassName"]}.fromJson(json);");
+      buffer.writeln("}");
+    }
+    buffer.writeln("throw NetCoreSyncException(\"Unexpected type: \$type\");");
+    buffer.writeln("}");
+    // END METHOD: fromJson
+
     // START METHOD: toSafeCompanion
     buffer.writeln();
     buffer.writeln("@override");
@@ -109,47 +123,49 @@ class NetCoreSyncClientGenerator extends GeneratorForAnnotation<UseMoor> {
     // END METHOD: toSafeCompanion
 
     // START METHOD: getSyncColumnValue
+    // Optimization Notes: fieldName used are only: id + deleted. The D type
+    // are only: DataClass and custom row class. Unused code are remarked.
     buffer.writeln();
     buffer.writeln("@override");
     buffer.writeln(
         "Object? getSyncColumnValue<D>(Insertable<D> entity, String fieldName) {");
-    buffer.writeln("if (entity is RawValuesInsertable<D>) {");
-    buffer.writeln("switch (fieldName) {");
-    buffer.writeln("case\"id\":");
-    buffer.writeln("return entity.data[tables[D]!.idEscapedName];");
-    buffer.writeln("case\"syncId\":");
-    buffer.writeln("return entity.data[tables[D]!.syncIdEscapedName];");
-    buffer.writeln("case\"knowledgeId\":");
-    buffer.writeln("return entity.data[tables[D]!.knowledgeIdEscapedName];");
-    buffer.writeln("case\"synced\":");
-    buffer.writeln("return entity.data[tables[D]!.syncedEscapedName];");
-    buffer.writeln("case\"deleted\":");
-    buffer.writeln("return entity.data[tables[D]!.deletedEscapedName];");
-    buffer.writeln("}");
-    buffer.writeln("} else if (entity is UpdateCompanion<D>) {");
-    for (var jsonPart in jsonParts) {
-      Map<String, dynamic> part = jsonDecode(jsonPart);
-      buffer.writeln("if (D == ${part["dataClassName"]}) {");
-      buffer.writeln("switch (fieldName) {");
-      buffer.writeln("case\"id\":");
-      buffer.writeln(
-          "return (entity as ${part["tableClassName"]}Companion).${part["netCoreSyncTable"]["idFieldName"]} == Value.absent() ? null : (entity as ${part["tableClassName"]}Companion).${part["netCoreSyncTable"]["idFieldName"]}.value;");
-      buffer.writeln("case\"syncId\":");
-      buffer.writeln(
-          "return (entity as ${part["tableClassName"]}Companion).${part["netCoreSyncTable"]["syncIdFieldName"]} == Value.absent() ? null : (entity as ${part["tableClassName"]}Companion).${part["netCoreSyncTable"]["syncIdFieldName"]}.value;");
-      buffer.writeln("case\"knowledgeId\":");
-      buffer.writeln(
-          "return (entity as ${part["tableClassName"]}Companion).${part["netCoreSyncTable"]["knowledgeIdFieldName"]} == Value.absent() ? null : (entity as ${part["tableClassName"]}Companion).${part["netCoreSyncTable"]["knowledgeIdFieldName"]}.value;");
-      buffer.writeln("case\"synced\":");
-      buffer.writeln(
-          "return (entity as ${part["tableClassName"]}Companion).${part["netCoreSyncTable"]["syncedFieldName"]} == Value.absent() ? null : (entity as ${part["tableClassName"]}Companion).${part["netCoreSyncTable"]["syncedFieldName"]}.value;");
-      buffer.writeln("case\"deleted\":");
-      buffer.writeln(
-          "return (entity as ${part["tableClassName"]}Companion).${part["netCoreSyncTable"]["deletedFieldName"]} == Value.absent() ? null : (entity as ${part["tableClassName"]}Companion).${part["netCoreSyncTable"]["deletedFieldName"]}.value;");
-      buffer.writeln("}");
-      buffer.writeln("}");
-    }
-    buffer.writeln("} else {");
+    // buffer.writeln("if (entity is RawValuesInsertable<D>) {");
+    // buffer.writeln("switch (fieldName) {");
+    // buffer.writeln("case\"id\":");
+    // buffer.writeln("return entity.data[tables[D]!.idEscapedName];");
+    // buffer.writeln("case\"syncId\":");
+    // buffer.writeln("return entity.data[tables[D]!.syncIdEscapedName];");
+    // buffer.writeln("case\"knowledgeId\":");
+    // buffer.writeln("return entity.data[tables[D]!.knowledgeIdEscapedName];");
+    // buffer.writeln("case\"synced\":");
+    // buffer.writeln("return entity.data[tables[D]!.syncedEscapedName];");
+    // buffer.writeln("case\"deleted\":");
+    // buffer.writeln("return entity.data[tables[D]!.deletedEscapedName];");
+    // buffer.writeln("}");
+    // buffer.writeln("} else if (entity is UpdateCompanion<D>) {");
+    // for (var jsonPart in jsonParts) {
+    //   Map<String, dynamic> part = jsonDecode(jsonPart);
+    //   buffer.writeln("if (D == ${part["dataClassName"]}) {");
+    //   buffer.writeln("switch (fieldName) {");
+    //   buffer.writeln("case\"id\":");
+    //   buffer.writeln(
+    //       "return (entity as ${part["tableClassName"]}Companion).${part["netCoreSyncTable"]["idFieldName"]} == Value.absent() ? null : (entity as ${part["tableClassName"]}Companion).${part["netCoreSyncTable"]["idFieldName"]}.value;");
+    //   buffer.writeln("case\"syncId\":");
+    //   buffer.writeln(
+    //       "return (entity as ${part["tableClassName"]}Companion).${part["netCoreSyncTable"]["syncIdFieldName"]} == Value.absent() ? null : (entity as ${part["tableClassName"]}Companion).${part["netCoreSyncTable"]["syncIdFieldName"]}.value;");
+    //   buffer.writeln("case\"knowledgeId\":");
+    //   buffer.writeln(
+    //       "return (entity as ${part["tableClassName"]}Companion).${part["netCoreSyncTable"]["knowledgeIdFieldName"]} == Value.absent() ? null : (entity as ${part["tableClassName"]}Companion).${part["netCoreSyncTable"]["knowledgeIdFieldName"]}.value;");
+    //   buffer.writeln("case\"synced\":");
+    //   buffer.writeln(
+    //       "return (entity as ${part["tableClassName"]}Companion).${part["netCoreSyncTable"]["syncedFieldName"]} == Value.absent() ? null : (entity as ${part["tableClassName"]}Companion).${part["netCoreSyncTable"]["syncedFieldName"]}.value;");
+    //   buffer.writeln("case\"deleted\":");
+    //   buffer.writeln(
+    //       "return (entity as ${part["tableClassName"]}Companion).${part["netCoreSyncTable"]["deletedFieldName"]} == Value.absent() ? null : (entity as ${part["tableClassName"]}Companion).${part["netCoreSyncTable"]["deletedFieldName"]}.value;");
+    //   buffer.writeln("}");
+    //   buffer.writeln("}");
+    // }
+    // buffer.writeln("} else {");
     for (var jsonPart in jsonParts) {
       Map<String, dynamic> part = jsonDecode(jsonPart);
       buffer.writeln("if (entity is ${part["dataClassName"]}) {");
@@ -157,22 +173,22 @@ class NetCoreSyncClientGenerator extends GeneratorForAnnotation<UseMoor> {
       buffer.writeln("case\"id\":");
       buffer.writeln(
           "return (entity as ${part["dataClassName"]}).${part["netCoreSyncTable"]["idFieldName"]};");
-      buffer.writeln("case\"syncId\":");
-      buffer.writeln(
-          "return (entity as ${part["dataClassName"]}).${part["netCoreSyncTable"]["syncIdFieldName"]};");
-      buffer.writeln("case\"knowledgeId\":");
-      buffer.writeln(
-          "return (entity as ${part["dataClassName"]}).${part["netCoreSyncTable"]["knowledgeIdFieldName"]};");
-      buffer.writeln("case\"synced\":");
-      buffer.writeln(
-          "return (entity as ${part["dataClassName"]}).${part["netCoreSyncTable"]["syncedFieldName"]};");
+      // buffer.writeln("case\"syncId\":");
+      // buffer.writeln(
+      //     "return (entity as ${part["dataClassName"]}).${part["netCoreSyncTable"]["syncIdFieldName"]};");
+      // buffer.writeln("case\"knowledgeId\":");
+      // buffer.writeln(
+      //     "return (entity as ${part["dataClassName"]}).${part["netCoreSyncTable"]["knowledgeIdFieldName"]};");
+      // buffer.writeln("case\"synced\":");
+      // buffer.writeln(
+      //     "return (entity as ${part["dataClassName"]}).${part["netCoreSyncTable"]["syncedFieldName"]};");
       buffer.writeln("case\"deleted\":");
       buffer.writeln(
           "return (entity as ${part["dataClassName"]}).${part["netCoreSyncTable"]["deletedFieldName"]};");
       buffer.writeln("}");
       buffer.writeln("}");
     }
-    buffer.writeln("}");
+    // buffer.writeln("}");
     buffer.writeln(
         "throw NetCoreSyncException(\"Unexpected entity Type: \$entity, fieldName: \$fieldName\");");
     buffer.writeln("}");

@@ -2,6 +2,7 @@ using System;
 using System.Linq;
 using System.Linq.Dynamic.Core;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using System.Collections.Generic;
 using System.Collections.Concurrent;
 using System.IO;
@@ -235,7 +236,6 @@ namespace NETCoreSyncServer
         {
             string? errorMessage = null;
             SyncTableResponsePayload responsePayload = new SyncTableResponsePayload();
-            responsePayload.Annotations = new Dictionary<string, object?>();
             responsePayload.UnsyncedRows = new List<Dictionary<string, object?>>();
             responsePayload.Knowledges = new List<Dictionary<string, object?>>();
             responsePayload.DeletedIds = new List<string>();
@@ -275,6 +275,7 @@ namespace NETCoreSyncServer
                             ["lastTimeStamp"] = 0,
                             ["meta"] = ""
                         };
+                        knowledges.Add(knowledgeDict);
                     }                        
                 }
                 long lastTimeStamp = Convert.ToInt64(knowledgeDict!["lastTimeStamp"]!);
@@ -309,11 +310,6 @@ namespace NETCoreSyncServer
                 responsePayload.Knowledges.Add(knowledgeDict);
             });
             TableInfo tableInfo = syncService.TableInfos[classType];
-            responsePayload.Annotations["idFieldName"] = JsonNamingPolicy.CamelCase.ConvertName(tableInfo.PropertyInfoID.Name);
-            responsePayload.Annotations["syncIdFieldName"] = JsonNamingPolicy.CamelCase.ConvertName(tableInfo.PropertyInfoSyncID.Name);
-            responsePayload.Annotations["knowledgeIdFieldName"] = JsonNamingPolicy.CamelCase.ConvertName(tableInfo.PropertyInfoKnowledgeID.Name);
-            responsePayload.Annotations["syncedFieldName"] = Convert.ToString(requestPayload.Annotations["syncedFieldName"])!;
-            responsePayload.Annotations["deletedFieldName"] = JsonNamingPolicy.CamelCase.ConvertName(tableInfo.PropertyInfoDeleted.Name);
             IQueryable queryable = syncEngine.GetQueryable(classType!);
             string syncedFieldName = Convert.ToString(requestPayload.Annotations["syncedFieldName"])!;
             string idFieldName = Convert.ToString(requestPayload.Annotations["idFieldName"])!;
@@ -421,17 +417,58 @@ namespace NETCoreSyncServer
                 knownKnowledgeCriterias.Add($"{tableInfo.PropertyInfoKnowledgeID.Name}.ToLower() = \"{knowledgeId}\" AND {tableInfo.PropertyInfoTimeStamp.Name} > {Convert.ToString(knowledgeDict["lastTimeStamp"])}");
                 knowledgeIdsForUnknownQuery.Add(knowledgeId);
             }
-            string knowledgeCriteria = $"{string.Join(" OR ", knownKnowledgeCriterias.Select(s => $"({s})").ToList())} OR (!@1.Contains({tableInfo.PropertyInfoKnowledgeID.Name}.ToLower()))";
-            string whereQuery = $"@0.Contains({tableInfo.PropertyInfoSyncID.Name}) AND ({knowledgeCriteria})";
-            var serverDatas = queryable.Where(whereQuery, syncIdInfo.GetAllSyncIds(), knowledgeIdsForUnknownQuery).ToDynamicList();
+            string whereQuery = $"@0.Contains({tableInfo.PropertyInfoSyncID.Name})";
+            List<object> whereParams = new List<object>() { syncIdInfo.GetAllSyncIds() };
+            if (knownKnowledgeCriterias.Count > 0)
+            {
+                string knowledgeCriteria = $"{string.Join(" OR ", knownKnowledgeCriterias.Select(s => $"({s})").ToList())} OR (!@1.Contains({tableInfo.PropertyInfoKnowledgeID.Name}.ToLower()))";
+                whereQuery += $" AND ({knowledgeCriteria})";
+                whereParams.Add(knowledgeIdsForUnknownQuery);
+            }
+            var serverDatas = queryable.Where(whereQuery, whereParams.ToArray()).ToDynamicList();
+            Dictionary<string, string> serverSyncFieldNamesToClient = new Dictionary<string, string>();
+            serverSyncFieldNamesToClient[tableInfo.PropertyInfoID.Name] = idFieldName;
+            serverSyncFieldNamesToClient[tableInfo.PropertyInfoSyncID.Name] = syncIdFieldName;
+            serverSyncFieldNamesToClient[tableInfo.PropertyInfoKnowledgeID.Name] = knowledgeIdFieldName;
+            serverSyncFieldNamesToClient[tableInfo.PropertyInfoDeleted.Name] = deletedFieldName;
+            List<string> clientColumnFieldNames = JsonSerializer.Deserialize<List<string>>(((JsonElement)requestPayload.Annotations["columnFieldNames"]!).GetRawText())!;
+            JsonSerializerOptions jsonSerializerOptions = new JsonSerializerOptions();
+            jsonSerializerOptions.Converters.Add(new MoorDateTimeSerializer());
             for (int i = 0; i < serverDatas.Count; i++)
             {
                 var serverData = serverDatas[i];
                 if (processedIds.Contains(tableInfo.PropertyInfoID.GetValue(serverData))) continue;
-                Dictionary<string, object?> serializedServerData = syncEngine.SerializeServerData(serverData);
-                serializedServerData[Convert.ToString(responsePayload.Annotations["syncedFieldName"])!] = true;
-                serializedServerData.Remove(JsonNamingPolicy.CamelCase.ConvertName(tableInfo.PropertyInfoTimeStamp.Name));
-                responsePayload.UnsyncedRows.Add(serializedServerData);
+                string json = JsonSerializer.Serialize(serverData, jsonSerializerOptions);
+                var result = JsonSerializer.Deserialize<Dictionary<string, object?>>(json)!;
+                foreach (var kvp in serverSyncFieldNamesToClient)
+                {
+                    result[kvp.Value] = result[kvp.Key];
+                    result.Remove(kvp.Key);
+                }
+                foreach (var kvp in syncEngine.ClientPropertyNameToServerPropertyName(classType))
+                {
+                    result[kvp.Key] = result[kvp.Value];
+                    result.Remove(kvp.Value);
+                }
+                var resultKeys = result.Keys.ToList();
+                for (int j = 0; j < clientColumnFieldNames.Count; j++)
+                {
+                    string clientColumnFieldName = clientColumnFieldNames[j];
+                    for (int k = 0; k < resultKeys.Count; k++)
+                    {
+                        string resultKey = resultKeys[k];
+                        if (resultKey != clientColumnFieldName && resultKey.ToLower() == clientColumnFieldName.ToLower())
+                        {
+                            result[clientColumnFieldName] = result[resultKey];
+                            result.Remove(resultKey);
+                            break;
+                        }
+                    }
+                }
+                result[syncedFieldName] = true;
+                result.Remove(tableInfo.PropertyInfoTimeStamp.Name);
+                syncEngine.ModifySerializedServerData(result);
+                responsePayload.UnsyncedRows.Add(result);
                 var parsedSyncId = tableInfo.PropertyInfoSyncID.GetValue(serverData);
                 var parsedKnowledgeId = tableInfo.PropertyInfoKnowledgeID.GetValue(serverData);
                 long parsedTimeStamp = Convert.ToInt64(tableInfo.PropertyInfoTimeStamp.GetValue(serverData));
@@ -514,6 +551,22 @@ namespace NETCoreSyncServer
             else
             {
                 System.Diagnostics.Debug.WriteLine(log);
+            }
+        }
+
+        private class MoorDateTimeSerializer : JsonConverter<DateTime>
+        {
+            // The Read converter here is not used because the Moor's DateTime deserialization is not performed automatically by JsonDeserializer.Deserialize(), but manually in the PopulateServerData() default implementation.
+            public override DateTime Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options) =>
+                    DateTimeOffset.FromUnixTimeMilliseconds(reader.GetInt64()).LocalDateTime;
+
+            public override void Write(
+                Utf8JsonWriter writer,
+                DateTime dateTimeValue,
+                JsonSerializerOptions options)
+            {
+                DateTimeOffset dateTimeOffet = DateTime.SpecifyKind(dateTimeValue, DateTimeKind.Local);
+                writer.WriteNumberValue(dateTimeOffet.ToUnixTimeMilliseconds());
             }
         }
    }

@@ -1,16 +1,17 @@
 import 'dart:async';
 import 'dart:convert';
 import 'package:moor/moor.dart';
-import 'package:netcoresync_moor/netcoresync_moor.dart';
 import 'package:test/test.dart';
 import 'package:uuid/uuid.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
 import 'package:netcoresync_moor/src/netcoresync_classes.dart';
+import 'package:netcoresync_moor/src/netcoresync_exceptions.dart';
 import 'package:netcoresync_moor/src/sync_messages.dart';
 import 'package:netcoresync_moor/src/sync_socket.dart';
+import 'package:netcoresync_moor/src/sync_session.dart';
 import '../utils/net_core_test_server.dart';
-import '../data/database.dart';
 import '../utils/helper.dart';
+import '../data/database.dart';
 
 void main() {
   bool testPrint = true;
@@ -29,7 +30,7 @@ void main() {
 
   String testFilesFolder = ".test_files";
   bool useInMemoryDatabase = true;
-  bool logSqlStatements = true;
+  bool logSqlStatements = false;
 
   void logClient(String printPrefixAdditionalText, Object? object,
       TestCaptureLog? captureLog) {
@@ -467,14 +468,62 @@ void main() {
       }
     });
 
+    test("SyncSession Basic Validation", () async {
+      await startServer(
+        args: [
+          "clearDatabase=true",
+        ],
+      );
+      final db = await setUpDatabase(
+        syncIdInfo: SyncIdInfo(syncId: "abc"),
+        databaseFileName: "netcoresync_sync_test_manual_basic.db",
+      );
+      try {
+        // Basic Validation: synchronize must not execute inside transaction
+        try {
+          await db.transaction(
+              () async => await db.netCoreSyncSynchronize(url: wsUrl));
+        } catch (ex) {
+          expect(ex, isA<NetCoreSyncMustNotInsideTransactionException>());
+        }
+        // Capture synchronize events
+        await db.syncInto(db.areas).syncInsert(
+            AreasCompanion(city: Value("Jakarta"), district: Value("Menteng")));
+        List<String> syncEventMessages = [];
+        SyncEvent syncEvent = SyncEvent(
+            progressEvent: (message, _, __, ___) =>
+                syncEventMessages.add(message));
+        await db.netCoreSyncSynchronize(url: wsUrl, syncEvent: syncEvent);
+        expect(syncEventMessages.contains(SyncSession.defaultConnectingMessage),
+            equals(true));
+        expect(
+            syncEventMessages
+                .contains(SyncSession.defaultHandshakeRequestMessage),
+            equals(true));
+        expect(
+            syncEventMessages
+                .contains(SyncSession.defaultSyncTableRequestMessage),
+            equals(true));
+        expect(
+            syncEventMessages.contains(SyncSession.defaultDisconnectingMessage),
+            equals(true));
+      } catch (e) {
+        rethrow;
+      } finally {
+        await tearDownDatabase(db);
+        await stopServer();
+      }
+    });
+
     test("SyncSession Synchronize", () async {
       await startServer(
         args: [
           "clearDatabase=true",
         ],
       );
-
       // wsUrl = "wss://localhost:5001/netcoresyncserver";
+
+      moorRuntimeOptions.dontWarnAboutMultipleDatabases = true;
 
       // START: Helper methods for repetitive tasks
 
@@ -502,6 +551,16 @@ void main() {
         return data;
       }
 
+      Future<AreaData> doUpdateArea(
+        Database db,
+        AreasCompanion entity,
+      ) async {
+        await db.syncUpdate(db.areas).syncReplace(entity);
+        final data = await (db.select(db.areas)..whereSamePrimaryKey(entity))
+            .getSingle();
+        return data;
+      }
+
       Future<Person> doInsertPerson(
         Database db,
         PersonsCompanion entity,
@@ -509,6 +568,26 @@ void main() {
         String id = Uuid().v4();
         entity = entity.copyWith(id: Value(id));
         await db.syncInto(db.persons).syncInsert(entity);
+        final data = await (db.select(db.persons)..whereSamePrimaryKey(entity))
+            .getSingle();
+        return data;
+      }
+
+      Future<Person> doUpdatePerson(
+        Database db,
+        PersonsCompanion entity,
+      ) async {
+        await db.syncUpdate(db.persons).syncReplace(entity);
+        final data = await (db.select(db.persons)..whereSamePrimaryKey(entity))
+            .getSingle();
+        return data;
+      }
+
+      Future<Person> doDeletePerson(
+        Database db,
+        PersonsCompanion entity,
+      ) async {
+        await (db.syncDelete(db.persons)..whereSamePrimaryKey(entity)).go();
         final data = await (db.select(db.persons)..whereSamePrimaryKey(entity))
             .getSingle();
         return data;
@@ -528,7 +607,10 @@ void main() {
             expect(actuals.length, equals(1));
             expect(actuals[0].city, equals(data.city));
             expect(actuals[0].district, equals(data.district));
+            expect(actuals[0].syncSyncId, equals(data.syncSyncId));
+            expect(actuals[0].syncKnowledgeId, equals(data.syncKnowledgeId));
             expect(actuals[0].syncSynced, equals(true));
+            expect(actuals[0].syncDeleted, equals(data.syncDeleted));
           }
         }
         expect(
@@ -544,7 +626,10 @@ void main() {
             expect(actuals[0].birthday, equals(data.birthday));
             expect(actuals[0].age, equals(data.age));
             expect(actuals[0].isForeigner, equals(data.isForeigner));
+            expect(actuals[0].syncId, equals(data.syncId));
+            expect(actuals[0].knowledgeId, equals(data.knowledgeId));
             expect(actuals[0].synced, equals(true));
+            expect(actuals[0].deleted, equals(data.deleted));
           }
         }
         expect((await db.select(db.persons).get()).length,
@@ -585,7 +670,7 @@ void main() {
         validateServerLogs("Person", personIdOperations);
       }
 
-      Future validateKnowledge(Database db) async {
+      Future validateClientKnowledge(Database db) async {
         final knowledges = await db.select(db.netCoreSyncKnowledges).get();
         for (var i = 0; i < knowledges.length; i++) {
           final knowledge = knowledges[i];
@@ -602,6 +687,38 @@ void main() {
                   .get())
               .isNotEmpty;
           expect(true, anyOf(areaExist, personExist));
+        }
+        final groupedAreas = await (db.selectOnly(db.areas)
+              ..addColumns([db.areas.syncSyncId, db.areas.syncKnowledgeId])
+              ..groupBy([db.areas.syncSyncId, db.areas.syncKnowledgeId]))
+            .get();
+        for (var item in groupedAreas) {
+          final syncId = item.read(db.areas.syncSyncId);
+          final knowledgeId = item.read(db.areas.syncKnowledgeId);
+          expect(
+              (await (db.select(db.netCoreSyncKnowledges)
+                        ..where((tbl) =>
+                            tbl.id.equals(knowledgeId) &
+                            tbl.syncId.equals(syncId)))
+                      .get())
+                  .isNotEmpty,
+              equals(true));
+        }
+        final groupedPersons = await (db.selectOnly(db.persons)
+              ..addColumns([db.persons.syncId, db.persons.knowledgeId])
+              ..groupBy([db.persons.syncId, db.persons.knowledgeId]))
+            .get();
+        for (var item in groupedPersons) {
+          final syncId = item.read(db.persons.syncId);
+          final knowledgeId = item.read(db.persons.knowledgeId);
+          expect(
+              (await (db.select(db.netCoreSyncKnowledges)
+                        ..where((tbl) =>
+                            tbl.id.equals(knowledgeId) &
+                            tbl.syncId.equals(syncId)))
+                      .get())
+                  .isNotEmpty,
+              equals(true));
         }
       }
 
@@ -623,46 +740,80 @@ void main() {
         (object as Map<String, dynamic>)["db"] = "abc2";
         log(object, null);
       });
+      final dbDef3 = await setUpDatabase(
+        syncIdInfo: SyncIdInfo(syncId: "def", linkedSyncIds: ["abc"]),
+        databaseFileName: "netcoresync_sync_test_manual_def3.db",
+      );
+      dbDef3.netCoreSyncSetLogger((object) {
+        (object as Map<String, dynamic>)["db"] = "def3";
+        log(object, null);
+      });
 
       try {
         // Activity #1: abc1 insert AreaData + insert Person + Sync
+        log({"activity": "=== ACTIVITY #1 ==="}, null);
         final abc1area1 = await doInsertArea(dbAbc1, defaultArea());
         final abc1person1 = await doInsertPerson(dbAbc1,
             defaultPerson().copyWith(vaccinationAreaPk: Value(abc1area1.pk)));
         final abc1syncResult1 = await dbAbc1.netCoreSyncSynchronize(url: wsUrl);
-        await validateClientState(dbAbc1, [abc1area1], [abc1person1]);
-        validateServerState(abc1syncResult1, null, null,
-            {abc1area1.pk: "insert"}, {abc1person1.id: "insert"});
-        await validateKnowledge(dbAbc1);
+        validateServerState(
+          abc1syncResult1,
+          null,
+          null,
+          {abc1area1.pk: "insert"},
+          {abc1person1.id: "insert"},
+        );
+        await validateClientState(
+          dbAbc1,
+          [abc1area1],
+          [abc1person1],
+        );
+        await validateClientKnowledge(dbAbc1);
 
         // Activity #2: abc1 no changes + Sync
+        log({"activity": "=== ACTIVITY #2 ==="}, null);
         final abc1syncResult2 = await dbAbc1.netCoreSyncSynchronize(url: wsUrl);
-        await validateClientState(dbAbc1, [abc1area1], [abc1person1]);
-        validateServerState(abc1syncResult2, null, null, {}, {});
-        await validateKnowledge(dbAbc1);
+        validateServerState(
+          abc1syncResult2,
+          null,
+          null,
+          {},
+          {},
+        );
+        await validateClientState(
+          dbAbc1,
+          [abc1area1],
+          [abc1person1],
+        );
+        await validateClientKnowledge(dbAbc1);
 
         // Activity #3: abc1 update AreaData + update Person + Sync
-        await dbAbc1
-            .syncUpdate(dbAbc1.areas)
-            .syncReplace(abc1area1.toCompanion(true).copyWith(
+        log({"activity": "=== ACTIVITY #3 ==="}, null);
+        final abc1area3 = await doUpdateArea(
+            dbAbc1,
+            abc1area1.toCompanion(true).copyWith(
                   city: Value("Denpasar"),
                   district: Value("Nusa Dua"),
                 ));
-        final abc1area3 = await (dbAbc1.select(dbAbc1.areas)
-              ..where((tbl) => tbl.pk.equals(abc1area1.pk)))
-            .getSingle();
-        await dbAbc1.syncUpdate(dbAbc1.persons).syncReplace(
+        final abc1person3 = await doUpdatePerson(dbAbc1,
             abc1person1.toCompanion(true).copyWith(name: Value("John Doe 2")));
-        final abc1person3 = await (dbAbc1.select(dbAbc1.persons)
-              ..where((tbl) => tbl.id.equals(abc1person1.id)))
-            .getSingle();
         final abc1syncResult3 = await dbAbc1.netCoreSyncSynchronize(url: wsUrl);
-        await validateClientState(dbAbc1, [abc1area3], [abc1person3]);
-        validateServerState(abc1syncResult3, null, null,
-            {abc1area3.pk: "update"}, {abc1person3.id: "update"});
-        await validateKnowledge(dbAbc1);
+        validateServerState(
+          abc1syncResult3,
+          null,
+          null,
+          {abc1area3.pk: "update"},
+          {abc1person3.id: "update"},
+        );
+        await validateClientState(
+          dbAbc1,
+          [abc1area3],
+          [abc1person3],
+        );
+        await validateClientKnowledge(dbAbc1);
 
         // Activity #4: abc2 insert Person + Sync, abc1 Sync
+        log({"activity": "=== ACTIVITY #4 ==="}, null);
         final abc2person4 = await doInsertPerson(
             dbAbc2,
             defaultPerson().copyWith(
@@ -670,15 +821,239 @@ void main() {
               "Jane Doe",
             )));
         final abc2syncResult4 = await dbAbc2.netCoreSyncSynchronize(url: wsUrl);
-        await validateClientState(dbAbc2, [], [abc2person4]);
         validateServerState(
-            abc2syncResult4, null, null, {}, {abc2person4.id: "insert"});
-        await validateKnowledge(dbAbc2);
+          abc2syncResult4,
+          null,
+          null,
+          {},
+          {abc2person4.id: "insert"},
+        );
+        await validateClientState(
+          dbAbc2,
+          [abc1area3],
+          [abc1person3, abc2person4],
+        );
+        await validateClientKnowledge(dbAbc2);
+        final abc1syncResult4 = await dbAbc1.netCoreSyncSynchronize(url: wsUrl);
+        validateServerState(
+          abc1syncResult4,
+          null,
+          null,
+          {},
+          {},
+        );
+        await validateClientState(
+          dbAbc1,
+          [abc1area3],
+          [abc1person3, abc2person4],
+        );
+        await validateClientKnowledge(dbAbc1);
+
+        // Activity #5: abc1 insert Person + update abc2's Person, abc2 insert
+        //              Person + update abc1's Person, abc1 Sync, abc2 Sync,
+        //              abc1 Sync
+        log({"activity": "=== ACTIVITY #5 ==="}, null);
+        final abc1person5_1 = await doInsertPerson(
+            dbAbc1,
+            defaultPerson().copyWith(
+                name: Value(
+              "Alice",
+            )));
+        final abc1person5_2 = await doUpdatePerson(
+            dbAbc1, abc2person4.toCompanion(true).copyWith(name: Value("Bob")));
+        final abc2person5_1 = await doInsertPerson(
+            dbAbc2,
+            defaultPerson().copyWith(
+                name: Value(
+              "Chuck",
+            )));
+        final abc2person5_2 = await doUpdatePerson(
+            dbAbc2, abc1person3.toCompanion(true).copyWith(name: Value("Dan")));
+        final abc1syncResult5_1 =
+            await dbAbc1.netCoreSyncSynchronize(url: wsUrl);
+        validateServerState(
+          abc1syncResult5_1,
+          null,
+          null,
+          {},
+          {abc1person5_1.id: "insert", abc1person5_2.id: "update"},
+        );
+        await validateClientState(
+          dbAbc1,
+          [abc1area3],
+          [abc1person3, abc1person5_1, abc1person5_2],
+        );
+        await validateClientKnowledge(dbAbc1);
+        final abc2syncResult5_1 =
+            await dbAbc2.netCoreSyncSynchronize(url: wsUrl);
+        validateServerState(
+          abc2syncResult5_1,
+          null,
+          null,
+          {},
+          {abc2person5_1.id: "insert", abc2person5_2.id: "update"},
+        );
+        await validateClientState(
+          dbAbc2,
+          [abc1area3],
+          [abc1person5_1, abc1person5_2, abc2person5_1, abc2person5_2],
+        );
+        await validateClientKnowledge(dbAbc2);
+        final abc1syncResult5_2 =
+            await dbAbc1.netCoreSyncSynchronize(url: wsUrl);
+        validateServerState(
+          abc1syncResult5_2,
+          null,
+          null,
+          {},
+          {},
+        );
+        await validateClientState(
+          dbAbc1,
+          [abc1area3],
+          [abc1person5_1, abc1person5_2, abc2person5_1, abc2person5_2],
+        );
+        await validateClientKnowledge(dbAbc1);
+
+        // Activity #6: abc1 delete its Person, abc2 update abc1's Person,
+        //              abc1 Sync, abc2 Sync, abc1 Sync
+        log({"activity": "=== ACTIVITY #6 ==="}, null);
+        final abc1person6 =
+            await doDeletePerson(dbAbc1, abc1person5_1.toCompanion(true));
+        final abc2person6 = await doUpdatePerson(dbAbc2,
+            abc1person5_1.toCompanion(true).copyWith(name: Value("Eve")));
+        final abc1syncResult6_1 =
+            await dbAbc1.netCoreSyncSynchronize(url: wsUrl);
+        validateServerState(
+          abc1syncResult6_1,
+          null,
+          null,
+          {},
+          {abc1person6.id: "delete"},
+        );
+        await validateClientState(
+          dbAbc1,
+          [abc1area3],
+          [abc1person6, abc1person5_2, abc2person5_1, abc2person5_2],
+        );
+        await validateClientKnowledge(dbAbc1);
+        final abc2syncResult6_1 =
+            await dbAbc2.netCoreSyncSynchronize(url: wsUrl);
+        validateServerState(
+          abc2syncResult6_1,
+          null,
+          null,
+          {},
+          {abc2person6.id: "ignored"},
+        );
+        await validateClientState(
+          dbAbc2,
+          [abc1area3],
+          [
+            abc2person6.copyWith(deleted: true),
+            abc1person5_2,
+            abc2person5_1,
+            abc2person5_2
+          ],
+        );
+        await validateClientKnowledge(dbAbc2);
+        final abc1syncResult6_2 =
+            await dbAbc1.netCoreSyncSynchronize(url: wsUrl);
+        validateServerState(
+          abc1syncResult6_2,
+          null,
+          null,
+          {},
+          {},
+        );
+        await validateClientState(
+          dbAbc1,
+          [abc1area3],
+          [abc1person6, abc1person5_2, abc2person5_1, abc2person5_2],
+        );
+        await validateClientKnowledge(dbAbc1);
+
+        // Activity #7: Introduce def (known as def3), which can access abc's
+        // data (includes abc1 + abc2), def3 Sync
+        log({"activity": "=== ACTIVITY #7 ==="}, null);
+        final def3syncResult7 = await dbDef3.netCoreSyncSynchronize(url: wsUrl);
+        validateServerState(
+          def3syncResult7,
+          null,
+          null,
+          {},
+          {},
+        );
+        await validateClientState(
+          dbDef3,
+          [abc1area3],
+          [abc1person5_2, abc2person5_1, abc2person5_2],
+        );
+        await validateClientKnowledge(dbDef3);
+
+        // Activity #8: def3 insert Person + insert on behalf abc's Person
+        // + update on behalf abc's Person + Sync
+        log({"activity": "=== ACTIVITY #8 ==="}, null);
+        final def3person8 = await doInsertPerson(
+            dbDef3, defaultPerson().copyWith(name: Value("Frank")));
+        dbDef3.netCoreSyncSetActiveSyncId("abc");
+        final def3abcperson8_1 = await doInsertPerson(
+            dbDef3, defaultPerson().copyWith(name: Value("Grace")));
+        final def3abcperson8_2 = await doUpdatePerson(dbDef3,
+            abc1person5_2.toCompanion(true).copyWith(name: Value("Heidi")));
+        final def3syncResult8 = await dbDef3.netCoreSyncSynchronize(url: wsUrl);
+        validateServerState(
+          def3syncResult8,
+          null,
+          null,
+          {},
+          {
+            def3person8.id: "insert",
+            def3abcperson8_1.id: "insert",
+            def3abcperson8_2.id: "update"
+          },
+        );
+        await validateClientState(
+          dbDef3,
+          [abc1area3],
+          [
+            def3person8,
+            def3abcperson8_1,
+            def3abcperson8_2,
+            abc2person5_1,
+            abc2person5_2
+          ],
+        );
+        await validateClientKnowledge(dbDef3);
+
+        // Activity #9: abc1 Sync
+        log({"activity": "=== ACTIVITY #9 ==="}, null);
+        final abc1syncResult9 = await dbAbc1.netCoreSyncSynchronize(url: wsUrl);
+        validateServerState(
+          abc1syncResult9,
+          null,
+          null,
+          {},
+          {},
+        );
+        await validateClientState(
+          dbAbc1,
+          [abc1area3],
+          [
+            abc1person6,
+            def3abcperson8_2,
+            abc2person5_1,
+            abc2person5_2,
+            def3abcperson8_1
+          ],
+        );
+        await validateClientKnowledge(dbAbc1);
       } catch (_) {
         rethrow;
       } finally {
         await tearDownDatabase(dbAbc1);
         await tearDownDatabase(dbAbc2);
+        await tearDownDatabase(dbDef3);
         await stopServer();
       }
     });

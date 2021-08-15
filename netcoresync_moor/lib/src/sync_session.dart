@@ -42,10 +42,15 @@ class SyncSession {
     _log(log);
   }
 
+  static const String defaultConnectingMessage = "Connecting...";
+  static const String defaultHandshakeRequestMessage = "Acquiring access...";
+  static const String defaultSyncTableRequestMessage = "Synchronizing...";
+  static const String defaultDisconnectingMessage = "Disconnecting...";
+
   Future<SyncResult> synchronize() async {
     final syncResult = SyncResult();
 
-    _progress("Connecting...");
+    _progress(defaultConnectingMessage);
     _logAction(
       syncResult,
       action: "connectRequest",
@@ -71,7 +76,7 @@ class SyncSession {
 
     late ResponseResult responseResult;
 
-    _progress("Acquiring access...");
+    _progress(defaultHandshakeRequestMessage);
     final handshakeRequest = HandshakeRequestPayload(
       schemaVersion: dataAccess.database.schemaVersion,
       syncIdInfo: dataAccess.syncIdInfo!,
@@ -99,7 +104,7 @@ class SyncSession {
     for (var i = 0; i < handshakeResponse.orderedClassNames.length; i++) {
       final className = handshakeResponse.orderedClassNames[i];
       _progress(
-        "Synchronizing...",
+        defaultSyncTableRequestMessage,
         min: 0,
         max: handshakeResponse.orderedClassNames.length,
         current: i,
@@ -158,6 +163,64 @@ class SyncSession {
             dataAccess.engine.updateSyncColumns(unsyncedRow, synced: true);
         await dataAccess.update(tableUser.tableInfo).replace(unsyncedRow);
       }
+      Map<String, List<dynamic>> responseApplyRows = {
+        "inserts": [],
+        "updates": [],
+        "deletes": [],
+        "ignores": [],
+        "deletedIds": [],
+      };
+      for (var j = 0; j < syncTableResponse.unsyncedRows.length; j++) {
+        var serverRow = syncTableResponse.unsyncedRows[j];
+        final serverData = dataAccess.engine.fromJson(classType, serverRow);
+        final rowId =
+            dataAccess.engine.getSyncColumnValue(serverData, "id") as String;
+        final rowDeleted =
+            dataAccess.engine.getSyncColumnValue(serverData, "deleted") as bool;
+        final clientRows = await (dataAccess.select(tableUser.tableInfo)
+              ..where((tbl) =>
+                  CustomExpression("${tableUser.idEscapedName} = '$rowId'")))
+            .get();
+        if (clientRows.isEmpty) {
+          if (!rowDeleted) {
+            await dataAccess.into(tableUser.tableInfo).insert(serverData);
+            responseApplyRows["inserts"]!.add(serverRow);
+          } else {
+            responseApplyRows["ignores"]!.add(serverRow);
+          }
+        } else {
+          await dataAccess.update(tableUser.tableInfo).replace(serverData);
+          if (!rowDeleted) {
+            responseApplyRows["updates"]!.add(serverRow);
+          } else {
+            responseApplyRows["deletes"]!.add(serverRow);
+          }
+        }
+      }
+      for (var j = 0; j < syncTableResponse.deletedIds.length; j++) {
+        var deletedId = syncTableResponse.deletedIds[j];
+        final clientRows = await (dataAccess.select(tableUser.tableInfo)
+              ..where((tbl) => CustomExpression(
+                  "${tableUser.idEscapedName} = '$deletedId'")))
+            .get();
+        if (clientRows.isNotEmpty) {
+          var clientRow = clientRows.elementAt(0);
+          clientRow = dataAccess.engine.updateSyncColumns(
+            clientRow,
+            synced: true,
+            deleted: true,
+          );
+          await dataAccess.update(tableUser.tableInfo).replace(clientRow);
+          responseApplyRows["deletedIds"]!.add(deletedId);
+        }
+      }
+      _logAction(syncResult,
+          action: "responseApplyRows",
+          data: {"className": className, "logs": responseApplyRows});
+      Map<String, List<dynamic>> applyKnowledges = {
+        "inserts": [],
+        "updates": [],
+      };
       for (var j = 0; j < syncTableResponse.knowledges.length; j++) {
         var knowledge = syncTableResponse.knowledges[j];
         var existing = await (dataAccess.select(dataAccess.knowledges)
@@ -167,20 +230,19 @@ class SyncSession {
             .getSingleOrNull();
         if (existing == null) {
           await dataAccess.into(dataAccess.knowledges).insert(knowledge);
+          applyKnowledges["inserts"]!.add(knowledge.toJson());
         } else {
           existing.lastTimeStamp = knowledge.lastTimeStamp;
           await dataAccess.update(dataAccess.knowledges).replace(existing);
+          applyKnowledges["updates"]!.add(existing.toJson());
         }
       }
-      for (var j = 0; j < syncTableResponse.unsyncedRows.length; j++) {
-        var serverRow = syncTableResponse.unsyncedRows[j];
-      }
-
-      // TODO: Handle unsynced rows from server response
-      // TODO: handle deletedIds from server response
+      _logAction(syncResult,
+          action: "applyKnowledges",
+          data: {"className": className, "logs": applyKnowledges});
     }
 
-    _progress("Disconnecting...");
+    _progress(defaultDisconnectingMessage);
     _logAction(
       syncResult,
       action: "closeRequest",

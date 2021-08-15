@@ -6,6 +6,8 @@ abstract class NetCoreSyncEngine {
 
   NetCoreSyncEngine(this.tables);
 
+  dynamic fromJson(Type type, Map<String, dynamic> json);
+
   UpdateCompanion<D> toSafeCompanion<D>(Insertable<D> entity);
 
   Object? getSyncColumnValue<D>(Insertable<D> entity, String fieldName);

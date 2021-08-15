@@ -4,7 +4,6 @@ using System.IO;
 using System.IO.Compression;
 using System.Text;
 using System.Text.Json;
-using System.Text.Json.Serialization;
 using System.Threading.Tasks;
 
 namespace NETCoreSyncServer
@@ -13,11 +12,13 @@ namespace NETCoreSyncServer
     {
         public static JsonSerializerOptions serializeOptions => new JsonSerializerOptions() 
         { 
+            // These both are needed for matching the string case of request + response messages and their payloads between server and client
             PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
             DictionaryKeyPolicy = JsonNamingPolicy.CamelCase
         };
         public static JsonSerializerOptions deserializeOptions => new JsonSerializerOptions() 
         { 
+            // This is needed to deserialize incoming models from client which are naturally camel-cased into the pascal-cased server models
             PropertyNameCaseInsensitive = true,
         };
 
@@ -185,7 +186,6 @@ namespace NETCoreSyncServer
         override public string Action => PayloadActions.syncTableResponse.ToString();
 
         public string ClassName { get; set; } = null!;
-        public Dictionary<string, object?> Annotations { get; set; } = null!;
         public List<Dictionary<string, object?>> UnsyncedRows { get; set; } = null!;
         public List<Dictionary<string, object?>> Knowledges { get; set; } = null!;
         public List<string> DeletedIds { get; set; } = null!;

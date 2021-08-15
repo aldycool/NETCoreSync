@@ -1717,13 +1717,27 @@ abstract class _$Database extends GeneratedDatabase {
 // **************************************************************************
 
 // NOTE: Obtained from @NetCoreSyncTable annotations:
-// Areas: {"tableClassName":"Areas","dataClassName":"AreaData","useRowClass":false,"netCoreSyncTable":{"idFieldName":"pk","syncIdFieldName":"syncSyncId","knowledgeIdFieldName":"syncKnowledgeId","syncedFieldName":"syncSynced","deletedFieldName":"syncDeleted"}}
-// CustomObjects: {"tableClassName":"CustomObjects","dataClassName":"CustomObject","useRowClass":true,"netCoreSyncTable":{"idFieldName":"id","syncIdFieldName":"syncId","knowledgeIdFieldName":"knowledgeId","syncedFieldName":"synced","deletedFieldName":"deleted"}}
-// Persons: {"tableClassName":"Persons","dataClassName":"Person","useRowClass":false,"netCoreSyncTable":{"idFieldName":"id","syncIdFieldName":"syncId","knowledgeIdFieldName":"knowledgeId","syncedFieldName":"synced","deletedFieldName":"deleted"}}
+// Areas: {"tableClassName":"Areas","dataClassName":"AreaData","useRowClass":false,"netCoreSyncTable":{"idFieldName":"pk","syncIdFieldName":"syncSyncId","knowledgeIdFieldName":"syncKnowledgeId","syncedFieldName":"syncSynced","deletedFieldName":"syncDeleted","columnFieldNames":["pk","city","district","syncSyncId","syncKnowledgeId","syncSynced","syncDeleted"]}}
+// CustomObjects: {"tableClassName":"CustomObjects","dataClassName":"CustomObject","useRowClass":true,"netCoreSyncTable":{"idFieldName":"id","syncIdFieldName":"syncId","knowledgeIdFieldName":"knowledgeId","syncedFieldName":"synced","deletedFieldName":"deleted","columnFieldNames":["id","fieldString","fieldStringNullable","fieldInt","fieldIntNullable","fieldBoolean","fieldBooleanNullable","fieldDateTime","fieldDateTimeNullable","syncId","knowledgeId","synced","deleted"]}}
+// Persons: {"tableClassName":"Persons","dataClassName":"Person","useRowClass":false,"netCoreSyncTable":{"idFieldName":"id","syncIdFieldName":"syncId","knowledgeIdFieldName":"knowledgeId","syncedFieldName":"synced","deletedFieldName":"deleted","columnFieldNames":["id","name","birthday","age","isForeigner","isVaccinated","vaccineName","vaccinationDate","vaccinePhase","vaccinationAreaPk","syncId","knowledgeId","synced","deleted"]}}
 
 class _$NetCoreSyncEngineUser extends NetCoreSyncEngine {
   _$NetCoreSyncEngineUser(Map<Type, NetCoreSyncTableUser> tables)
       : super(tables);
+
+  @override
+  dynamic fromJson(Type type, Map<String, dynamic> json) {
+    if (type == AreaData) {
+      return AreaData.fromJson(json);
+    }
+    if (type == CustomObject) {
+      return CustomObject.fromJson(json);
+    }
+    if (type == Person) {
+      return Person.fromJson(json);
+    }
+    throw NetCoreSyncException("Unexpected type: $type");
+  }
 
   @override
   UpdateCompanion<D> toSafeCompanion<D>(Insertable<D> entity) {
@@ -1780,135 +1794,28 @@ class _$NetCoreSyncEngineUser extends NetCoreSyncEngine {
 
   @override
   Object? getSyncColumnValue<D>(Insertable<D> entity, String fieldName) {
-    if (entity is RawValuesInsertable<D>) {
+    if (entity is AreaData) {
       switch (fieldName) {
         case "id":
-          return entity.data[tables[D]!.idEscapedName];
-        case "syncId":
-          return entity.data[tables[D]!.syncIdEscapedName];
-        case "knowledgeId":
-          return entity.data[tables[D]!.knowledgeIdEscapedName];
-        case "synced":
-          return entity.data[tables[D]!.syncedEscapedName];
+          return (entity as AreaData).pk;
         case "deleted":
-          return entity.data[tables[D]!.deletedEscapedName];
+          return (entity as AreaData).syncDeleted;
       }
-    } else if (entity is UpdateCompanion<D>) {
-      if (D == AreaData) {
-        switch (fieldName) {
-          case "id":
-            return (entity as AreasCompanion).pk == Value.absent()
-                ? null
-                : (entity as AreasCompanion).pk.value;
-          case "syncId":
-            return (entity as AreasCompanion).syncSyncId == Value.absent()
-                ? null
-                : (entity as AreasCompanion).syncSyncId.value;
-          case "knowledgeId":
-            return (entity as AreasCompanion).syncKnowledgeId == Value.absent()
-                ? null
-                : (entity as AreasCompanion).syncKnowledgeId.value;
-          case "synced":
-            return (entity as AreasCompanion).syncSynced == Value.absent()
-                ? null
-                : (entity as AreasCompanion).syncSynced.value;
-          case "deleted":
-            return (entity as AreasCompanion).syncDeleted == Value.absent()
-                ? null
-                : (entity as AreasCompanion).syncDeleted.value;
-        }
+    }
+    if (entity is CustomObject) {
+      switch (fieldName) {
+        case "id":
+          return (entity as CustomObject).id;
+        case "deleted":
+          return (entity as CustomObject).deleted;
       }
-      if (D == CustomObject) {
-        switch (fieldName) {
-          case "id":
-            return (entity as CustomObjectsCompanion).id == Value.absent()
-                ? null
-                : (entity as CustomObjectsCompanion).id.value;
-          case "syncId":
-            return (entity as CustomObjectsCompanion).syncId == Value.absent()
-                ? null
-                : (entity as CustomObjectsCompanion).syncId.value;
-          case "knowledgeId":
-            return (entity as CustomObjectsCompanion).knowledgeId ==
-                    Value.absent()
-                ? null
-                : (entity as CustomObjectsCompanion).knowledgeId.value;
-          case "synced":
-            return (entity as CustomObjectsCompanion).synced == Value.absent()
-                ? null
-                : (entity as CustomObjectsCompanion).synced.value;
-          case "deleted":
-            return (entity as CustomObjectsCompanion).deleted == Value.absent()
-                ? null
-                : (entity as CustomObjectsCompanion).deleted.value;
-        }
-      }
-      if (D == Person) {
-        switch (fieldName) {
-          case "id":
-            return (entity as PersonsCompanion).id == Value.absent()
-                ? null
-                : (entity as PersonsCompanion).id.value;
-          case "syncId":
-            return (entity as PersonsCompanion).syncId == Value.absent()
-                ? null
-                : (entity as PersonsCompanion).syncId.value;
-          case "knowledgeId":
-            return (entity as PersonsCompanion).knowledgeId == Value.absent()
-                ? null
-                : (entity as PersonsCompanion).knowledgeId.value;
-          case "synced":
-            return (entity as PersonsCompanion).synced == Value.absent()
-                ? null
-                : (entity as PersonsCompanion).synced.value;
-          case "deleted":
-            return (entity as PersonsCompanion).deleted == Value.absent()
-                ? null
-                : (entity as PersonsCompanion).deleted.value;
-        }
-      }
-    } else {
-      if (entity is AreaData) {
-        switch (fieldName) {
-          case "id":
-            return (entity as AreaData).pk;
-          case "syncId":
-            return (entity as AreaData).syncSyncId;
-          case "knowledgeId":
-            return (entity as AreaData).syncKnowledgeId;
-          case "synced":
-            return (entity as AreaData).syncSynced;
-          case "deleted":
-            return (entity as AreaData).syncDeleted;
-        }
-      }
-      if (entity is CustomObject) {
-        switch (fieldName) {
-          case "id":
-            return (entity as CustomObject).id;
-          case "syncId":
-            return (entity as CustomObject).syncId;
-          case "knowledgeId":
-            return (entity as CustomObject).knowledgeId;
-          case "synced":
-            return (entity as CustomObject).synced;
-          case "deleted":
-            return (entity as CustomObject).deleted;
-        }
-      }
-      if (entity is Person) {
-        switch (fieldName) {
-          case "id":
-            return (entity as Person).id;
-          case "syncId":
-            return (entity as Person).syncId;
-          case "knowledgeId":
-            return (entity as Person).knowledgeId;
-          case "synced":
-            return (entity as Person).synced;
-          case "deleted":
-            return (entity as Person).deleted;
-        }
+    }
+    if (entity is Person) {
+      switch (fieldName) {
+        case "id":
+          return (entity as Person).id;
+        case "deleted":
+          return (entity as Person).deleted;
       }
     }
     throw NetCoreSyncException(
@@ -2011,7 +1918,16 @@ extension $NetCoreSyncClientExtension on Database {
               "syncIdFieldName": "syncSyncId",
               "knowledgeIdFieldName": "syncKnowledgeId",
               "syncedFieldName": "syncSynced",
-              "deletedFieldName": "syncDeleted"
+              "deletedFieldName": "syncDeleted",
+              "columnFieldNames": [
+                "pk",
+                "city",
+                "district",
+                "syncSyncId",
+                "syncKnowledgeId",
+                "syncSynced",
+                "syncDeleted"
+              ]
             }),
             areas.pk.escapedName,
             areas.syncSyncId.escapedName,
@@ -2026,7 +1942,22 @@ extension $NetCoreSyncClientExtension on Database {
               "syncIdFieldName": "syncId",
               "knowledgeIdFieldName": "knowledgeId",
               "syncedFieldName": "synced",
-              "deletedFieldName": "deleted"
+              "deletedFieldName": "deleted",
+              "columnFieldNames": [
+                "id",
+                "fieldString",
+                "fieldStringNullable",
+                "fieldInt",
+                "fieldIntNullable",
+                "fieldBoolean",
+                "fieldBooleanNullable",
+                "fieldDateTime",
+                "fieldDateTimeNullable",
+                "syncId",
+                "knowledgeId",
+                "synced",
+                "deleted"
+              ]
             }),
             customObjects.id.escapedName,
             customObjects.syncId.escapedName,
@@ -2041,7 +1972,23 @@ extension $NetCoreSyncClientExtension on Database {
               "syncIdFieldName": "syncId",
               "knowledgeIdFieldName": "knowledgeId",
               "syncedFieldName": "synced",
-              "deletedFieldName": "deleted"
+              "deletedFieldName": "deleted",
+              "columnFieldNames": [
+                "id",
+                "name",
+                "birthday",
+                "age",
+                "isForeigner",
+                "isVaccinated",
+                "vaccineName",
+                "vaccinationDate",
+                "vaccinePhase",
+                "vaccinationAreaPk",
+                "syncId",
+                "knowledgeId",
+                "synced",
+                "deleted"
+              ]
             }),
             persons.id.escapedName,
             persons.syncId.escapedName,

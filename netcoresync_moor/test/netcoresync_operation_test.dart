@@ -3,7 +3,9 @@ import 'package:moor/moor.dart';
 import 'package:test/test.dart';
 import 'package:uuid/uuid.dart';
 import 'package:version/version.dart';
-import 'package:netcoresync_moor/netcoresync_moor.dart';
+import 'package:netcoresync_moor/src/netcoresync_exceptions.dart';
+import 'package:netcoresync_moor/src/netcoresync_classes.dart';
+import 'package:netcoresync_moor/src/netcoresync_knowledges.dart';
 import 'data/database.dart';
 import 'data/custom_objects.dart';
 import 'utils/helper.dart';
@@ -196,6 +198,28 @@ void main() async {
               .replace(PersonsCompanion());
         },
         throwsA(isA<NetCoreSyncException>()),
+      );
+      // should be ok if using the sync table version when doing syncInto
+      // (because it will be 'normalized' into its original table)
+      expect(
+        database.syncInto(database.syncPersons).syncInsert(PersonsCompanion()),
+        completes,
+      );
+      // should be ok if using the sync table version when doing syncUpdate
+      // (because it will be 'normalized' into its original table)
+      expect(
+        database
+            .syncUpdate(database.syncPersons)
+            .syncReplace(PersonsCompanion().copyWith(id: Value(Uuid().v4()))),
+        completes,
+      );
+      // should be ok if using the sync table version when doing syncDelete
+      // (because it will be 'normalized' into its original table)
+      expect(
+        (database.syncDelete(database.syncPersons)
+              ..where((tbl) => tbl.id.equals(Uuid().v4())))
+            .go(),
+        completes,
       );
     });
   });

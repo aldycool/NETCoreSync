@@ -1285,12 +1285,23 @@ abstract class _$Database extends GeneratedDatabase {
 // **************************************************************************
 
 // NOTE: Obtained from @NetCoreSyncTable annotations:
-// Employees: {"tableClassName":"Employees","dataClassName":"Employee","useRowClass":false,"netCoreSyncTable":{"idFieldName":"id","syncIdFieldName":"syncId","knowledgeIdFieldName":"knowledgeId","syncedFieldName":"synced","deletedFieldName":"deleted"}}
-// Departments: {"tableClassName":"Departments","dataClassName":"Department","useRowClass":false,"netCoreSyncTable":{"idFieldName":"id","syncIdFieldName":"syncId","knowledgeIdFieldName":"knowledgeId","syncedFieldName":"synced","deletedFieldName":"deleted"}}
+// Employees: {"tableClassName":"Employees","dataClassName":"Employee","useRowClass":false,"netCoreSyncTable":{"idFieldName":"id","syncIdFieldName":"syncId","knowledgeIdFieldName":"knowledgeId","syncedFieldName":"synced","deletedFieldName":"deleted","columnFieldNames":["id","name","birthday","numberOfComputers","savingAmount","isActive","departmentId","syncId","knowledgeId","synced","deleted"]}}
+// Departments: {"tableClassName":"Departments","dataClassName":"Department","useRowClass":false,"netCoreSyncTable":{"idFieldName":"id","syncIdFieldName":"syncId","knowledgeIdFieldName":"knowledgeId","syncedFieldName":"synced","deletedFieldName":"deleted","columnFieldNames":["id","name","syncId","knowledgeId","synced","deleted"]}}
 
 class _$NetCoreSyncEngineUser extends NetCoreSyncEngine {
   _$NetCoreSyncEngineUser(Map<Type, NetCoreSyncTableUser> tables)
       : super(tables);
+
+  @override
+  dynamic fromJson(Type type, Map<String, dynamic> json) {
+    if (type == Employee) {
+      return Employee.fromJson(json);
+    }
+    if (type == Department) {
+      return Department.fromJson(json);
+    }
+    throw NetCoreSyncException("Unexpected type: $type");
+  }
 
   @override
   UpdateCompanion<D> toSafeCompanion<D>(Insertable<D> entity) {
@@ -1331,97 +1342,20 @@ class _$NetCoreSyncEngineUser extends NetCoreSyncEngine {
 
   @override
   Object? getSyncColumnValue<D>(Insertable<D> entity, String fieldName) {
-    if (entity is RawValuesInsertable<D>) {
+    if (entity is Employee) {
       switch (fieldName) {
         case "id":
-          return entity.data[tables[D]!.idEscapedName];
-        case "syncId":
-          return entity.data[tables[D]!.syncIdEscapedName];
-        case "knowledgeId":
-          return entity.data[tables[D]!.knowledgeIdEscapedName];
-        case "synced":
-          return entity.data[tables[D]!.syncedEscapedName];
+          return (entity as Employee).id;
         case "deleted":
-          return entity.data[tables[D]!.deletedEscapedName];
+          return (entity as Employee).deleted;
       }
-    } else if (entity is UpdateCompanion<D>) {
-      if (D == Employee) {
-        switch (fieldName) {
-          case "id":
-            return (entity as EmployeesCompanion).id == Value.absent()
-                ? null
-                : (entity as EmployeesCompanion).id.value;
-          case "syncId":
-            return (entity as EmployeesCompanion).syncId == Value.absent()
-                ? null
-                : (entity as EmployeesCompanion).syncId.value;
-          case "knowledgeId":
-            return (entity as EmployeesCompanion).knowledgeId == Value.absent()
-                ? null
-                : (entity as EmployeesCompanion).knowledgeId.value;
-          case "synced":
-            return (entity as EmployeesCompanion).synced == Value.absent()
-                ? null
-                : (entity as EmployeesCompanion).synced.value;
-          case "deleted":
-            return (entity as EmployeesCompanion).deleted == Value.absent()
-                ? null
-                : (entity as EmployeesCompanion).deleted.value;
-        }
-      }
-      if (D == Department) {
-        switch (fieldName) {
-          case "id":
-            return (entity as DepartmentsCompanion).id == Value.absent()
-                ? null
-                : (entity as DepartmentsCompanion).id.value;
-          case "syncId":
-            return (entity as DepartmentsCompanion).syncId == Value.absent()
-                ? null
-                : (entity as DepartmentsCompanion).syncId.value;
-          case "knowledgeId":
-            return (entity as DepartmentsCompanion).knowledgeId ==
-                    Value.absent()
-                ? null
-                : (entity as DepartmentsCompanion).knowledgeId.value;
-          case "synced":
-            return (entity as DepartmentsCompanion).synced == Value.absent()
-                ? null
-                : (entity as DepartmentsCompanion).synced.value;
-          case "deleted":
-            return (entity as DepartmentsCompanion).deleted == Value.absent()
-                ? null
-                : (entity as DepartmentsCompanion).deleted.value;
-        }
-      }
-    } else {
-      if (entity is Employee) {
-        switch (fieldName) {
-          case "id":
-            return (entity as Employee).id;
-          case "syncId":
-            return (entity as Employee).syncId;
-          case "knowledgeId":
-            return (entity as Employee).knowledgeId;
-          case "synced":
-            return (entity as Employee).synced;
-          case "deleted":
-            return (entity as Employee).deleted;
-        }
-      }
-      if (entity is Department) {
-        switch (fieldName) {
-          case "id":
-            return (entity as Department).id;
-          case "syncId":
-            return (entity as Department).syncId;
-          case "knowledgeId":
-            return (entity as Department).knowledgeId;
-          case "synced":
-            return (entity as Department).synced;
-          case "deleted":
-            return (entity as Department).deleted;
-        }
+    }
+    if (entity is Department) {
+      switch (fieldName) {
+        case "id":
+          return (entity as Department).id;
+        case "deleted":
+          return (entity as Department).deleted;
       }
     }
     throw NetCoreSyncException(
@@ -1501,7 +1435,20 @@ extension $NetCoreSyncClientExtension on Database {
               "syncIdFieldName": "syncId",
               "knowledgeIdFieldName": "knowledgeId",
               "syncedFieldName": "synced",
-              "deletedFieldName": "deleted"
+              "deletedFieldName": "deleted",
+              "columnFieldNames": [
+                "id",
+                "name",
+                "birthday",
+                "numberOfComputers",
+                "savingAmount",
+                "isActive",
+                "departmentId",
+                "syncId",
+                "knowledgeId",
+                "synced",
+                "deleted"
+              ]
             }),
             employees.id.escapedName,
             employees.syncId.escapedName,
@@ -1516,7 +1463,15 @@ extension $NetCoreSyncClientExtension on Database {
               "syncIdFieldName": "syncId",
               "knowledgeIdFieldName": "knowledgeId",
               "syncedFieldName": "synced",
-              "deletedFieldName": "deleted"
+              "deletedFieldName": "deleted",
+              "columnFieldNames": [
+                "id",
+                "name",
+                "syncId",
+                "knowledgeId",
+                "synced",
+                "deleted"
+              ]
             }),
             departments.id.escapedName,
             departments.syncId.escapedName,

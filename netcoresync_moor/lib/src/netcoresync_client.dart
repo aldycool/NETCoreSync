@@ -136,9 +136,14 @@ mixin NetCoreSyncClient on GeneratedDatabase {
     TableInfo<T, D> table,
   ) {
     if (!netCoreSyncInitialized) throw NetCoreSyncNotInitializedException();
+    TableInfo<T, D> normalizedTable = table;
+    if (table is SyncBaseTable<T, D>) {
+      normalizedTable =
+          dataAccess.engine.tables[D]!.tableInfo as TableInfo<T, D>;
+    }
     return SyncInsertStatement<T, D>(
       dataAccess,
-      table,
+      normalizedTable,
     );
   }
 
@@ -146,9 +151,14 @@ mixin NetCoreSyncClient on GeneratedDatabase {
     TableInfo<T, D> table,
   ) {
     if (!netCoreSyncInitialized) throw NetCoreSyncNotInitializedException();
+    TableInfo<T, D> normalizedTable = table;
+    if (table is SyncBaseTable<T, D>) {
+      normalizedTable =
+          dataAccess.engine.tables[D]!.tableInfo as TableInfo<T, D>;
+    }
     return SyncUpdateStatement<T, D>(
       dataAccess,
-      table,
+      normalizedTable,
     );
   }
 
@@ -156,9 +166,14 @@ mixin NetCoreSyncClient on GeneratedDatabase {
     TableInfo<T, D> table,
   ) {
     if (!netCoreSyncInitialized) throw NetCoreSyncNotInitializedException();
+    TableInfo<T, D> normalizedTable = table;
+    if (table is SyncBaseTable<T, D>) {
+      normalizedTable =
+          dataAccess.engine.tables[D]!.tableInfo as TableInfo<T, D>;
+    }
     return SyncDeleteStatement<T, D>(
       dataAccess,
-      table,
+      normalizedTable,
     );
   }
 }

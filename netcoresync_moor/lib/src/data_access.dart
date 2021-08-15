@@ -51,6 +51,28 @@ class DataAccess<G extends GeneratedDatabase> extends DatabaseAccessor<G> {
             ..where((tbl) => tbl.id.equals(newLocalKnowledge.id)))
           .getSingle();
     }
+    // When the logged in user is inserting on behalf of any linked SyncId, even
+    // though the returned knowledgeId is the same as the local's logged in
+    // user, it still important to have the combination of linkedSyncId +
+    // localKnowledgeId data in the knowledge table. This is to ensure that
+    // all known knowledges are sent to the server during sync, and the
+    // integrity of syncId + knowledgeId for any row in any table is exist in
+    // the knowledge table.
+    if (activeSyncId != syncIdInfo!.syncId) {
+      NetCoreSyncKnowledge? onBehalfKnowledge =
+          await (activeDb.select(knowledges)
+                ..where((tbl) =>
+                    tbl.syncId.equals(activeSyncId) &
+                    tbl.id.equals(localKnowledge!.id)))
+              .getSingleOrNull();
+      if (onBehalfKnowledge == null) {
+        onBehalfKnowledge = NetCoreSyncKnowledge();
+        onBehalfKnowledge.id = localKnowledge.id;
+        onBehalfKnowledge.syncId = activeSyncId;
+        onBehalfKnowledge.local = false;
+        await activeDb.into(knowledges).insert(onBehalfKnowledge);
+      }
+    }
     return localKnowledge.id;
   }
 
