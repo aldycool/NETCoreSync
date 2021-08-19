@@ -267,7 +267,7 @@ class SyncSession {
     assert(current >= min && current <= max);
     syncEvent?.progressEvent?.call(
       message,
-      (current - min) / (max - min),
+      (max - min) == 0 ? 0 : (current - min) / (max - min),
       0.0,
       1.0,
     );

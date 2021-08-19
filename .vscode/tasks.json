@@ -7,7 +7,7 @@
             "type": "process",
             "args": [
                 "build",
-                "${workspaceFolder}/Samples/Flutter/ServerApp/ServerApp.csproj",
+                "${workspaceFolder}/Samples/ServerTimeStamp/WebSample/WebSample.csproj",
                 "/property:GenerateFullPaths=true",
                 "/consoleloggerparameters:NoSummary"
             ],
@@ -19,7 +19,7 @@
             "type": "process",
             "args": [
                 "publish",
-                "${workspaceFolder}/Samples/Flutter/ServerApp/ServerApp.csproj",
+                "${workspaceFolder}/Samples/ServerTimeStamp/WebSample/WebSample.csproj",
                 "/property:GenerateFullPaths=true",
                 "/consoleloggerparameters:NoSummary"
             ],
@@ -32,18 +32,6 @@
             "args": [
                 "watch",
                 "run",
-                "${workspaceFolder}/Samples/Flutter/ServerApp/ServerApp.csproj",
-                "/property:GenerateFullPaths=true",
-                "/consoleloggerparameters:NoSummary"
-            ],
-            "problemMatcher": "$msCompile"
-        },
-        {
-            "label": "buildServerTimeStamp",
-            "command": "dotnet",
-            "type": "process",
-            "args": [
-                "build",
                 "${workspaceFolder}/Samples/ServerTimeStamp/WebSample/WebSample.csproj",
                 "/property:GenerateFullPaths=true",
                 "/consoleloggerparameters:NoSummary"

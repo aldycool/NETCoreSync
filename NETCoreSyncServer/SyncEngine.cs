@@ -37,7 +37,7 @@ namespace NETCoreSyncServer
                 {
                     // The current Moor's default implementation of toJson() is converting DateTime to epoch milliseconds (in the _DefaultValueSerializer class).
                     // We now attempt to detect such condition for DateTime type.
-                    if (property.PropertyType == typeof(DateTime) && ((JsonElement)value).ValueKind == JsonValueKind.Number)
+                    if ((property.PropertyType == typeof(DateTime) || property.PropertyType == typeof(DateTime?)) && ((JsonElement)value).ValueKind == JsonValueKind.Number)
                     {
                         value = DateTimeOffset.FromUnixTimeMilliseconds(((JsonElement)value).GetInt64()).LocalDateTime;
                     }

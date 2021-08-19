@@ -5,10 +5,10 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "ServerTimeStamp",
+            "name": "ServerTimeStamp-Server",
             "type": "coreclr",
             "request": "launch",
-            "preLaunchTask": "buildServerTimeStamp",
+            "preLaunchTask": "build",
             "program": "${workspaceFolder}/Samples/ServerTimeStamp/WebSample/bin/Debug/net5.0/WebSample.dll",
             "args": [],
             "cwd": "${workspaceFolder}/Samples/ServerTimeStamp/WebSample",
@@ -25,10 +25,10 @@
             }
         },
         {
-            "name": "ServerTimeStamp-ForTesting",
+            "name": "ServerTimeStamp-Server-ForTesting",
             "type": "coreclr",
             "request": "launch",
-            "preLaunchTask": "buildServerTimeStamp",
+            "preLaunchTask": "build",
             "program": "${workspaceFolder}/Samples/ServerTimeStamp/WebSample/bin/Debug/net5.0/WebSample.dll",
             "args": [ "clearDatabase=true" ],
             "cwd": "${workspaceFolder}/Samples/ServerTimeStamp/WebSample",
@@ -41,28 +41,8 @@
             }
         },
         {
-            "name": "Flutter-ServerApp",
-            "type": "coreclr",
-            "request": "launch",
-            "preLaunchTask": "build",
-            "program": "${workspaceFolder}/Samples/Flutter/ServerApp/bin/Debug/net5.0/ServerApp.dll",
-            "args": [],
-            "cwd": "${workspaceFolder}/Samples/Flutter/ServerApp",
-            "stopAtEntry": false,
-            "serverReadyAction": {
-                "action": "openExternally",
-                "pattern": "\\bNow listening on:\\s+(https?://\\S+)"
-            },
-            "env": {
-                "ASPNETCORE_ENVIRONMENT": "Development"
-            },
-            "sourceFileMap": {
-                "/Views": "${workspaceFolder}/Views"
-            }
-        },
-        {
-            "name": "Flutter-ClientApp",
-            "cwd": "${workspaceFolder}/Samples/Flutter/client_app",
+            "name": "ServerTimeStamp-Client",
+            "cwd": "${workspaceFolder}/Samples/ServerTimeStamp/clientsample",
             "request": "launch",
             "type": "dart",
         },

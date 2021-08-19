@@ -1,0 +1,49 @@
+﻿@using WebSample.Models
+@model List<SyncCustomObject>
+
+@{
+    ViewData["Title"] = "View CustomObjects";
+}
+
+<div class="table-responsive">
+    <table class="table">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>FieldString</th>
+                <th>FieldStringNullable</th>
+                <th>FieldInt</th>
+                <th>FieldIntNullable</th>
+                <th>FieldBoolean</th>
+                <th>FieldBooleanNullable</th>
+                <th>FieldDateTime</th>
+                <th>FieldDateTimeNullable</th>
+                <th>SyncID</th>
+                <th>KnowledgeID</th>
+                <th>TimeStamp</th>
+                <th>Deleted</th>
+            </tr>
+        </thead>
+        <tbody>
+            @for (int i = 0; i < Model.Count; i++)
+            {
+                var data = Model[i];
+                <tr>
+                    <td>@data.ID</td>
+                    <td>@data.FieldString</td>
+                    <td>@data.FieldStringNullable</td>
+                    <td>@data.FieldInt</td>
+                    <td>@data.FieldIntNullable</td>
+                    <td>@data.FieldBoolean</td>
+                    <td>@data.FieldBooleanNullable</td>
+                    <td>@data.FieldDateTime</td>
+                    <td>@data.FieldDateTimeNullable</td>
+                    <td>@data.SyncID</td>
+                    <td>@data.KnowledgeID</td>
+                    <td>@data.TimeStamp</td>
+                    <td>@data.Deleted</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>

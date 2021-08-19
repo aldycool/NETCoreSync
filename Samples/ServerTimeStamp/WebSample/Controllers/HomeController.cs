@@ -11,19 +11,14 @@ namespace WebSample.Controllers
 {
     public class HomeController : Controller
     {
-        private readonly ILogger<HomeController> _logger;
+        private readonly DatabaseContext databaseContext;        
 
-        public HomeController(ILogger<HomeController> logger)
+        public HomeController(DatabaseContext databaseContext)
         {
-            _logger = logger;
+            this.databaseContext = databaseContext;
         }
 
         public IActionResult Index()
-        {
-            return View();
-        }
-
-        public IActionResult Privacy()
         {
             return View();
         }
@@ -32,6 +27,16 @@ namespace WebSample.Controllers
         public IActionResult Error()
         {
             return View(new ErrorViewModel { RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier });
+        }
+
+        public IActionResult ResetDatabase()
+        {
+            databaseContext.Persons.RemoveRange(databaseContext.Persons);
+            databaseContext.Areas.RemoveRange(databaseContext.Areas);
+            databaseContext.CustomObjects.RemoveRange(databaseContext.CustomObjects);
+            databaseContext.SaveChanges();
+
+            return RedirectToAction("Index", "Home");
         }
     }
 }
