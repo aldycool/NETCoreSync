@@ -506,6 +506,38 @@ void main() {
         expect(
             syncEventMessages.contains(SyncSession.defaultDisconnectingMessage),
             equals(true));
+
+        // Check the syncOnlyFields log level output
+        await db.syncInto(db.areas).syncInsert(
+            AreasCompanion(city: Value("Tokyo"), district: Value("Shibuya")));
+        final syncResultSyncFieldsOnly = await db.netCoreSyncSynchronize(
+          url: wsUrl,
+          syncResultLogLevel: SyncResultLogLevel.syncFieldsOnly,
+        );
+        expect(
+            syncResultSyncFieldsOnly.logs.any((element) =>
+                element["action"] == "syncTableRequest" &&
+                element["data"]["className"] == "AreaData" &&
+                element["data"]["unsyncedRows"] is List<dynamic> &&
+                element["data"]["unsyncedRows"].length == 1 &&
+                !element["data"]["unsyncedRows"][0].containsKey("city") &&
+                !element["data"]["unsyncedRows"][0].containsKey("district")),
+            equals(true));
+
+        // Check the countsOnly log level output
+        await db.syncInto(db.areas).syncInsert(AreasCompanion(
+            city: Value("Paris"), district: Value("Champs-Elysées")));
+        final syncResultCountsOnly = await db.netCoreSyncSynchronize(
+          url: wsUrl,
+          syncResultLogLevel: SyncResultLogLevel.countsOnly,
+        );
+        expect(
+            syncResultCountsOnly.logs.any((element) =>
+                element["action"] == "syncTableRequest" &&
+                element["data"]["className"] == "AreaData" &&
+                element["data"]["unsyncedRows"] is int &&
+                element["data"]["unsyncedRows"] == 1),
+            equals(true));
       } catch (e) {
         rethrow;
       } finally {
