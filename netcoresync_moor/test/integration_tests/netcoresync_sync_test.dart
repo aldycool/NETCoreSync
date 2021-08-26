@@ -21,6 +21,8 @@ void main() async {
     }
   }
 
+  Helper.bypassHttpCertificateVerifyFailed();
+
   String dotnetExecutableFullPath =
       await NetCoreTestServer.getDotNetExecutablePath();
   if (dotnetExecutableFullPath.isEmpty) {
