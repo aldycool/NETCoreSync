@@ -13,7 +13,7 @@ import '../utils/net_core_test_server.dart';
 import '../utils/helper.dart';
 import '../data/database.dart';
 
-void main() {
+void main() async {
   bool testPrint = true;
   void logTest(Object? object) {
     if (testPrint) {
@@ -21,7 +21,11 @@ void main() {
     }
   }
 
-  String dotnetExecutableFullPath = "/usr/local/share/dotnet/dotnet";
+  String dotnetExecutableFullPath =
+      await NetCoreTestServer.getDotNetExecutablePath();
+  if (dotnetExecutableFullPath.isEmpty) {
+    throw Exception("Unexpected dotnetExecutableFullPath is empty");
+  }
   bool netCorePrintStdout = true;
   String netCoreProjectRootDirectory = "../Samples/ServerTimeStamp/WebSample";
   String netCoreDllFileName = "WebSample.dll";

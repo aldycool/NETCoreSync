@@ -27,7 +27,12 @@ namespace WebSample
         {
             services.AddDbContext<DatabaseContext>(options =>
             {
-                options.UseNpgsql("Host=localhost;Database=NETCoreSyncServerTimeStampDB;Username=NETCoreSyncServerTimeStamp_User;Password=NETCoreSyncServerTimeStamp_Password");
+                String host = "localhost";
+                if (!string.IsNullOrEmpty(Environment.GetEnvironmentVariable("NETCORESYNCSERVER_POSTGRES_HOST")))
+                {
+                    host = Environment.GetEnvironmentVariable("NETCORESYNCSERVER_POSTGRES_HOST")!;
+                }
+                options.UseNpgsql($"Host={host};Database=NETCoreSyncServerTimeStampDB;Username=NETCoreSyncServerTimeStamp_User;Password=NETCoreSyncServerTimeStamp_Password");
             });
 
             services.AddControllersWithViews();
