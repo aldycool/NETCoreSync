@@ -1,3 +1,3 @@
 # netcoresync_moor_generator
 
-The code generation tool (as `dev_dependencies`) for `netcoresync_moor` package. read the `netcoresync_moor`'s README for more details.
+The code generation tool (as `dev_dependencies`) for the `netcoresync_moor` package. Read the `netcoresync_moor`'s [README](https://github.com/aldycool/NETCoreSync/blob/master/netcoresync_moor/README.md) for more details.

@@ -130,7 +130,7 @@ namespace NETCoreSyncServer
                         string? errorMessage = null;
                         if (syncService.SyncEvent != null && syncService.SyncEvent.OnHandshake != null) 
                         {
-                            errorMessage = syncService.SyncEvent.OnHandshake.Invoke(requestPayload, requestPayload.CustomInfo!);
+                            errorMessage = syncService.SyncEvent.OnHandshake.Invoke(requestPayload);
                         }
                         if (string.IsNullOrEmpty(errorMessage))
                         {
@@ -239,21 +239,18 @@ namespace NETCoreSyncServer
             responsePayload.UnsyncedRows = new List<Dictionary<string, object?>>();
             responsePayload.Knowledges = new List<Dictionary<string, object?>>();
             responsePayload.DeletedIds = new List<string>();
-            responsePayload.Logs = new List<Dictionary<string, object?>>();
+            responsePayload.Logs = new Dictionary<string, object?>() 
+            { 
+                ["inserts"] = new List<Dictionary<string, object?>>(),
+                ["updates"] = new List<Dictionary<string, object?>>(),
+                ["deletes"] = new List<Dictionary<string, object?>>(),
+                ["ignores"] = new List<Dictionary<string, object?>>() 
+            };
 
             ResponseMessage createResponse(string? errorMessage, SyncTableResponsePayload responsePayload)
             {
                 if (responsePayload == null) responsePayload = new SyncTableResponsePayload();
                 return ResponseMessage.FromPayload<SyncTableResponsePayload>(request.Id, errorMessage, responsePayload);
-            }
-
-            Dictionary<string, object?> createLog(string action, Dictionary<string, object?> data)
-            {
-                return new Dictionary<string, object?>()
-                {
-                    ["action"] = action,
-                    ["data"] = data
-                };
             }
 
             string? updateKnowledges(List<Dictionary<string, object?>> knowledges, object syncId, object knowledgeId, long timeStamp, bool shouldAddIfNotExist)
@@ -317,6 +314,15 @@ namespace NETCoreSyncServer
             string knowledgeIdFieldName = Convert.ToString(requestPayload.Annotations["knowledgeIdFieldName"])!;
             string deletedFieldName = Convert.ToString(requestPayload.Annotations["deletedFieldName"])!;
             List<object> processedIds = new List<object>();
+            
+            responsePayload.Annotations = new Dictionary<string, object?>()
+            {
+                ["timeStampFieldName"] = SyncMessages.serializeOptions.DictionaryKeyPolicy!.ConvertName(tableInfo.PropertyInfoTimeStamp.Name),
+                ["idFieldName"] = SyncMessages.serializeOptions.DictionaryKeyPolicy!.ConvertName(tableInfo.PropertyInfoID.Name),
+                ["syncIdFieldName"] = SyncMessages.serializeOptions.DictionaryKeyPolicy!.ConvertName(tableInfo.PropertyInfoSyncID.Name),
+                ["knowledgeIdFieldName"] = SyncMessages.serializeOptions.DictionaryKeyPolicy!.ConvertName(tableInfo.PropertyInfoKnowledgeID.Name),
+                ["deletedFieldName"] = SyncMessages.serializeOptions.DictionaryKeyPolicy!.ConvertName(tableInfo.PropertyInfoDeleted.Name)
+            };
             for (int i = 0; i < requestPayload.UnsyncedRows.Count; i++)
             {
                 var clientData = requestPayload.UnsyncedRows[i];
@@ -367,7 +373,7 @@ namespace NETCoreSyncServer
                     if (serverDeleted)
                     {
                         shouldIgnore = true;
-                        responsePayload.Logs.Add(createLog("ignored", clientData));
+                        ((List<Dictionary<string, object?>>)responsePayload.Logs["ignores"]!).Add(clientData);
                         if (!parsedDeleted)
                         {
                             responsePayload.DeletedIds.Add(Convert.ToString(id)!);
@@ -380,7 +386,7 @@ namespace NETCoreSyncServer
                     if (!shouldIgnore)
                     {
                         syncEngine.Insert(classType, serverData);
-                        responsePayload.Logs.Add(createLog("insert", clientData));
+                        ((List<Dictionary<string, object?>>)responsePayload.Logs["inserts"]!).Add(clientData);
                     }
                 }
                 else
@@ -390,11 +396,11 @@ namespace NETCoreSyncServer
                         syncEngine.Update(classType, serverData);
                         if (!parsedDeleted)
                         {
-                            responsePayload.Logs.Add(createLog("update", clientData));
+                            ((List<Dictionary<string, object?>>)responsePayload.Logs["updates"]!).Add(clientData);
                         }
                         else
                         {
-                            responsePayload.Logs.Add(createLog("delete", clientData));
+                            ((List<Dictionary<string, object?>>)responsePayload.Logs["deletes"]!).Add(clientData);
                         }
                     }
                 }

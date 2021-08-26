@@ -1,31 +1,30 @@
 name: netcoresync_moor
-description: Dart / Flutter Client (opinionated to Moor) for NETCoreSync (a data synchronization library / server component implemented using .NET Core).
-version: 0.0.1
-homepage:
+description: A database synchronization framework where each client's local offline database (on each client's multiple devices) can be synchronized on-demand via network into a single centralized database hosted on a server.
+version: 1.0.0
+repository: https://github.com/aldycool/NETCoreSync/tree/master/netcoresync_moor
+homepage: https://github.com/aldycool/NETCoreSync/tree/master/netcoresync_moor
+issue_tracker: https://github.com/aldycool/NETCoreSync/issues
 
 environment:
   sdk: ">=2.12.0 <3.0.0"
-  flutter: ">=1.17.0"
 
 dependencies:
-  flutter:
-    sdk: flutter
-  meta: ^1.3.0 # https://pub.dev/packages/meta # ...Because every version of flutter_test from sdk depends on meta 1.3.0...
   moor: ^4.4.1 # https://pub.dev/packages/moor
+  meta: ^1.3.0 # https://pub.dev/packages/meta
   uuid: ^3.0.4 # https://pub.dev/packages/uuid
   web_socket_channel: ^2.1.0 # https://pub.dev/packages/web_socket_channel
   enum_to_string: ^2.0.1 # https://pub.dev/packages/enum_to_string
   archive: ^3.1.2 # https://pub.dev/packages/archive
 
 dev_dependencies:
-  lints: ^1.0.1 # https://pub.dev/packages/lints
-  test: ^1.17.10 # https://pub.dev/packages/test
-  build_runner: ^2.1.1 # https://pub.dev/packages/build_runner
   moor_generator: ^4.4.1 # https://pub.dev/packages/moor_generator
+  lints: ^1.0.1 # https://pub.dev/packages/lints
+  test: ^1.17.11 # https://pub.dev/packages/test
+  build_runner: ^2.1.1 # https://pub.dev/packages/build_runner
   netcoresync_moor_generator: any
   # For test only:
   path: ^1.8.0 # https://pub.dev/packages/path
-  sqlite3_flutter_libs: ^0.5.0 # https://pub.dev/packages/sqlite3_flutter_libs
+  # sqlite3_flutter_libs: ^0.5.0 # https://pub.dev/packages/sqlite3_flutter_libs
   version: ^2.0.0 # https://pub.dev/packages/version
   async: ^2.8.2 # https://pub.dev/packages/async
   

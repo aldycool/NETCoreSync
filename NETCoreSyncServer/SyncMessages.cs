@@ -186,9 +186,10 @@ namespace NETCoreSyncServer
         override public string Action => PayloadActions.syncTableResponse.ToString();
 
         public string ClassName { get; set; } = null!;
+        public Dictionary<string, object?> Annotations { get; set; } = null!;
         public List<Dictionary<string, object?>> UnsyncedRows { get; set; } = null!;
         public List<Dictionary<string, object?>> Knowledges { get; set; } = null!;
         public List<string> DeletedIds { get; set; } = null!;
-        public List<Dictionary<string, object?>> Logs { get; set; } = null!;
+        public Dictionary<string, object?> Logs { get; set; } = null!;
 }
 }

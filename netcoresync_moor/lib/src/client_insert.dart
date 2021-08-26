@@ -11,7 +11,7 @@ class SyncInsertStatement<T extends Table, D> extends InsertStatement<T, D> {
   SyncInsertStatement(
     this.dataAccess,
     TableInfo<T, D> table,
-  ) : super(dataAccess.resolvedEngine, table) {
+  ) : super(dataAccess.databaseResolvedEngine, table) {
     if (!dataAccess.engine.tables.containsKey(D)) {
       throw NetCoreSyncTypeNotRegisteredException(D);
     }

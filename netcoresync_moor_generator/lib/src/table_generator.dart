@@ -23,13 +23,13 @@ class TableGenerator extends GeneratorForAnnotation<NetCoreSyncTable> {
       knowledgeIdFieldName: annotation.read("knowledgeIdFieldName").stringValue,
       syncedFieldName: annotation.read("syncedFieldName").stringValue,
       deletedFieldName: annotation.read("deletedFieldName").stringValue,
-      columnFieldNames: element.fields
-          .where((element) => element.type
-              .getDisplayString(withNullability: true)
-              .startsWith("Column<"))
-          .map((e) => e.name)
-          .toList(),
     );
+    List<String> columnFieldNames = element.fields
+        .where((element) => element.type
+            .getDisplayString(withNullability: true)
+            .startsWith("Column<"))
+        .map((e) => e.name)
+        .toList();
 
     _ModelVisitor visitor = _ModelVisitor();
     element.visitChildren(visitor);
@@ -172,6 +172,7 @@ class TableGenerator extends GeneratorForAnnotation<NetCoreSyncTable> {
     content["dataClassName"] = dataClassName;
     content["useRowClass"] = useRowClass;
     content["netCoreSyncTable"] = netCoreSyncTable;
+    content["columnFieldNames"] = columnFieldNames;
     buffer.write("/* PART-MARKER */");
     buffer.write("// ${jsonEncode(content)}");
     return buffer.toString();

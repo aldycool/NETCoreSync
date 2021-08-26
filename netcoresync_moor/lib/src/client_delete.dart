@@ -10,7 +10,7 @@ class SyncDeleteStatement<T extends Table, D> extends DeleteStatement<T, D> {
   SyncDeleteStatement(
     this.dataAccess,
     TableInfo<T, D> table,
-  ) : super(dataAccess.resolvedEngine, table) {
+  ) : super(dataAccess.databaseResolvedEngine, table) {
     if (!dataAccess.engine.tables.containsKey(D)) {
       throw NetCoreSyncTypeNotRegisteredException(D);
     }

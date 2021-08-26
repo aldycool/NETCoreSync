@@ -58,7 +58,7 @@ class SyncIdInfo {
 }
 
 class SyncEvent {
-  void Function(String message, double current, double min, double max)?
+  void Function(String message, bool indeterminate, double value)?
       progressEvent;
 
   SyncEvent({this.progressEvent});
@@ -68,6 +68,12 @@ class SyncResult {
   String? errorMessage;
   Object? error;
   List<Map<String, dynamic>> logs = [];
+}
+
+enum SyncResultLogLevel {
+  countsOnly,
+  syncFieldsOnly,
+  fullData,
 }
 
 abstract class SyncBaseTable<T extends HasResultSet, D> {

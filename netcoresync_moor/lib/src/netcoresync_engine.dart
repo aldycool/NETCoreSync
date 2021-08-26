@@ -6,6 +6,8 @@ abstract class NetCoreSyncEngine {
 
   NetCoreSyncEngine(this.tables);
 
+  Map<String, dynamic> toJson(dynamic object);
+
   dynamic fromJson(Type type, Map<String, dynamic> json);
 
   UpdateCompanion<D> toSafeCompanion<D>(Insertable<D> entity);
@@ -29,6 +31,8 @@ class NetCoreSyncTableUser<T extends Table, D> {
   String knowledgeIdEscapedName;
   String syncedEscapedName;
   String deletedEscapedName;
+  List<String> columnFieldNames;
+
   NetCoreSyncTableUser(
     this.tableInfo,
     this.tableAnnotation,
@@ -37,5 +41,6 @@ class NetCoreSyncTableUser<T extends Table, D> {
     this.knowledgeIdEscapedName,
     this.syncedEscapedName,
     this.deletedEscapedName,
+    this.columnFieldNames,
   );
 }

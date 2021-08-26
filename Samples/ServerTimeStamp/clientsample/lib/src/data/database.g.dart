@@ -1888,13 +1888,27 @@ abstract class _$Database extends GeneratedDatabase {
 // **************************************************************************
 
 // NOTE: Obtained from @NetCoreSyncTable annotations:
-// Areas: {"tableClassName":"Areas","dataClassName":"AreaData","useRowClass":false,"netCoreSyncTable":{"idFieldName":"pk","syncIdFieldName":"syncSyncId","knowledgeIdFieldName":"syncKnowledgeId","syncedFieldName":"syncSynced","deletedFieldName":"syncDeleted","columnFieldNames":["pk","city","district","syncSyncId","syncKnowledgeId","syncSynced","syncDeleted"]}}
-// CustomObjects: {"tableClassName":"CustomObjects","dataClassName":"CustomObject","useRowClass":true,"netCoreSyncTable":{"idFieldName":"id","syncIdFieldName":"syncId","knowledgeIdFieldName":"knowledgeId","syncedFieldName":"synced","deletedFieldName":"deleted","columnFieldNames":["id","fieldString","fieldStringNullable","fieldInt","fieldIntNullable","fieldBoolean","fieldBooleanNullable","fieldDateTime","fieldDateTimeNullable","syncId","knowledgeId","synced","deleted"]}}
-// Persons: {"tableClassName":"Persons","dataClassName":"Person","useRowClass":false,"netCoreSyncTable":{"idFieldName":"id","syncIdFieldName":"syncId","knowledgeIdFieldName":"knowledgeId","syncedFieldName":"synced","deletedFieldName":"deleted","columnFieldNames":["id","name","birthday","age","isForeigner","isVaccinated","vaccineName","vaccinationDate","vaccinePhase","vaccinationAreaPk","syncId","knowledgeId","synced","deleted"]}}
+// Areas: {"tableClassName":"Areas","dataClassName":"AreaData","useRowClass":false,"netCoreSyncTable":{"idFieldName":"pk","syncIdFieldName":"syncSyncId","knowledgeIdFieldName":"syncKnowledgeId","syncedFieldName":"syncSynced","deletedFieldName":"syncDeleted"},"columnFieldNames":["pk","city","district","syncSyncId","syncKnowledgeId","syncSynced","syncDeleted"]}
+// CustomObjects: {"tableClassName":"CustomObjects","dataClassName":"CustomObject","useRowClass":true,"netCoreSyncTable":{"idFieldName":"id","syncIdFieldName":"syncId","knowledgeIdFieldName":"knowledgeId","syncedFieldName":"synced","deletedFieldName":"deleted"},"columnFieldNames":["id","fieldString","fieldStringNullable","fieldInt","fieldIntNullable","fieldBoolean","fieldBooleanNullable","fieldDateTime","fieldDateTimeNullable","syncId","knowledgeId","synced","deleted"]}
+// Persons: {"tableClassName":"Persons","dataClassName":"Person","useRowClass":false,"netCoreSyncTable":{"idFieldName":"id","syncIdFieldName":"syncId","knowledgeIdFieldName":"knowledgeId","syncedFieldName":"synced","deletedFieldName":"deleted"},"columnFieldNames":["id","name","birthday","age","isForeigner","isVaccinated","vaccineName","vaccinationDate","vaccinePhase","vaccinationAreaPk","syncId","knowledgeId","synced","deleted"]}
 
 class _$NetCoreSyncEngineUser extends NetCoreSyncEngine {
   _$NetCoreSyncEngineUser(Map<Type, NetCoreSyncTableUser> tables)
       : super(tables);
+
+  @override
+  Map<String, dynamic> toJson(dynamic object) {
+    if (object is AreaData) {
+      return object.toJson();
+    }
+    if (object is CustomObject) {
+      return object.toJson();
+    }
+    if (object is Person) {
+      return object.toJson();
+    }
+    throw NetCoreSyncException("Unexpected object: $object");
+  }
 
   @override
   dynamic fromJson(Type type, Map<String, dynamic> json) {
@@ -2089,22 +2103,22 @@ extension $NetCoreSyncClientExtension on Database {
               "syncIdFieldName": "syncSyncId",
               "knowledgeIdFieldName": "syncKnowledgeId",
               "syncedFieldName": "syncSynced",
-              "deletedFieldName": "syncDeleted",
-              "columnFieldNames": [
-                "pk",
-                "city",
-                "district",
-                "syncSyncId",
-                "syncKnowledgeId",
-                "syncSynced",
-                "syncDeleted"
-              ]
+              "deletedFieldName": "syncDeleted"
             }),
             areas.pk.escapedName,
             areas.syncSyncId.escapedName,
             areas.syncKnowledgeId.escapedName,
             areas.syncSynced.escapedName,
             areas.syncDeleted.escapedName,
+            [
+              "pk",
+              "city",
+              "district",
+              "syncSyncId",
+              "syncKnowledgeId",
+              "syncSynced",
+              "syncDeleted"
+            ],
           ),
           CustomObject: NetCoreSyncTableUser(
             customObjects,
@@ -2113,28 +2127,28 @@ extension $NetCoreSyncClientExtension on Database {
               "syncIdFieldName": "syncId",
               "knowledgeIdFieldName": "knowledgeId",
               "syncedFieldName": "synced",
-              "deletedFieldName": "deleted",
-              "columnFieldNames": [
-                "id",
-                "fieldString",
-                "fieldStringNullable",
-                "fieldInt",
-                "fieldIntNullable",
-                "fieldBoolean",
-                "fieldBooleanNullable",
-                "fieldDateTime",
-                "fieldDateTimeNullable",
-                "syncId",
-                "knowledgeId",
-                "synced",
-                "deleted"
-              ]
+              "deletedFieldName": "deleted"
             }),
             customObjects.id.escapedName,
             customObjects.syncId.escapedName,
             customObjects.knowledgeId.escapedName,
             customObjects.synced.escapedName,
             customObjects.deleted.escapedName,
+            [
+              "id",
+              "fieldString",
+              "fieldStringNullable",
+              "fieldInt",
+              "fieldIntNullable",
+              "fieldBoolean",
+              "fieldBooleanNullable",
+              "fieldDateTime",
+              "fieldDateTimeNullable",
+              "syncId",
+              "knowledgeId",
+              "synced",
+              "deleted"
+            ],
           ),
           Person: NetCoreSyncTableUser(
             persons,
@@ -2143,29 +2157,29 @@ extension $NetCoreSyncClientExtension on Database {
               "syncIdFieldName": "syncId",
               "knowledgeIdFieldName": "knowledgeId",
               "syncedFieldName": "synced",
-              "deletedFieldName": "deleted",
-              "columnFieldNames": [
-                "id",
-                "name",
-                "birthday",
-                "age",
-                "isForeigner",
-                "isVaccinated",
-                "vaccineName",
-                "vaccinationDate",
-                "vaccinePhase",
-                "vaccinationAreaPk",
-                "syncId",
-                "knowledgeId",
-                "synced",
-                "deleted"
-              ]
+              "deletedFieldName": "deleted"
             }),
             persons.id.escapedName,
             persons.syncId.escapedName,
             persons.knowledgeId.escapedName,
             persons.synced.escapedName,
             persons.deleted.escapedName,
+            [
+              "id",
+              "name",
+              "birthday",
+              "age",
+              "isForeigner",
+              "isVaccinated",
+              "vaccineName",
+              "vaccinationDate",
+              "vaccinePhase",
+              "vaccinationAreaPk",
+              "syncId",
+              "knowledgeId",
+              "synced",
+              "deleted"
+            ],
           ),
         },
       ),

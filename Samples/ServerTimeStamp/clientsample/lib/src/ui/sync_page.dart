@@ -19,6 +19,7 @@ class _SyncPageState extends State<SyncPage> {
   double _progressValue = 0;
   String? _errorMessage;
   Object? _error;
+  SyncResultLogLevel? _logLevel = SyncResultLogLevel.fullData;
 
   void _toggleShowLogsInTreeView(bool value) {
     setState(() {
@@ -33,10 +34,10 @@ class _SyncPageState extends State<SyncPage> {
       });
       final syncUrl = await Global.instance.database.getSyncUrl();
       SyncEvent syncEvent =
-          SyncEvent(progressEvent: (eventMessage, current, _, __) {
+          SyncEvent(progressEvent: (eventMessage, indeterminate, value) {
         setState(() {
           _progressMessage = eventMessage;
-          _progressValue = current;
+          _progressValue = value;
         });
       });
       setState(() {
@@ -47,6 +48,11 @@ class _SyncPageState extends State<SyncPage> {
       final syncResult = await Global.instance.database.netCoreSyncSynchronize(
         url: syncUrl,
         syncEvent: syncEvent,
+        syncResultLogLevel: _logLevel ?? SyncResultLogLevel.fullData,
+        customInfo: {
+          "a": "abc",
+          "b": 1000,
+        },
       );
       setState(() {
         _errorMessage = syncResult.errorMessage;
@@ -124,6 +130,40 @@ class _SyncPageState extends State<SyncPage> {
                 height: 12,
               ),
               Text("Error: ${_error.toString()}"),
+              SizedBox(
+                height: 12,
+              ),
+              Text("Log Level:"),
+              RadioListTile<SyncResultLogLevel?>(
+                title: Text("Counts Only"),
+                value: SyncResultLogLevel.countsOnly,
+                groupValue: _logLevel,
+                onChanged: (value) {
+                  setState(() {
+                    _logLevel = value;
+                  });
+                },
+              ),
+              RadioListTile<SyncResultLogLevel?>(
+                title: Text("Sync Fields Only"),
+                value: SyncResultLogLevel.syncFieldsOnly,
+                groupValue: _logLevel,
+                onChanged: (value) {
+                  setState(() {
+                    _logLevel = value;
+                  });
+                },
+              ),
+              RadioListTile<SyncResultLogLevel?>(
+                title: Text("Full Data"),
+                value: SyncResultLogLevel.fullData,
+                groupValue: _logLevel,
+                onChanged: (value) {
+                  setState(() {
+                    _logLevel = value;
+                  });
+                },
+              ),
               SizedBox(
                 height: 12,
               ),

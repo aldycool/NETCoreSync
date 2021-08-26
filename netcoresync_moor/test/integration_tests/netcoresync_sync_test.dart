@@ -491,8 +491,7 @@ void main() {
             AreasCompanion(city: Value("Jakarta"), district: Value("Menteng")));
         List<String> syncEventMessages = [];
         SyncEvent syncEvent = SyncEvent(
-            progressEvent: (message, _, __, ___) =>
-                syncEventMessages.add(message));
+            progressEvent: (message, _, __) => syncEventMessages.add(message));
         await db.netCoreSyncSynchronize(url: wsUrl, syncEvent: syncEvent);
         expect(syncEventMessages.contains(SyncSession.defaultConnectingMessage),
             equals(true));
@@ -654,16 +653,25 @@ void main() {
           expect(logLines.length, equals(1));
           final serverLogs = logLines.elementAt(0)["data"]["logs"];
           expect(serverLogs,
-              allOf(isNot(equals(null)), isA<List<Map<String, dynamic>>>()));
+              allOf(isNot(equals(null)), isA<Map<String, dynamic>>()));
+          Set<String> processedActions = {};
+          int logCount = 0;
           operations.forEach((key, value) {
+            // Warning: for this test, it is expected that the server
+            // counterpart table's primary key column name is always "id".
             expect(
-                (serverLogs as List<Map<String, dynamic>>).any((element) =>
-                    element.containsKey("action") &&
-                    element["action"] == value &&
-                    element["data"]["id"] == key),
+                (serverLogs as Map<String, dynamic>).containsKey(value) &&
+                    serverLogs[value] is List<dynamic> &&
+                    (serverLogs[value] as List<dynamic>)
+                        .any((element) => element["id"] == key),
                 equals(true));
+            if (!processedActions.contains(value)) {
+              logCount += (serverLogs[value] as List<dynamic>).length;
+              processedActions.add(value);
+            }
           });
-          expect(serverLogs.length, equals(operations.length));
+
+          expect(logCount, equals(operations.length));
         }
 
         validateServerLogs("AreaData", areaIdOperations);
@@ -760,8 +768,8 @@ void main() {
           abc1syncResult1,
           null,
           null,
-          {abc1area1.pk: "insert"},
-          {abc1person1.id: "insert"},
+          {abc1area1.pk: "inserts"},
+          {abc1person1.id: "inserts"},
         );
         await validateClientState(
           dbAbc1,
@@ -802,8 +810,8 @@ void main() {
           abc1syncResult3,
           null,
           null,
-          {abc1area3.pk: "update"},
-          {abc1person3.id: "update"},
+          {abc1area3.pk: "updates"},
+          {abc1person3.id: "updates"},
         );
         await validateClientState(
           dbAbc1,
@@ -826,7 +834,7 @@ void main() {
           null,
           null,
           {},
-          {abc2person4.id: "insert"},
+          {abc2person4.id: "inserts"},
         );
         await validateClientState(
           dbAbc2,
@@ -876,7 +884,7 @@ void main() {
           null,
           null,
           {},
-          {abc1person5_1.id: "insert", abc1person5_2.id: "update"},
+          {abc1person5_1.id: "inserts", abc1person5_2.id: "updates"},
         );
         await validateClientState(
           dbAbc1,
@@ -891,7 +899,7 @@ void main() {
           null,
           null,
           {},
-          {abc2person5_1.id: "insert", abc2person5_2.id: "update"},
+          {abc2person5_1.id: "inserts", abc2person5_2.id: "updates"},
         );
         await validateClientState(
           dbAbc2,
@@ -929,7 +937,7 @@ void main() {
           null,
           null,
           {},
-          {abc1person6.id: "delete"},
+          {abc1person6.id: "deletes"},
         );
         await validateClientState(
           dbAbc1,
@@ -944,7 +952,7 @@ void main() {
           null,
           null,
           {},
-          {abc2person6.id: "ignored"},
+          {abc2person6.id: "ignores"},
         );
         await validateClientState(
           dbAbc2,
@@ -1008,9 +1016,9 @@ void main() {
           null,
           {},
           {
-            def3person8.id: "insert",
-            def3abcperson8_1.id: "insert",
-            def3abcperson8_2.id: "update"
+            def3person8.id: "inserts",
+            def3abcperson8_1.id: "inserts",
+            def3abcperson8_2.id: "updates"
           },
         );
         await validateClientState(

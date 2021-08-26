@@ -79,6 +79,21 @@ class NetCoreSyncClientGenerator extends GeneratorForAnnotation<UseMoor> {
     buffer.writeln(
         "_\$NetCoreSyncEngineUser(Map<Type, NetCoreSyncTableUser> tables) : super(tables);");
 
+    // START METHOD: toJson
+    buffer.writeln();
+    buffer.writeln("@override");
+    buffer.writeln("Map<String, dynamic> toJson(dynamic object) {");
+    for (var jsonPart in jsonParts) {
+      Map<String, dynamic> part = jsonDecode(jsonPart);
+      buffer.writeln("if (object is ${part["dataClassName"]}) {");
+      buffer.writeln("return object.toJson();");
+      buffer.writeln("}");
+    }
+    buffer.writeln(
+        "throw NetCoreSyncException(\"Unexpected object: \$object\");");
+    buffer.writeln("}");
+    // END METHOD: toJson
+
     // START METHOD: fromJson
     buffer.writeln();
     buffer.writeln("@override");
@@ -290,6 +305,7 @@ class NetCoreSyncClientGenerator extends GeneratorForAnnotation<UseMoor> {
         ${ReCase(part["tableClassName"]).camelCase}.${part["netCoreSyncTable"]["knowledgeIdFieldName"]}.escapedName,
         ${ReCase(part["tableClassName"]).camelCase}.${part["netCoreSyncTable"]["syncedFieldName"]}.escapedName,
         ${ReCase(part["tableClassName"]).camelCase}.${part["netCoreSyncTable"]["deletedFieldName"]}.escapedName,
+        ${jsonEncode(part["columnFieldNames"])},
       ),''');
     }
     buffer.writeln("},");

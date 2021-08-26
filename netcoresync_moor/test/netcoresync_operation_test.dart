@@ -258,18 +258,6 @@ void main() async {
       return queryRow?.data['id'];
     }
 
-    // test("Test Concepts", () async {
-    //   await database.transaction(() async {
-    //     await database
-    //         .into(database.persons)
-    //         .insert(PersonsCompanion(name: Value("A")));
-    //   });
-    //   await database.netCoreSyncSynchronize(
-    //     synchronizationId: "abc",
-    //     url: "https://localhost:5001/custompath",
-    //   );
-    // });
-
     test(
       "Sync Insert",
       () async {

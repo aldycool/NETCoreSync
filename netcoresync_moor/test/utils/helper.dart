@@ -21,7 +21,7 @@ class Helper {
     // Override for macos is defined here (not inside the openSqlite() method),
     // this is due to the need to support recent "insertReturning" of sqlite3
     if (io.Platform.isMacOS) {
-      final rootDir = io.File(io.Platform.script.toFilePath()).parent.path;
+      final rootDir = io.Directory.current.path;
       final overrideSqliteLib = path.join(
           rootDir, "test", "dylib", "sqlite3", "macos", "libsqlite3.dylib");
       open.overrideFor(OperatingSystem.macOS,

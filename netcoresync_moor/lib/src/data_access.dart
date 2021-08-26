@@ -28,7 +28,7 @@ class DataAccess<G extends GeneratedDatabase> extends DatabaseAccessor<G> {
         .contains("Transaction");
   }
 
-  dynamic get resolvedEngine =>
+  dynamic get databaseResolvedEngine =>
       Zone.current[#DatabaseConnectionUser] ?? database;
 
   Future<String> getLocalKnowledgeId() async {
@@ -38,7 +38,8 @@ class DataAccess<G extends GeneratedDatabase> extends DatabaseAccessor<G> {
     // linked user). When other users logged into this device, then the
     // netCoreSyncSetIdInfo() should also be called first when logging in.
     if (syncIdInfo == null) throw NetCoreSyncSyncIdInfoNotSetException();
-    DatabaseConnectionUser activeDb = resolvedEngine as DatabaseConnectionUser;
+    DatabaseConnectionUser activeDb =
+        databaseResolvedEngine as DatabaseConnectionUser;
     NetCoreSyncKnowledge? localKnowledge = await (activeDb.select(knowledges)
           ..where((tbl) => tbl.syncId.equals(syncIdInfo!.syncId) & tbl.local))
         .getSingleOrNull();

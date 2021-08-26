@@ -580,7 +580,7 @@ obj/
 .pub/
 coverage/
 lib/generated_plugin_registrant.dart
-# For library packages, don’t commit the pubspec.lock file.
+# For library packages, donï¿½t commit the pubspec.lock file.
 # Regenerating the pubspec.lock file lets you test your package against the latest compatible versions of its dependencies.
 # See https://dart.dev/guides/libraries/private-files#pubspeclock
 #pubspec.lock
@@ -677,3 +677,7 @@ Temporary Items
 .ionide
 
 # End of https://www.toptal.com/developers/gitignore/api/macos,visualstudiocode,dotnetcore,aspnetcore,dart,flutter
+
+# Custom
+# Realm generated dll
+.Tools/

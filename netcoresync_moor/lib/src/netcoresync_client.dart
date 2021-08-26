@@ -30,7 +30,7 @@ mixin NetCoreSyncClient on GeneratedDatabase {
     );
   }
 
-  dynamic get netCoreSyncResolvedEngine => dataAccess.resolvedEngine;
+  dynamic get netCoreSyncResolvedEngine => dataAccess.databaseResolvedEngine;
 
   void netCoreSyncSetLogger(void Function(Object? object) logger) {
     dataAccess.logger = logger;
@@ -86,6 +86,7 @@ mixin NetCoreSyncClient on GeneratedDatabase {
   Future<SyncResult> netCoreSyncSynchronize({
     required String url,
     SyncEvent? syncEvent,
+    SyncResultLogLevel syncResultLogLevel = SyncResultLogLevel.fullData,
     Map<String, dynamic> customInfo = const {},
   }) async {
     if (!netCoreSyncInitialized) throw NetCoreSyncNotInitializedException();
@@ -100,6 +101,7 @@ mixin NetCoreSyncClient on GeneratedDatabase {
       dataAccess: dataAccess,
       url: url,
       syncEvent: syncEvent,
+      syncResultLogLevel: syncResultLogLevel,
       customInfo: customInfo,
     );
 

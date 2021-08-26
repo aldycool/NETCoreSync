@@ -2,15 +2,10 @@ import 'dart:ffi' as ffi;
 import 'dart:io' as io;
 import 'package:moor/ffi.dart';
 import 'package:moor/moor.dart';
-import 'package:sqlite3_flutter_libs/sqlite3_flutter_libs.dart';
 import 'package:sqlite3/open.dart';
 import '../database.dart';
 
 Future<void> openSqlite() async {
-  if (io.Platform.isAndroid) {
-    await applyWorkaroundToOpenSqlite3OnOldAndroidVersions();
-  }
-
   if (io.Platform.isLinux) {
     final scriptDir = io.File(io.Platform.script.toFilePath()).parent;
     final libraryNextToScript = io.File('${scriptDir.path}/sqlite3.so');

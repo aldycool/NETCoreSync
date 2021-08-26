@@ -1,29 +1,26 @@
 name: netcoresync_moor_generator
-description: The code generation tool (as `dev_dependencies`) for `netcoresync_moor` package.
-version: 0.0.1
-homepage:
+description: The code generation tool (as `dev_dependencies`) for the `netcoresync_moor` package.
+version: 1.0.0
+repository: https://github.com/aldycool/NETCoreSync/tree/master/netcoresync_moor_generator
+homepage: https://github.com/aldycool/NETCoreSync/tree/master/netcoresync_moor_generator
+issue_tracker: https://github.com/aldycool/NETCoreSync/issues
 
 environment:
   sdk: ">=2.12.0 <3.0.0"
-  flutter: ">=1.17.0"
 
 dependencies:
-  flutter:
-    sdk: flutter
-  source_gen: ^1.0.3 # https://pub.dev/packages/source_gen // ...ecause source_gen >=1.0.4 depends on analyzer ^2.0.0 which depends on meta ^1.7.0, source_gen >=1.0.4 requires meta ^1.7.0...
+  moor: ^4.4.1 # https://pub.dev/packages/moor
+  source_gen: ^1.0.3 # https://pub.dev/packages/source_gen
   build_config: ^1.0.0 # https://pub.dev/packages/build_config
   glob: ^2.0.1 # https://pub.dev/packages/glob
   recase: ^4.0.0 # https://pub.dev/packages/recase
-  moor: ^4.4.1 # https://pub.dev/packages/moor
   netcoresync_moor: any
   
 dev_dependencies:
   lints: ^1.0.1 # https://pub.dev/packages/lints
-  test: ^1.17.10 # https://pub.dev/packages/test
+  test: ^1.17.11 # https://pub.dev/packages/test
   build_runner: ^2.1.1 # https://pub.dev/packages/build_runner
 
 dependency_overrides:
   netcoresync_moor:
     path: ../netcoresync_moor
-
-

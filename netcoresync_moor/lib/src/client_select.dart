@@ -17,7 +17,7 @@ class SyncSimpleSelectStatement<T extends HasResultSet, D>
     ResultSetImplementation<T, D> table, {
     bool distinct = false,
   }) : super(
-          dataAccess.resolvedEngine,
+          dataAccess.databaseResolvedEngine,
           table,
           distinct: distinct,
         ) {
@@ -92,7 +92,7 @@ class SyncJoinedSelectStatement<T extends HasResultSet, D>
     bool distinct = false,
     bool includeMainTableInResult = true,
   ]) : super(
-          dataAccess.resolvedEngine,
+          dataAccess.databaseResolvedEngine,
           table,
           joins,
           distinct,
