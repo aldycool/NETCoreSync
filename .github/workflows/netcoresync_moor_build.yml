@@ -81,7 +81,9 @@ jobs:
           format_coverage --lcov --in=coverage --out=lcov.info --packages=.packages --report-on=lib
           mv lcov.info coverage/lcov.info
 
-      - name: Upload coverage to codecov
-        run: curl -s https://codecov.io/bash
-        shell: bash          
-          
+      - name: Upload coverage
+      - uses: codecov/codecov-action@v2
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }} # not required for public repos
+          fail_ci_if_error: true
+          verbose: true
