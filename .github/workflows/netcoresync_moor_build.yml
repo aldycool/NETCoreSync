@@ -1,4 +1,4 @@
-name: netcoresync-moor
+name: netcoresync_moor_build
 
 on:
   push:
@@ -8,7 +8,7 @@ on:
 
 jobs:
   full-build:
-    name: "Full build netcoresync_moor"
+    name: "Build netcoresync_moor"
     runs-on: ubuntu-20.04
     services:
       postgres_svc:
@@ -65,6 +65,6 @@ jobs:
         run: dart run build_runner build --delete-conflicting-outputs
 
       - name: Tests
-        run: dart test # test/integration_tests/netcoresync_sync_test.dart
+        run: dart test
         env:
           NETCORESYNCSERVER_POSTGRES_HOST: localhost
