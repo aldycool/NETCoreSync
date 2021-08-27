@@ -82,7 +82,7 @@ jobs:
           mv lcov.info coverage/lcov.info
 
       - name: Upload coverage
-      - uses: codecov/codecov-action@v2
+        uses: codecov/codecov-action@v2
         with:
           token: ${{ secrets.CODECOV_TOKEN }} # not required for public repos
           fail_ci_if_error: true
