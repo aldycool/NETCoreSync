@@ -66,8 +66,8 @@ jobs:
 
       - name: Prepare coverage tools
         run: |
-          apt-get update -y
-          apt-get install -y lcov
+          sudo apt-get update -y
+          sudo apt-get install -y lcov
           dart pub global activate coverage
           echo "$HOME/.pub_cache/bin" >> $GITHUB_PATH
 
