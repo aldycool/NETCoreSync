@@ -64,7 +64,24 @@ jobs:
       - name: Generator for tests
         run: dart run build_runner build --delete-conflicting-outputs
 
+      - name: Prepare coverage tools
+        run: |
+          apt-get update -y
+          apt-get install -y lcov
+          dart pub global activate coverage
+          echo "$HOME/.pub_cache/bin" >> $GITHUB_PATH
+
       - name: Tests
-        run: dart test
+        run: dart test --coverage=coverage
         env:
           NETCORESYNCSERVER_POSTGRES_HOST: localhost
+
+      - name: Collect coverage
+        run: |
+          format_coverage --lcov --in=coverage --out=lcov.info --packages=.packages --report-on=lib
+          mv lcov.info coverage/lcov.info
+
+      - name: Upload coverage to codecov
+        run: curl -s https://codecov.io/bash
+        shell: bash          
+          

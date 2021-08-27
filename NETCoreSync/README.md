@@ -1,8 +1,8 @@
 # NETCoreSync (Xamarin Version)
 
-| NuGet |
+| NETCoreSync |
 | :---: |
-| ![Nuget](https://img.shields.io/nuget/v/NETCoreSync?style=plastic) |
+| [![Nuget](https://img.shields.io/nuget/v/NETCoreSync)](https://www.nuget.org/packages/NETCoreSync) |
 
 This is the **Xamarin** version of NETCoreSync - a database synchronization framework where each client's local offline database (on each client's multiple devices) can be synchronized on-demand via network into a single centralized database hosted on a server. The NETCoreSync for Xamarin version is built using Microsoft .NET Standard 2.0, and needs to be implemented on both of your client-side and server-side projects.
 

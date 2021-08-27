@@ -24,6 +24,33 @@
   - on the root folder: `genhtml -o coverage/genhtml coverage/lcov.info`, this will generate test reports in html files, the starting html index file is in `coverage/genhtml/index.html`.
   - NOTE: by default, the `coverage` folder is git-ignored.
 
+- Coverage Badge:
+
+  - If generating the lcov.info ourselves to be attached in Github gists (basically without 3rd party coverage):
+    - Read https://dev.to/thejaredwilcurt/coverage-badge-with-github-actions-finally-59fa, basically it uses this: https://github.com/Schneegans/dynamic-badges-action
+    - The github workflow file requires this step first:
+    ```yaml
+      - name: Prepare coverage tools
+        run: |
+          apt-get update -y
+          apt-get install -y lcov
+          dart pub global activate coverage
+          echo "$HOME/.pub_cache/bin" >> $GITHUB_PATH
+    ```
+    - And then, the step to generate the lcov.info:
+    ```yaml
+      - name: Collect coverage
+        run: |
+          # this will generate a "coverage" folder in the root directory
+          dart test test/moor_behavior_test.dart --coverage=coverage
+          # This will take the "coverage" folder file results and build an "lcov.info" file in the root directory
+          format_coverage --lcov --in=coverage --out=lcov.info --packages=.packages --report-on=lib
+          # This just prints out the coverage percentage result at the bottom in the console. This result needs to be parsed like the above article (to be uploaded as badge json into github gists using dynamic-badges-action)
+          lcov -l lcov.info
+    ```
+    - But, with all those troubles, we still need to see the coverage details to be useful, so, just use any 3rd party coverage for now (now using codecov.io)
+  
+  - It turn out that codecov.io needs to have the file lcov.info generate and to be located in the coverage folder. So the above steps still valid, and just copy the result lcov.info into coverage folder (we cannot generate lcov.info directly inside the coverage folder at the first run, because it will mess things up during the tests run).
 ## Dev Notes
 
 - OK (using 'normalizedTable') - Put checks on syncInto + syncUpdate + syncDelete, the passed in table should NOT be in the sync form (this raise an error of malformed sql such as: INSERT INTO (SELECT * FROM ...))
