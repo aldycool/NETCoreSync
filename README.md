@@ -6,7 +6,7 @@ This framework has two components that needs to be implemented in each of your c
 
 ## Flutter Version
 
-[![build](https://github.com/aldycool/NETCoreSync/actions/workflows/netcoresync_moor_build.yml/badge.svg?event=push)](https://github.com/aldycool/NETCoreSync/actions/workflows/netcoresync_moor_build.yml?query=event%3Apush)
+[![build](https://github.com/aldycool/NETCoreSync/actions/workflows/netcoresync_moor_build.yml/badge.svg?event=push)](https://github.com/aldycool/NETCoreSync/actions/workflows/netcoresync_moor_build.yml?query=event%3Apush) [![codecov](https://codecov.io/gh/aldycool/NETCoreSync/branch/master/graph/badge.svg?token=S2GTBOB7XB)](https://codecov.io/gh/aldycool/NETCoreSync)
 
 If the client is built using **[Flutter](https://flutter.dev/)**, use the Flutter version of NETCoreSync. This version provides `netcoresync_moor` package for the client side, and the `NETCorSyncServer` package for the server side. The client's `netcoresync_moor` package is built on top of Flutter's [Moor](https://github.com/simolus3/moor) library, and the server's `NETCoreSyncServer` package is built using Microsoft .NET 5.0 ASP .NET Core Middleware.
 
