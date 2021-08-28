@@ -1,6 +1,6 @@
 name: netcoresync_moor
-description: A database synchronization framework where each client's local offline database (on each client's multiple devices) can be synchronized on-demand via network into a single centralized database hosted on a server.
-version: 1.0.0
+description: A database synchronization framework where each client's local offline database can be synchronized on-demand via network into a single centralized database hosted on a server.
+version: 1.0.1
 repository: https://github.com/aldycool/NETCoreSync/tree/master/netcoresync_moor
 homepage: https://github.com/aldycool/NETCoreSync/tree/master/netcoresync_moor
 issue_tracker: https://github.com/aldycool/NETCoreSync/issues
@@ -21,14 +21,15 @@ dev_dependencies:
   lints: ^1.0.1 # https://pub.dev/packages/lints
   test: ^1.17.11 # https://pub.dev/packages/test
   build_runner: ^2.1.1 # https://pub.dev/packages/build_runner
-  netcoresync_moor_generator: any
+  netcoresync_moor_generator: ^1.0.1 # https://pub.dev/packages/netcoresync_moor_generator
   # For test only:
   path: ^1.8.0 # https://pub.dev/packages/path
   sqlite3: ^1.0.0 # https://pub.dev/packages/sqlite3
   version: ^2.0.0 # https://pub.dev/packages/version
   async: ^2.8.2 # https://pub.dev/packages/async
-  
-dependency_overrides:
-  netcoresync_moor_generator:
-    path: ../netcoresync_moor_generator
+
+# For local debugging only  
+# dependency_overrides:
+#   netcoresync_moor_generator:
+#     path: ../netcoresync_moor_generator
   

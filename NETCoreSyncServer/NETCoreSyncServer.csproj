@@ -14,9 +14,11 @@
     <PackageProjectUrl>https://github.com/aldycool/NETCoreSync/tree/master/NETCoreSyncServer</PackageProjectUrl>
     <RepositoryUrl>https://github.com/aldycool/NETCoreSync/tree/master/NETCoreSyncServer</RepositoryUrl>
     <PackageTags>database sync synchronization framework NETCoreApp NET5.0 Flutter</PackageTags>
-    <PackageReleaseNotes>v1.0.0 Release Notes: Initial Release.</PackageReleaseNotes>
+    <PackageReleaseNotes>
+      * Fix wrong link description.    
+    </PackageReleaseNotes>
     <PackageRequireLicenseAcceptance>true</PackageRequireLicenseAcceptance>
-    <Version>1.0.0</Version>
+    <Version>1.0.1</Version>
     <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
   </PropertyGroup>
 

@@ -43,6 +43,11 @@ class NetCoreSyncClientGenerator extends GeneratorForAnnotation<UseMoor> {
     }
 
     // Collect NetCoreSyncTable's parts
+    List<String> validTables = [];
+    annotation.read("tables").listValue.forEach((element) {
+      validTables
+          .add(element.toTypeValue()!.getDisplayString(withNullability: false));
+    });
     final assetIds = await buildStep
         .findAssets(Glob("**.netcoresync_moor_table.part"))
         .toList();
@@ -54,6 +59,11 @@ class NetCoreSyncClientGenerator extends GeneratorForAnnotation<UseMoor> {
       content = content.replaceAll("//", "").trim();
       return content;
     }).toList();
+    // find included jsonParts for the current @UseMoor tables
+    jsonParts.removeWhere((element) {
+      Map<String, dynamic> part = jsonDecode(element);
+      return !validTables.contains(part["tableClassName"]);
+    });
 
     // Perform code generation
     StringBuffer buffer = StringBuffer();
