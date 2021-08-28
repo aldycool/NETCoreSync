@@ -6,7 +6,7 @@
 
 This is the **Xamarin** version of NETCoreSync - a database synchronization framework where each client's local offline database (on each client's multiple devices) can be synchronized on-demand via network into a single centralized database hosted on a server. The NETCoreSync for Xamarin version is built using Microsoft .NET Standard 2.0, and needs to be implemented on both of your client-side and server-side projects.
 
-> To learn about NETCoreSync general requirements (characteristics such as database-agnostic, unique primary keys, soft-delete, etc.), visit the short-explanation on the root README [here](../).
+> To learn about NETCoreSync general requirements (characteristics such as database-agnostic, unique primary keys, soft-delete, etc.), visit the short-explanation on the root site [here](https://github.com/aldycool/NETCoreSync).
 
 > If you're using [Flutter](https://flutter.dev) (which you should be :grin:), visit the Flutter version of NETCoreSync [here](../netcoresync_moor).
 
