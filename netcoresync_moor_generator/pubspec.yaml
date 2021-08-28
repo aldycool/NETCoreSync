@@ -17,13 +17,9 @@ dependencies:
   collection: ^1.15.0 # https://pub.dev/packages/collection
   glob: ^2.0.1 # https://pub.dev/packages/glob
   recase: ^4.0.0 # https://pub.dev/packages/recase
-  netcoresync_moor: ^1.0.0
+  netcoresync_moor: ^1.0.0 # https://pub.dev/packages/netcoresync_moor
   
 dev_dependencies:
   lints: ^1.0.1 # https://pub.dev/packages/lints
   test: ^1.17.11 # https://pub.dev/packages/test
   build_runner: ^2.1.1 # https://pub.dev/packages/build_runner
-
-dependency_overrides:
-  netcoresync_moor:
-    path: ../netcoresync_moor
