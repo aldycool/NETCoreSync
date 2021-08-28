@@ -1,6 +1,11 @@
 import 'package:moor/moor.dart';
 import 'netcoresync_annotations.dart';
 
+/// The abstract class for performing required actions by the framework that is
+/// specific to the project's database schema, where its implementation is
+/// created during code generation.
+///
+/// *(This class is used internally, no need to use it directly)*
 abstract class NetCoreSyncEngine {
   late Map<Type, NetCoreSyncTableUser> tables;
 
@@ -23,6 +28,10 @@ abstract class NetCoreSyncEngine {
   });
 }
 
+/// A helper class for the [NetCoreSyncEngine] class that is used in the code
+/// generation.
+///
+/// *(This class is used internally, no need to use it directly)*
 class NetCoreSyncTableUser<T extends Table, D> {
   TableInfo<T, D> tableInfo;
   NetCoreSyncTable tableAnnotation;

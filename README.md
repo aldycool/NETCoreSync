@@ -10,6 +10,15 @@ This framework has two components that needs to be implemented in each of your c
 
 If the client is built using **[Flutter](https://flutter.dev/)**, use the Flutter version of NETCoreSync. This version provides `netcoresync_moor` package for the client side, and the `NETCorSyncServer` package for the server side. The client's `netcoresync_moor` package is built on top of Flutter's [Moor](https://github.com/simolus3/moor) library, and the server's `NETCoreSyncServer` package is built using Microsoft .NET 5.0 ASP .NET Core Middleware.
 
+### Repository Folders
+
+The repository folders are
+- [netcoresync_moor](netcoresync_moor): Client-side Flutter package
+- [netcoresync_moor_generator](netcoresync_moor_generator): Client-side Flutter code generator
+- [NETCoreSyncServer]: Server-side .NET 5.0 Middleware package
+- [Samples/ServerTimeStamp/clientsample](Samples/ServerTimeStamp/clientsample): Client-side Flutter project example
+- [Samples/ServerTimeStamp/WebSample](Samples/ServerTimeStamp/WebSample): Server-side .NET 5.0 ASP Core project example
+
 ## Xamarin Version
 
 | NETCoreSync |
@@ -17,6 +26,13 @@ If the client is built using **[Flutter](https://flutter.dev/)**, use the Flutte
 | [![Nuget](https://img.shields.io/nuget/v/NETCoreSync)](https://www.nuget.org/packages/NETCoreSync) |
 
 If the client is built using **[Xamarin](https://dotnet.microsoft.com/apps/xamarin)**, use the Xamarin version of NETCoreSync. This version provides `NETCoreSync` package for both client and server side. The `NETCoreSync` package is built using Microsoft .NET Standard 2.0.
+
+### Repository Folders
+
+The repository folders are
+- [NETCoreSync](NETCoreSync): Client-side and Server-side .NET Standard 2.0 package
+- [Samples/GlobalTimeStamp](Samples/GlobalTimeStamp): Client-side Xamarin and Server-Side .NET Core 3.1 project example for the *GlobalTimeStamp* synchronization approach
+- [Samples/DatabaseTimeStamp](Samples/DatabaseTimeStamp): Client-side Xamarin and Server-Side .NET Core 3.1 project example for the *DatabaseTimeStamp* synchronization approach
 
 ## Characteristics
 

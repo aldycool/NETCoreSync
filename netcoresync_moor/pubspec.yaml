@@ -24,7 +24,7 @@ dev_dependencies:
   netcoresync_moor_generator: any
   # For test only:
   path: ^1.8.0 # https://pub.dev/packages/path
-  # sqlite3_flutter_libs: ^0.5.0 # https://pub.dev/packages/sqlite3_flutter_libs
+  sqlite3: ^1.0.0 # https://pub.dev/packages/sqlite3
   version: ^2.0.0 # https://pub.dev/packages/version
   async: ^2.8.2 # https://pub.dev/packages/async
   

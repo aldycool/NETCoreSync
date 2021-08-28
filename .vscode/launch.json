@@ -45,6 +45,7 @@
             "cwd": "${workspaceFolder}/Samples/ServerTimeStamp/clientsample",
             "request": "launch",
             "type": "dart",
+            "deviceId": "chrome"
         },
         {
             "name": "NetCoreSyncMoorGeneratorDebug",

@@ -1,6 +1,25 @@
 import 'package:moor/moor.dart';
 import 'package:uuid/uuid.dart';
 
+/// The table class used by the framework to keep track of the server's
+/// timestamp.
+///
+/// This table class should be included in the `@UseMoor`'s `tables` list. For
+/// example:
+/// ```dart
+/// @UseMoor(
+///   tables: [
+///     // ...some table classes here...
+///     NetCoreSyncKnowledges,
+///   ],
+/// )
+/// class Database extends _$Database
+///     with NetCoreSyncClient, NetCoreSyncClientUser {
+/// // ... class code here ...
+/// }
+/// ```
+/// After it is included, no further action is necessary, the framework will
+/// utilize it as needed.
 @UseRowClass(NetCoreSyncKnowledge, constructor: "fromDb")
 class NetCoreSyncKnowledges extends Table {
   TextColumn get id => text().withLength(max: 36)();
@@ -19,6 +38,9 @@ class NetCoreSyncKnowledges extends Table {
   String? get tableName => "netcoresync_knowledges";
 }
 
+/// The Moor's Row Class for [NetCoreSyncKnowledges] table.
+///
+/// *(This class is used internally, no need to use it directly)*
 class NetCoreSyncKnowledge implements Insertable<NetCoreSyncKnowledge> {
   String id = Uuid().v4();
   String syncId = "";

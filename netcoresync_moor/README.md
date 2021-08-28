@@ -17,7 +17,7 @@ A database synchronization framework where each client's local offline database 
 
 ## How It Works
 
-To know how the synchronization works in detail, there is a special **in-depth explanation** page that covers the step-by-step logic of the synchronization, along with some activity simulation examples in this page [here](https://github.com/aldycool/NETCoreSync/blob/master/netcoresync_moor/docs/server-timestamp-logic.md). These simulation steps are also already made as a unit test in the `netcoresync_moor` package [here](https://github.com/aldycool/NETCoreSync/blob/master/netcoresync_moor/test/integration_tests/netcoresync_sync_test.dart) (in a `test` section called _SyncSession Synchronize_) to ensure the synchronization logic is always work as intended.
+To know how the synchronization works in detail, there is a special **in-depth explanation** page that covers the step-by-step logic of the synchronization, along with some activity simulation examples in this page [here](https://github.com/aldycool/NETCoreSync/blob/master/netcoresync_moor/documentation/server-timestamp-logic.md). These simulation steps are also already made as a unit test in the `netcoresync_moor` package [here](https://github.com/aldycool/NETCoreSync/blob/master/netcoresync_moor/test/integration_tests/netcoresync_sync_test.dart) (in a `test` section called _SyncSession Synchronize_) to ensure the synchronization logic is always work as intended.
 
 ## Example
 

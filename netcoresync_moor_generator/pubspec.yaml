@@ -11,10 +11,13 @@ environment:
 dependencies:
   moor: ^4.4.1 # https://pub.dev/packages/moor
   source_gen: ^1.0.3 # https://pub.dev/packages/source_gen
+  analyzer: ^1.7.1 # https://pub.dev/packages/analyzer 
+  build: ^2.0.0 # https://pub.dev/packages/build
   build_config: ^1.0.0 # https://pub.dev/packages/build_config
+  collection: ^1.15.0 # https://pub.dev/packages/collection
   glob: ^2.0.1 # https://pub.dev/packages/glob
   recase: ^4.0.0 # https://pub.dev/packages/recase
-  netcoresync_moor: any
+  netcoresync_moor: ^1.0.0
   
 dev_dependencies:
   lints: ^1.0.1 # https://pub.dev/packages/lints
