@@ -8,6 +8,10 @@ This framework has two components that needs to be implemented in each of your c
 
 [![build](https://github.com/aldycool/NETCoreSync/actions/workflows/netcoresync_moor_build.yml/badge.svg?event=push)](https://github.com/aldycool/NETCoreSync/actions/workflows/netcoresync_moor_build.yml?query=event%3Apush) [![codecov](https://codecov.io/gh/aldycool/NETCoreSync/branch/master/graph/badge.svg?token=S2GTBOB7XB)](https://codecov.io/gh/aldycool/NETCoreSync)
 
+| Client | Client Generator | Server |
+| :---: | :---: | :---: |
+| [![netcoresync_moor version](https://img.shields.io/pub/v/netcoresync_moor.svg)](https://pub.dev/packages/netcoresync_moor) | [![netcoresync_moor_generator version](https://img.shields.io/pub/v/netcoresync_moor_generator.svg)](https://pub.dev/packages/netcoresync_moor_generator) | [![Nuget](https://img.shields.io/nuget/v/NETCoreSyncServer)](https://www.nuget.org/packages/NETCoreSyncServer) |
+
 If the client is built using **[Flutter](https://flutter.dev/)**, use the Flutter version of NETCoreSync. This version provides `netcoresync_moor` package for the client side, and the `NETCorSyncServer` package for the server side. The client's `netcoresync_moor` package is built on top of Flutter's [Moor](https://github.com/simolus3/moor) library, and the server's `NETCoreSyncServer` package is built using Microsoft .NET 5.0 ASP .NET Core Middleware.
 
 ### Repository Folders
@@ -15,15 +19,15 @@ If the client is built using **[Flutter](https://flutter.dev/)**, use the Flutte
 The repository folders are
 - [netcoresync_moor](netcoresync_moor): Client-side Flutter package
 - [netcoresync_moor_generator](netcoresync_moor_generator): Client-side Flutter code generator
-- [NETCoreSyncServer]: Server-side .NET 5.0 Middleware package
+- [NETCoreSyncServer](NETCoreSyncServer): Server-side .NET 5.0 Middleware package
 - [Samples/ServerTimeStamp/clientsample](Samples/ServerTimeStamp/clientsample): Client-side Flutter project example
 - [Samples/ServerTimeStamp/WebSample](Samples/ServerTimeStamp/WebSample): Server-side .NET 5.0 ASP Core project example
 
 ## Xamarin Version
 
-| NETCoreSync |
+| Client + Server |
 | :---: |
-| [![Nuget](https://img.shields.io/nuget/v/NETCoreSync)](https://www.nuget.org/packages/NETCoreSync) |
+| [![NETCoreSync version](https://img.shields.io/nuget/v/NETCoreSync)](https://www.nuget.org/packages/NETCoreSync) |
 
 If the client is built using **[Xamarin](https://dotnet.microsoft.com/apps/xamarin)**, use the Xamarin version of NETCoreSync. This version provides `NETCoreSync` package for both client and server side. The `NETCoreSync` package is built using Microsoft .NET Standard 2.0.
 
@@ -60,6 +64,6 @@ The **Flutter** version is actually newer than the **Xamarin** version (the Xama
 
 Moving forward, the Flutter version will be the primary development to have periodical updates and improvements, while the Xamarin version will remain as a backward-compatible solution only.
 
-To read more about the **Flutter** version of NETCoreSync, visit the `netcoresync_moor` [here](netcoresync_moor/README.md).
+To read more about the **Flutter** version of NETCoreSync, visit the `netcoresync_moor` [here](netcoresync_moor).
 
-To read more about the **Xamarin** version of NETCoreSync, visit the `NETCoreSync` [here](NETCoreSync/README.md).
+To read more about the **Xamarin** version of NETCoreSync, visit the `NETCoreSync` [here](NETCoreSync).
