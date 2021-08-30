@@ -32,7 +32,7 @@ dependencies:
   datetime_picker_formfield: ^2.0.0 # https://pub.dev/packages/datetime_picker_formfield
   flutter_simple_treeview: ^3.0.0-nullsafety.1 # https://pub.dev/packages/flutter_simple_treeview/versions/3.0.0-nullsafety.1
   universal_platform: ^1.0.0+1 # https://pub.dev/packages/universal_platform
-  netcoresync_moor: any
+  netcoresync_moor: ^1.0.2
 
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.
@@ -43,13 +43,14 @@ dev_dependencies:
     sdk: flutter
   moor_generator: ^4.4.1 # https://pub.dev/packages/moor_generator
   build_runner: ^2.1.1 # https://pub.dev/packages/build_runner
-  netcoresync_moor_generator: any
+  netcoresync_moor_generator: ^1.0.2
 
-dependency_overrides:
-  netcoresync_moor:
-    path: ../../../netcoresync_moor
-  netcoresync_moor_generator:
-    path: ../../../netcoresync_moor_generator
+# For local debugging only  
+# dependency_overrides:
+#   netcoresync_moor:
+#     path: ../../../netcoresync_moor
+#   netcoresync_moor_generator:
+#     path: ../../../netcoresync_moor_generator
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec

@@ -630,8 +630,8 @@ The `netCoreSyncSynchronize()` method is the method to initiate synchronization 
 
 The `SyncEvent` class provides information that can be used to display visual indicators for the synchronization progress:
 - `eventMessage` is a default text message provided by the framework of each stages that happens in the synchronization. 
-- `indeterminate` is a `bool` value that indicates whether the stage can determine a progress value or not. If it is `true`, then the `value` parameter will contain a progress value, and a non-deterministic visual indicator such as `CircleProgressIndicator` can be used. If it is `false`, then a visual indicator such as `LinearProgressIndicator` can be presented with the `value` parameter as its current progression value. 
-- `value` is a `double` value that indicates the current stage progression. The `value` parameter is always ranged from `0.0` to `1.0`, so it is already compatible to be used directly with common visual indicators. In the case of non-deterministic (`indeterminate` is false), this value will always be zero.
+- `indeterminate` is a `bool` value that indicates whether the stage can determine a progress value or not. If it is `true` (means it is non-deterministic), then the `value` parameter will always be zero, and a non-deterministic visual indicator such as `CircleProgressIndicator` can be used. If it is `false`, then a visual indicator such as `LinearProgressIndicator` can be presented with the `value` parameter as its current progression value. 
+- `value` is a `double` value that indicates the current stage progression. The `value` parameter is always ranged from `0.0` to `1.0`, so it is already compatible to be used directly with common visual indicators. In the case of non-deterministic (`indeterminate` is `true`), this value will always be zero.
 - To know the exact details of what the `eventMessage` will be, read the [Synchronization Logs](#synchronization-logs) section.
 
 #### Synchronization Result Explanation

@@ -1,6 +1,6 @@
 name: netcoresync_moor_generator
 description: The code generation tool (as `dev_dependencies`) for the `netcoresync_moor` package.
-version: 1.0.1
+version: 1.0.2
 repository: https://github.com/aldycool/NETCoreSync/tree/master/netcoresync_moor_generator
 homepage: https://github.com/aldycool/NETCoreSync/tree/master/netcoresync_moor_generator
 issue_tracker: https://github.com/aldycool/NETCoreSync/issues
@@ -11,13 +11,13 @@ environment:
 dependencies:
   moor: ^4.4.1 # https://pub.dev/packages/moor
   source_gen: ^1.0.3 # https://pub.dev/packages/source_gen
-  analyzer: ^2.0.0 # https://pub.dev/packages/analyzer 
+  analyzer: ^1.7.0 # https://pub.dev/packages/analyzer 
   build: ^2.0.0 # https://pub.dev/packages/build
   build_config: ^1.0.0 # https://pub.dev/packages/build_config
   collection: ^1.15.0 # https://pub.dev/packages/collection
   glob: ^2.0.1 # https://pub.dev/packages/glob
   recase: ^4.0.0 # https://pub.dev/packages/recase
-  netcoresync_moor: ^1.0.1 # https://pub.dev/packages/netcoresync_moor
+  netcoresync_moor: ^1.0.2 # https://pub.dev/packages/netcoresync_moor
   
 dev_dependencies:
   lints: ^1.0.1 # https://pub.dev/packages/lints
