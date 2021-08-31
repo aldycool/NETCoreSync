@@ -13,6 +13,17 @@ import '../utils/net_core_test_server.dart';
 import '../utils/helper.dart';
 import '../data/database.dart';
 
+// TODO: 210830: Consider adding a real Flutter integration test in
+// `netcoresync_moor` tests, because this package is supposed to be used in a
+// real Flutter application, so we need to ensure it always works properly. One
+// case happened earlier where in Generator, to score more pub points, the
+// `analyzer` package is upgraded from 1.7.0 to 2.0.0, which by transitive deps
+// also silently upgrades `meta` to 1.7.0. This is fine in the libraries,
+// because they only depends on Dart and have no dependencies to Flutter, but,
+// in a Flutter application, it turns out that Flutter (at the time of writing)
+// still depends on `meta` 1.3.0, thus breaks the code generation in the client
+// project.
+
 void main() async {
   bool testPrint = true;
   void logTest(Object? object) {
