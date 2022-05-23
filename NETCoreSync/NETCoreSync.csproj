@@ -9,16 +9,16 @@
     <PackageProjectUrl>https://github.com/aldycool/NETCoreSync</PackageProjectUrl>
     <RepositoryUrl>https://github.com/aldycool/NETCoreSync</RepositoryUrl>
     <PackageTags>database sync synchronization framework NETCoreApp NETStandard Xamarin Forms</PackageTags>
-    <PackageReleaseNotes>## v1.2.1 Release Notes
+    <PackageReleaseNotes>## v1.2.2 Release Notes
 
 ### Added Features
-* Support custom HTTP Headers in `SyncClient` constructor
+* Fix GZip decompression into chunks
 
 ### Breaking Changes
 None
 </PackageReleaseNotes>
     <PackageRequireLicenseAcceptance>true</PackageRequireLicenseAcceptance>
-    <Version>1.2.1</Version>
+    <Version>1.2.2</Version>
     <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
   </PropertyGroup>
 
