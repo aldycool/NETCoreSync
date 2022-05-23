@@ -47,7 +47,13 @@ namespace NETCoreSync
             {
                 using (var gzip = new GZipStream(ms, CompressionMode.Decompress))
                 {
-                    gzip.Read(buffer, 0, uncompressedSize);
+                    int totalRead = 0;
+                    while (totalRead < buffer.Length)
+                    {
+                        int bytesRead = gzip.Read(buffer, totalRead, buffer.Length - totalRead);
+                        if (bytesRead == 0) break;
+                        totalRead += bytesRead;
+                    }
                 }
             }
             return Encoding.Unicode.GetString(buffer);
